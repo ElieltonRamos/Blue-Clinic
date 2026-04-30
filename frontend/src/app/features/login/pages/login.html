@@ -1,0 +1,44 @@
+<main class="bg-indigo-950 min-h-screen w-screen flex items-center justify-center p-4">
+  <div class="flex flex-col md:flex-row rounded-md w-full max-w-3xl overflow-hidden gap-3">
+    <!-- Imagem -->
+    <div class="w-full md:w-1/2 max-h-80 md:max-h-full">
+      <img src="blue-erp.png" alt="Logo Blue PDV" class="rounded-2xl w-full h-full object-cover" />
+    </div>
+
+    <!-- Formulário Teste-->
+    <form
+      [formGroup]="form"
+      (ngSubmit)="onSubmit()"
+      class="bg-gray-300 p-4 w-full md:w-1/2 rounded-b-md md:rounded-r-md md:rounded-bl-none flex justify-center items-center flex-col"
+    >
+      <h1 class="text-indigo-950 font-bold text-2xl md:text-3xl mb-4 text-center">
+        Bem Vindo ao Blue ERP
+      </h1>
+      <input
+        type="text"
+        placeholder="Usuário"
+        formControlName="username"
+        class="rounded-sm border w-full h-12 mt-2 pl-2"
+      />
+      @if (form.get('username')?.touched && form.get('username')?.invalid) {
+        <p class="msg-error text-sm text-red-600">O usuário é inválido</p>
+      }
+      <input
+        type="password"
+        placeholder="Senha"
+        formControlName="password"
+        class="rounded-sm border w-full h-12 mt-2 pl-2"
+      />
+      @if (form.get('password')?.touched && form.get('password')?.invalid) {
+        <p class="msg-error text-sm text-red-600">Digite sua senha</p>
+      }
+      <button
+        type="submit"
+        class="h-12 w-full bg-blue-600 rounded-md text-white cursor-pointer mt-4"
+      >
+        Entrar
+      </button>
+      <p class="text-gray-900 text-xs mt-3">Versão {{ version }}</p>
+    </form>
+  </div>
+</main>
