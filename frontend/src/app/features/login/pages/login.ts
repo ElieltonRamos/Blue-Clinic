@@ -2,6 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ServiceLogin } from '../services/login.service';
+import { version } from '../../../../../package.json';
 
 @Component({
   selector: 'app-login',
@@ -13,12 +14,13 @@ export class Login {
   private serviceLogin = inject(ServiceLogin);
   private router = inject(Router);
 
+  version = version;
   loading = signal(false);
   errorMessage = signal('');
   showPassword = signal(false);
 
   form = this.fb.group({
-    username: ['', [Validators.required, Validators.email]],
+    username: ['', [Validators.required]],
     password: ['', [Validators.required, Validators.minLength(4)]],
     rememberMe: [false],
   });
@@ -45,7 +47,7 @@ export class Login {
       },
       error: () => {
         this.loading.set(false);
-        this.errorMessage.set('E-mail ou senha inválidos.');
+        this.errorMessage.set('Usuario ou senha inválidos.');
       },
     });
   }

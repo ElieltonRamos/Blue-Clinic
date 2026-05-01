@@ -1,0 +1,238 @@
+<div class="flex h-screen overflow-hidden bg-[#161d2b]">
+  <!-- SIDEBAR -->
+  <aside class="w-[200px] flex-shrink-0 flex flex-col bg-[#111827] border-r border-white/[0.06]">
+    <!-- Logo -->
+    <div class="px-4 py-5 border-b border-white/[0.06]">
+      <div class="flex items-center gap-2.5">
+        <div
+          class="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center text-base shrink-0"
+        >
+          🔬
+        </div>
+        <div class="leading-tight">
+          <p class="text-[13px] font-semibold text-slate-200">Digital Surgeon</p>
+          <p class="text-[9px] font-light text-slate-500 uppercase tracking-widest">
+            Unidade Central
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Nav -->
+    <nav class="flex-1 px-2.5 py-3 flex flex-col gap-0.5 overflow-y-auto">
+      @for (item of mainNav; track item.route) {
+        <a
+          [routerLink]="item.route"
+          routerLinkActive="bg-blue-500/[0.18] text-blue-400 font-medium"
+          [routerLinkActiveOptions]="{ exact: false }"
+          class="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-[13px] text-slate-500 hover:bg-white/[0.04] hover:text-slate-200 transition-all duration-150"
+        >
+          @switch (item.icon) {
+            @case ('grid') {
+              <svg
+                class="w-4 h-4 shrink-0 opacity-80"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+              >
+                <rect x="3" y="3" width="7" height="7" rx="1" />
+                <rect x="14" y="3" width="7" height="7" rx="1" />
+                <rect x="3" y="14" width="7" height="7" rx="1" />
+                <rect x="14" y="14" width="7" height="7" rx="1" />
+              </svg>
+            }
+            @case ('calendar') {
+              <svg
+                class="w-4 h-4 shrink-0 opacity-80"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+              >
+                <rect x="3" y="4" width="18" height="18" rx="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+              </svg>
+            }
+            @case ('users') {
+              <svg
+                class="w-4 h-4 shrink-0 opacity-80"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+              >
+                <circle cx="9" cy="7" r="4" />
+                <path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                <path d="M21 21v-2a4 4 0 0 0-3-3.87" />
+              </svg>
+            }
+            @case ('message-square') {
+              <svg
+                class="w-4 h-4 shrink-0 opacity-80"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+              >
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+            }
+            @case ('file-text') {
+              <svg
+                class="w-4 h-4 shrink-0 opacity-80"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+              >
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14,2 14,8 20,8" />
+                <line x1="16" y1="13" x2="8" y2="13" />
+                <line x1="16" y1="17" x2="8" y2="17" />
+              </svg>
+            }
+          }
+          {{ item.label }}
+        </a>
+      }
+    </nav>
+
+    <!-- Bottom Nav -->
+    <div class="px-2.5 pb-4 pt-2 border-t border-white/[0.06] flex flex-col gap-0.5">
+      @for (item of bottomNav; track item.route) {
+        <a
+          [routerLink]="item.route"
+          routerLinkActive="bg-blue-500/[0.18] text-blue-400 font-medium"
+          class="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-[13px] text-slate-500 hover:bg-white/[0.04] hover:text-slate-200 transition-all duration-150"
+        >
+          @switch (item.icon) {
+            @case ('settings') {
+              <svg
+                class="w-4 h-4 shrink-0 opacity-80"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+              >
+                <circle cx="12" cy="12" r="3" />
+                <path
+                  d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"
+                />
+              </svg>
+            }
+            @case ('log-out') {
+              <svg
+                class="w-4 h-4 shrink-0 opacity-80"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+              >
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16,17 21,12 16,7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
+            }
+          }
+          {{ item.label }}
+        </a>
+      }
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="flex flex-1 flex-col overflow-hidden">
+    <!-- TOPBAR -->
+    <header
+      class="h-14 flex-shrink-0 flex items-center gap-3 px-5 bg-[#111827] border-b border-white/[0.06]"
+    >
+      <div
+        class="flex items-center gap-2 h-[34px] px-3 rounded-lg bg-white/[0.04] border border-white/[0.06] max-w-[360px] flex-1"
+      >
+        <svg
+          class="w-3.5 h-3.5 text-slate-500 shrink-0"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+        >
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+        <input
+          type="text"
+          placeholder="Pesquisar pacientes, médicos ou registros..."
+          class="bg-transparent border-none outline-none text-slate-200 text-[12px] placeholder:text-slate-500 w-full font-[inherit]"
+        />
+      </div>
+
+      <div class="ml-auto flex items-center gap-2">
+        <button
+          class="w-8 h-8 rounded-lg bg-white/[0.04] border border-white/[0.06] flex items-center justify-center text-slate-500 hover:text-slate-200 hover:bg-white/[0.08] transition-all"
+        >
+          <svg
+            class="w-3.5 h-3.5"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+          >
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+          </svg>
+        </button>
+
+        <button
+          class="w-8 h-8 rounded-lg bg-white/[0.04] border border-white/[0.06] flex items-center justify-center text-slate-500 hover:text-slate-200 hover:bg-white/[0.08] transition-all"
+        >
+          <svg
+            class="w-3.5 h-3.5"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+          >
+            <circle cx="12" cy="12" r="3" />
+            <path
+              d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"
+            />
+          </svg>
+        </button>
+
+        <div
+          class="flex items-center gap-2 pl-1 pr-3 py-1 rounded-lg bg-white/[0.04] border border-white/[0.06] cursor-pointer hover:bg-white/[0.08] transition-all"
+        >
+          <div
+            class="w-7 h-7 rounded-md bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-[11px] font-semibold text-white"
+          >
+            JS
+          </div>
+          <div class="leading-tight">
+            <p class="text-[11px] font-medium text-slate-200">Dr. Julian Smith</p>
+            <p class="text-[9px] text-slate-500 uppercase tracking-wider">Diretor Médico</p>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ROUTER OUTLET -->
+    <main class="flex-1 overflow-y-auto bg-[#161d2b] relative">
+      <div
+        class="absolute inset-0 pointer-events-none"
+        style="
+          background-image:
+            linear-gradient(rgba(59, 130, 246, 0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(59, 130, 246, 0.03) 1px, transparent 1px);
+          background-size: 40px 40px;
+        "
+      ></div>
+      <div class="relative z-10 p-6">
+        <router-outlet />
+      </div>
+    </main>
+  </div>
+</div>
