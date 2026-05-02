@@ -5,11 +5,17 @@ import { Dashboard } from './features/dashboard/pages/dashboard';
 
 export const routes: Routes = [
   {
-    path: '',
+    path: 'login',
     component: Login,
   },
   {
     path: 'dashboard',
     component: AppLayout,
+    children: [
+      {
+        path: '',
+        component: Dashboard,
+      },
+    ],
   },
 ];

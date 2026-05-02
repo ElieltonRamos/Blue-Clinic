@@ -1,0 +1,349 @@
+<div class="p-6 flex flex-col gap-6">
+  <!-- Header -->
+  <div>
+    <h1 class="text-xl font-semibold text-(--color-text-primary)">Visão Geral Clínica</h1>
+    <p class="text-[13px] text-(--color-text-muted) mt-0.5">
+      Bem-vindo de volta, Dr. Smith. Aqui está o desempenho da sua clínica em agosto.
+    </p>
+  </div>
+
+  <!-- Stat Cards -->
+  <div class="grid grid-cols-4 gap-4">
+    @for (card of stats; track card.label) {
+      <div
+        class="rounded-xl p-4 flex flex-col gap-3 border"
+        [class]="
+          card.highlight
+            ? 'bg-blue-500 border-transparent'
+            : 'bg-(--color-bg-sidebar) border-(--color-border)'
+        "
+      >
+        <div class="flex items-center justify-between">
+          <div
+            class="w-8 h-8 rounded-lg flex items-center justify-center"
+            [class]="
+              card.highlight ? 'bg-white/20 text-white' : 'bg-white/5 text-(--color-text-muted)'
+            "
+          >
+            @switch (card.icon) {
+              @case ('calendar') {
+                <svg
+                  class="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                >
+                  <rect x="3" y="4" width="18" height="18" rx="2" />
+                  <line x1="16" y1="2" x2="16" y2="6" />
+                  <line x1="8" y1="2" x2="8" y2="6" />
+                  <line x1="3" y1="10" x2="21" y2="10" />
+                </svg>
+              }
+              @case ('dollar') {
+                <svg
+                  class="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                >
+                  <line x1="12" y1="1" x2="12" y2="23" />
+                  <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                </svg>
+              }
+              @case ('x') {
+                <svg
+                  class="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              }
+              @case ('chat') {
+                <svg
+                  class="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                </svg>
+              }
+            }
+          </div>
+
+          @if (card.toggle) {
+            <div class="w-8 h-4.5 bg-white/30 rounded-full p-0.5 flex items-center justify-end">
+              <div class="w-3.5 h-3.5 bg-white rounded-full"></div>
+            </div>
+          } @else {
+            <span
+              class="text-[11px] font-medium px-1.5 py-0.5 rounded-md"
+              [class]="
+                card.trend > 0 ? 'bg-emerald-400/10 text-emerald-400' : 'bg-red-400/10 text-red-400'
+              "
+            >
+              {{ card.trend > 0 ? '+' : '' }}{{ card.trend }}%
+            </span>
+          }
+        </div>
+
+        <div>
+          <p
+            class="text-[11px]"
+            [class]="card.highlight ? 'text-white/70' : 'text-(--color-text-muted)'"
+          >
+            {{ card.label }}
+          </p>
+          <p
+            class="text-2xl font-bold mt-0.5"
+            [class]="card.highlight ? 'text-white' : 'text-(--color-text-primary)'"
+          >
+            {{ card.value }}
+          </p>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Middle Row -->
+  <div class="grid grid-cols-[1fr_280px] gap-4">
+    <!-- Growth Chart -->
+    <div class="rounded-xl border border-(--color-border) bg-(--color-bg-sidebar) p-5">
+      <div class="flex items-center justify-between mb-5">
+        <div>
+          <p class="text-[13px] font-semibold text-(--color-text-primary)">Crescimento</p>
+          <p class="text-[11px] text-(--color-text-muted)">
+            Aquisição de pacientes vs. tratamentos concluídos
+          </p>
+        </div>
+        <div class="flex gap-1">
+          <button
+            class="text-[11px] px-3 py-1 rounded-md bg-(--color-primary) text-white font-medium"
+          >
+            Mensal
+          </button>
+          <button
+            class="text-[11px] px-3 py-1 rounded-md text-(--color-text-muted) hover:bg-(--color-bg-hover)"
+          >
+            Anual
+          </button>
+        </div>
+      </div>
+
+      <div class="flex items-end gap-3 h-36">
+        @for (month of chartMonths; track month; let i = $index) {
+          <div class="flex-1 flex flex-col items-center gap-1">
+            <div class="w-full flex gap-0.5 items-end" style="height: 112px">
+              <div
+                class="flex-1 rounded-t bg-blue-500/70"
+                [style.height.%]="barHeight(chartData.newPatients[i])"
+              ></div>
+              <div
+                class="flex-1 rounded-t bg-emerald-400/70"
+                [style.height.%]="barHeight(chartData.completed[i])"
+              ></div>
+            </div>
+            <span class="text-[9px] text-(--color-text-muted)">{{ month }}</span>
+          </div>
+        }
+      </div>
+
+      <div class="flex gap-4 mt-4">
+        <div class="flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+          <span class="text-[11px] text-(--color-text-muted)">Novos Pacientes</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+          <span class="text-[11px] text-(--color-text-muted)">Tratamentos Concluídos</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chatbot Automation -->
+    <div
+      class="rounded-xl border border-(--color-border) bg-(--color-bg-sidebar) p-5 flex flex-col gap-4"
+    >
+      <div>
+        <p class="text-[13px] font-semibold text-(--color-text-primary)">Automação de Chatbot</p>
+        <p class="text-[11px] text-(--color-text-muted)">
+          Visão geral da eficiência de agendamento
+        </p>
+      </div>
+
+      <div class="flex justify-center">
+        <div class="relative w-28 h-28">
+          <svg viewBox="0 0 100 100" class="w-full h-full -rotate-90">
+            <circle
+              cx="50"
+              cy="50"
+              r="38"
+              fill="none"
+              stroke="rgba(255,255,255,0.06)"
+              stroke-width="14"
+            />
+            <circle
+              cx="50"
+              cy="50"
+              r="38"
+              fill="none"
+              stroke="var(--color-primary)"
+              stroke-width="14"
+              stroke-linecap="round"
+              stroke-dashoffset="0"
+              [attr.stroke-dasharray]="
+                chatbotStats.percent * 2.389 + ' ' + (100 - chatbotStats.percent) * 2.389
+              "
+            />
+          </svg>
+          <div class="absolute inset-0 flex flex-col items-center justify-center">
+            <span class="text-lg font-bold text-(--color-text-primary)"
+              >{{ chatbotStats.percent }}%</span
+            >
+            <span class="text-[9px] text-(--color-text-muted) uppercase tracking-wider"
+              >Automatizado</span
+            >
+          </div>
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-2 mt-auto">
+        <div class="flex items-center justify-between px-3 py-2 rounded-lg bg-(--color-bg-hover)">
+          <div class="flex items-center gap-2">
+            <span class="w-1.5 h-1.5 rounded-full bg-(--color-primary)"></span>
+            <span class="text-[12px] text-(--color-text-muted)">Bot WhatsApp</span>
+          </div>
+          <span class="text-[12px] font-semibold text-(--color-text-primary)">{{
+            chatbotStats.botInteractions
+          }}</span>
+        </div>
+        <div class="flex items-center justify-between px-3 py-2 rounded-lg bg-(--color-bg-hover)">
+          <div class="flex items-center gap-2">
+            <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+            <span class="text-[12px] text-(--color-text-muted)">Interação Humana</span>
+          </div>
+          <span class="text-[12px] font-semibold text-(--color-text-primary)">{{
+            chatbotStats.humanInteractions
+          }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Appointments Table -->
+  <div class="rounded-xl border border-(--color-border) bg-(--color-bg-sidebar) p-5">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <p class="text-[13px] font-semibold text-(--color-text-primary)">Próximas Consultas</p>
+        <p class="text-[11px] text-(--color-text-muted)">Agendadas para hoje, 24 de Agosto</p>
+      </div>
+      <button
+        class="flex items-center gap-1.5 text-[11px] text-(--color-primary) hover:opacity-80 transition-opacity"
+      >
+        Ver Calendário Completo
+        <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <line x1="7" y1="17" x2="17" y2="7" />
+          <polyline points="7,7 17,7 17,17" />
+        </svg>
+      </button>
+    </div>
+
+    <table class="w-full">
+      <thead>
+        <tr class="border-b border-(--color-border)">
+          <th
+            class="text-left text-[10px] font-medium text-(--color-text-muted) uppercase tracking-wider pb-2.5"
+          >
+            Paciente
+          </th>
+          <th
+            class="text-left text-[10px] font-medium text-(--color-text-muted) uppercase tracking-wider pb-2.5"
+          >
+            Horário
+          </th>
+          <th
+            class="text-left text-[10px] font-medium text-(--color-text-muted) uppercase tracking-wider pb-2.5"
+          >
+            Médico
+          </th>
+          <th
+            class="text-left text-[10px] font-medium text-(--color-text-muted) uppercase tracking-wider pb-2.5"
+          >
+            Status
+          </th>
+          <th
+            class="text-left text-[10px] font-medium text-(--color-text-muted) uppercase tracking-wider pb-2.5"
+          >
+            Ações
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (appt of appointments; track appt.patient) {
+          <tr
+            class="border-b border-(--color-border) last:border-0 hover:bg-(--color-bg-hover) transition-colors"
+          >
+            <td class="py-3 pr-4">
+              <div class="flex items-center gap-2.5">
+                <div
+                  class="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-semibold text-white shrink-0"
+                  [style.background]="appt.color"
+                >
+                  {{ appt.initials }}
+                </div>
+                <div>
+                  <p class="text-[12px] font-medium text-(--color-text-primary)">
+                    {{ appt.patient }}
+                  </p>
+                  <p class="text-[10px] text-(--color-text-muted)">{{ appt.type }}</p>
+                </div>
+              </div>
+            </td>
+            <td class="py-3 pr-4">
+              <span class="text-[12px] text-(--color-text-primary)">{{ appt.time }}</span>
+            </td>
+            <td class="py-3 pr-4">
+              <div class="flex items-center gap-2">
+                <div
+                  class="w-6 h-6 rounded-full bg-(--color-primary) flex items-center justify-center text-[9px] font-bold text-white"
+                >
+                  {{ appt.doctorAvatar }}
+                </div>
+                <span class="text-[12px] text-(--color-text-primary)">{{ appt.doctor }}</span>
+              </div>
+            </td>
+            <td class="py-3 pr-4">
+              <span
+                class="text-[10px] font-medium px-2.5 py-1 rounded-full"
+                [ngClass]="{
+                  'bg-emerald-400/10 text-emerald-400': appt.status === 'Confirmado',
+                  'bg-amber-400/10 text-amber-400': appt.status === 'Pendente',
+                  'bg-red-400/10 text-red-400': appt.status === 'Cancelado',
+                }"
+                >{{ appt.status }}</span
+              >
+            </td>
+            <td class="py-3">
+              <button
+                class="w-6 h-6 flex items-center justify-center text-(--color-text-muted) hover:text-(--color-text-primary) transition-colors"
+              >
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                  <circle cx="12" cy="5" r="1.5" />
+                  <circle cx="12" cy="12" r="1.5" />
+                  <circle cx="12" cy="19" r="1.5" />
+                </svg>
+              </button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
