@@ -3,6 +3,7 @@ import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ServiceLogin } from '../services/login.service';
 import { version } from '../../../../../package.json';
+import { ThemeService } from '../../../core/services/theme.service';
 
 @Component({
   selector: 'app-login',
@@ -13,6 +14,7 @@ export class Login {
   private fb = inject(FormBuilder);
   private serviceLogin = inject(ServiceLogin);
   private router = inject(Router);
+  themeService = inject(ThemeService);
 
   version = version;
   loading = signal(false);

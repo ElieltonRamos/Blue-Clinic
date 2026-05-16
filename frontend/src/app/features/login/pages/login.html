@@ -1,33 +1,46 @@
 <main
-  class="bg-slate-950 min-h-screen w-screen flex items-center justify-center p-4 bg-[radial-gradient(ellipse_at_60%_40%,#0f1f3d_0%,#050d1a_100%)]"
+  class="min-h-screen w-screen flex items-center justify-center p-4 bg-login-page-bg-to bg-[radial-gradient(ellipse_at_60%_40%,var(--color-login-page-bg-from)_0%,var(--color-login-page-bg-to)_100%)]"
 >
+  <button
+    (click)="themeService.toggle()"
+    class="absolute top-4 right-4 bg-bg-card border border-(--color-border) text-(--color-text-secondary) hover:text-(--color-text-primary) rounded-md px-3 py-1.5 text-sm transition-colors"
+  >
+    {{ themeService.theme() === 'dark' ? '☀️ Claro' : '🌙 Escuro' }}
+  </button>
+
   <div class="flex w-full max-w-3xl">
     <!-- Logo Panel -->
     <div
-      class="w-1/2 rounded-l-xl p-8 bg-slate-900/80 border border-blue-300/10 border-r-0 backdrop-blur-xl flex items-center justify-center overflow-hidden"
+      class="w-1/2 rounded-l-xl p-8 bg-login-panel-bg border border-login-panel-border border-r-0 backdrop-blur-xl flex items-center justify-center overflow-hidden"
     >
       <img src="logo-principal.png" alt="BlueClinic Logo" class="w-full h-auto object-contain" />
     </div>
 
     <!-- Form Panel -->
-    <div class="w-1/2 rounded-r-xl p-8 bg-slate-900/80 border border-blue-300/10 backdrop-blur-xl">
+    <div
+      class="w-1/2 rounded-r-xl p-8 bg-login-panel-bg border border-login-panel-border backdrop-blur-xl"
+    >
       <!-- Header -->
       <div class="flex items-center gap-3 mb-8">
         <img src="blue-clinic-logo.png" alt="" class="w-10 h-10 rounded-md object-contain" />
         <div>
-          <h1 class="text-white font-bold text-2xl leading-tight">Bem-vindo de volta</h1>
-          <p class="text-slate-400 text-sm">Acesse sua estação de trabalho</p>
+          <h1 class="text-(--color-text-primary) font-bold text-2xl leading-tight">
+            Bem-vindo de volta
+          </h1>
+          <p class="text-(--color-text-secondary) text-sm">Acesse sua estação de trabalho</p>
         </div>
       </div>
 
       <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
         <!-- E-mail -->
         <div class="mb-5">
-          <label class="block text-xs font-semibold tracking-widest text-slate-400 uppercase mb-2">
+          <label
+            class="block text-xs font-semibold tracking-widest text-(--color-text-secondary) uppercase mb-2"
+          >
             Usuario
           </label>
           <div class="relative">
-            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-(--color-text-muted)">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 class="w-4 h-4"
@@ -48,26 +61,28 @@
               formControlName="username"
               placeholder="admin"
               (keydown.enter)="passwordInput.focus()"
-              class="w-full h-11 pl-10 pr-4 rounded-lg text-sm text-white placeholder-slate-500 outline-none transition-all bg-white/5 border border-white/10"
-              [class.border-red-500/60]="
+              class="w-full h-11 pl-10 pr-4 rounded-lg text-sm text-(--color-input-text) placeholder:text-(--color-input-placeholder) outline-none transition-all bg-(--color-input-bg) border border-(--color-input-border) focus:border-(--color-input-border-focus)"
+              [class.border-danger!]="
                 form.get('username')?.touched && form.get('username')?.invalid
               "
             />
           </div>
           @if (form.get('username')?.touched && form.get('username')?.invalid) {
-            <p class="text-red-400 text-xs mt-1">Usuario inválido</p>
+            <p class="text-(--color-danger) text-xs mt-1">Usuario inválido</p>
           }
         </div>
 
         <!-- Senha -->
         <div class="mb-5">
           <div class="flex items-center justify-between mb-2">
-            <label class="block text-xs font-semibold tracking-widest text-slate-400 uppercase">
+            <label
+              class="block text-xs font-semibold tracking-widest text-(--color-text-secondary) uppercase"
+            >
               Senha
             </label>
           </div>
           <div class="relative">
-            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-(--color-text-muted)">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 class="w-4 h-4"
@@ -89,15 +104,15 @@
               formControlName="password"
               placeholder="••••••••"
               (keydown.enter)="onSubmit()"
-              class="w-full h-11 pl-10 pr-10 rounded-lg text-sm text-white placeholder-slate-500 outline-none transition-all bg-white/5 border border-white/10"
-              [class.border-red-500/60]="
+              class="w-full h-11 pl-10 pr-10 rounded-lg text-sm text-(--color-input-text) placeholder:text-(--color-input-placeholder) outline-none transition-all bg-(--color-input-bg) border border-(--color-input-border) focus:border-(--color-input-border-focus)"
+              [class.border-danger!]="
                 form.get('password')?.touched && form.get('password')?.invalid
               "
             />
             <button
               type="button"
               (click)="togglePassword()"
-              class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+              class="absolute right-3 top-1/2 -translate-y-1/2 text-(--color-text-muted) hover:text-(--color-text-secondary) transition-colors"
             >
               @if (showPassword()) {
                 <svg
@@ -139,14 +154,14 @@
             </button>
           </div>
           @if (form.get('password')?.touched && form.get('password')?.invalid) {
-            <p class="text-red-400 text-xs mt-1">Senha inválida</p>
+            <p class="text-(--color-danger) text-xs mt-1">Senha inválida</p>
           }
         </div>
 
         <!-- Erro geral -->
         @if (errorMessage()) {
           <div
-            class="mb-4 px-3 py-2 rounded-lg text-sm text-red-400 bg-red-500/10 border border-red-500/20"
+            class="mb-4 px-3 py-2 rounded-lg text-sm text-(--color-danger) bg-danger-subtle border border-(--color-danger)"
           >
             {{ errorMessage() }}
           </div>
@@ -156,7 +171,7 @@
         <button
           type="submit"
           [disabled]="loading()"
-          class="w-full h-11 rounded-lg text-white text-sm font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer bg-linear-to-br from-blue-600 to-blue-700"
+          class="w-full h-11 rounded-lg text-(--color-btn-primary-text) text-sm font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer bg-(--color-btn-primary-bg) hover:bg-(--color-btn-primary-hover)"
         >
           @if (loading()) {
             <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -194,7 +209,7 @@
   </div>
 
   <!-- Footer -->
-  <p class="absolute bottom-4 text-center text-xs text-slate-600">
+  <p class="absolute bottom-4 text-center text-xs text-text-disabled">
     © 2026 BlueClinic. Versão: {{ version }}
   </p>
 </main>

@@ -1,6 +1,6 @@
 <!-- DEV ONLY - remover antes de produção -->
-<div class="flex gap-2 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
-  <span class="text-[11px] text-yellow-400 self-center">DEV:</span>
+<div class="flex gap-2 p-3 bg-dev-bg border border-dev-border rounded-lg">
+  <span class="text-[11px] text-dev-text self-center">DEV:</span>
   <button
     (click)="setRole('admin')"
     [class.font-bold]="role === 'admin'"
@@ -24,6 +24,7 @@
   </button>
 </div>
 <!-- DEV ONLY - remover antes de produção -->
+
 <div class="p-6 flex flex-col gap-6">
   <!-- Header -->
   <div>
@@ -63,15 +64,17 @@
         class="rounded-xl p-4 flex flex-col gap-3 border"
         [class]="
           card.highlight
-            ? 'bg-blue-500 border-transparent'
-            : 'bg-(--color-bg-sidebar) border-(--color-border)'
+            ? 'bg-(--color-highlight-bg) border-transparent'
+            : 'bg-bg-sidebar border-(--color-border)'
         "
       >
         <div class="flex items-center justify-between">
           <div
             class="w-8 h-8 rounded-lg flex items-center justify-center"
             [class]="
-              card.highlight ? 'bg-white/20 text-white' : 'bg-white/5 text-(--color-text-muted)'
+              card.highlight
+                ? 'bg-highlight-icon-bg text-(--color-highlight-text)'
+                : 'bg-highlight-icon-bg-alt text-(--color-text-muted)'
             "
           >
             @switch (card.icon) {
@@ -128,14 +131,18 @@
           </div>
 
           @if (card.toggle) {
-            <div class="w-8 h-4.5 bg-white/30 rounded-full p-0.5 flex items-center justify-end">
-              <div class="w-3.5 h-3.5 bg-white rounded-full"></div>
+            <div
+              class="w-8 h-4.5 bg-highlight-icon-bg rounded-full p-0.5 flex items-center justify-end"
+            >
+              <div class="w-3.5 h-3.5 bg-(--color-highlight-text) rounded-full"></div>
             </div>
           } @else {
             <span
               class="text-[11px] font-medium px-1.5 py-0.5 rounded-md"
               [class]="
-                card.trend > 0 ? 'bg-emerald-400/10 text-emerald-400' : 'bg-red-400/10 text-red-400'
+                card.trend > 0
+                  ? 'bg-success-subtle text-success'
+                  : 'bg-danger-subtle text-(--color-danger)'
               "
             >
               {{ card.trend > 0 ? '+' : '' }}{{ card.trend }}%
@@ -146,13 +153,19 @@
         <div>
           <p
             class="text-[11px]"
-            [class]="card.highlight ? 'text-white/70' : 'text-(--color-text-muted)'"
+            [class]="
+              card.highlight
+                ? 'text-(--color-highlight-text) opacity-70'
+                : 'text-(--color-text-muted)'
+            "
           >
             {{ card.label }}
           </p>
           <p
             class="text-2xl font-bold mt-0.5"
-            [class]="card.highlight ? 'text-white' : 'text-(--color-text-primary)'"
+            [class]="
+              card.highlight ? 'text-(--color-highlight-text)' : 'text-(--color-text-primary)'
+            "
           >
             {{ card.value }}
           </p>
@@ -161,13 +174,13 @@
     }
   </div>
 
-  <!-- Próximo Paciente (apenas médico) -->
+  <!-- Próximo Paciente -->
   @if (showNextPatient) {
-    <div class="rounded-xl border border-(--color-border) bg-(--color-bg-sidebar) p-5">
+    <div class="rounded-xl border border-(--color-border) bg-bg-sidebar p-5">
       <p class="text-[13px] font-semibold text-(--color-text-primary) mb-4">Próximo Paciente</p>
       <div class="flex items-center gap-4">
         <div
-          class="w-14 h-14 rounded-full flex items-center justify-center text-base font-bold text-white shrink-0"
+          class="w-14 h-14 rounded-full flex items-center justify-center text-base font-bold text-(--color-text-inverse) shrink-0"
           [style.background]="nextPatient.color"
         >
           {{ nextPatient.initials }}
@@ -184,15 +197,14 @@
     </div>
   }
 
-  <!-- Middle Row: Gráfico + Chatbot -->
+  <!-- Middle Row -->
   @if (showGrowthChart || showChatbot) {
     <div
       class="grid gap-4"
       [ngClass]="{ 'grid-cols-[1fr_280px]': showGrowthChart, 'grid-cols-1': !showGrowthChart }"
     >
-      <!-- Growth Chart (apenas admin) -->
       @if (showGrowthChart) {
-        <div class="rounded-xl border border-(--color-border) bg-(--color-bg-sidebar) p-5">
+        <div class="rounded-xl border border-(--color-border) bg-bg-sidebar p-5">
           <div class="flex items-center justify-between mb-5">
             <div>
               <p class="text-[13px] font-semibold text-(--color-text-primary)">Crescimento</p>
@@ -202,7 +214,7 @@
             </div>
             <div class="flex gap-1">
               <button
-                class="text-[11px] px-3 py-1 rounded-md bg-(--color-primary) text-white font-medium"
+                class="text-[11px] px-3 py-1 rounded-md bg-(--color-btn-primary-bg) text-(--color-btn-primary-text) font-medium"
               >
                 Mensal
               </button>
@@ -219,11 +231,11 @@
               <div class="flex-1 flex flex-col items-center gap-1">
                 <div class="w-full flex gap-0.5 items-end" style="height: 112px">
                   <div
-                    class="flex-1 rounded-t bg-blue-500/70"
+                    class="flex-1 rounded-t bg-chart-primary"
                     [style.height.%]="barHeight(chartData.newPatients[i])"
                   ></div>
                   <div
-                    class="flex-1 rounded-t bg-emerald-400/70"
+                    class="flex-1 rounded-t bg-chart-secondary"
                     [style.height.%]="barHeight(chartData.completed[i])"
                   ></div>
                 </div>
@@ -234,21 +246,20 @@
 
           <div class="flex gap-4 mt-4">
             <div class="flex items-center gap-1.5">
-              <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+              <span class="w-2 h-2 rounded-full bg-(--color-primary)"></span>
               <span class="text-[11px] text-(--color-text-muted)">Novos Pacientes</span>
             </div>
             <div class="flex items-center gap-1.5">
-              <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+              <span class="w-2 h-2 rounded-full bg-success"></span>
               <span class="text-[11px] text-(--color-text-muted)">Tratamentos Concluídos</span>
             </div>
           </div>
         </div>
       }
 
-      <!-- Chatbot (admin + balconista) -->
       @if (showChatbot) {
         <div
-          class="rounded-xl border border-(--color-border) bg-(--color-bg-sidebar) p-5 flex flex-col gap-4"
+          class="rounded-xl border border-(--color-border) bg-bg-sidebar p-5 flex flex-col gap-4"
         >
           <div>
             <p class="text-[13px] font-semibold text-(--color-text-primary)">
@@ -267,7 +278,7 @@
                   cy="50"
                   r="38"
                   fill="none"
-                  stroke="rgba(255,255,255,0.06)"
+                  stroke="var(--color-ring-track)"
                   stroke-width="14"
                 />
                 <circle
@@ -311,7 +322,7 @@
               class="flex items-center justify-between px-3 py-2 rounded-lg bg-(--color-bg-hover)"
             >
               <div class="flex items-center gap-2">
-                <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                <span class="w-1.5 h-1.5 rounded-full bg-(--color-dot-neutral)"></span>
                 <span class="text-[12px] text-(--color-text-muted)">Interação Humana</span>
               </div>
               <span class="text-[12px] font-semibold text-(--color-text-primary)">{{
@@ -325,7 +336,7 @@
   }
 
   <!-- Appointments Table -->
-  <div class="rounded-xl border border-(--color-border) bg-(--color-bg-sidebar) p-5">
+  <div class="rounded-xl border border-(--color-border) bg-bg-sidebar p-5">
     <div class="flex items-center justify-between mb-4">
       <div>
         <p class="text-[13px] font-semibold text-(--color-text-primary)">
@@ -388,7 +399,7 @@
             <td class="py-3 pr-4">
               <div class="flex items-center gap-2.5">
                 <div
-                  class="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-semibold text-white shrink-0"
+                  class="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-semibold text-(--color-text-inverse) shrink-0"
                   [style.background]="appt.color"
                 >
                   {{ appt.initials }}
@@ -408,7 +419,7 @@
               <td class="py-3 pr-4">
                 <div class="flex items-center gap-2">
                   <div
-                    class="w-6 h-6 rounded-full bg-(--color-primary) flex items-center justify-center text-[9px] font-bold text-white"
+                    class="w-6 h-6 rounded-full bg-(--color-btn-primary-bg) flex items-center justify-center text-[9px] font-bold text-(--color-btn-primary-text)"
                   >
                     {{ appt.doctorAvatar }}
                   </div>
@@ -420,9 +431,10 @@
               <span
                 class="text-[10px] font-medium px-2.5 py-1 rounded-full"
                 [ngClass]="{
-                  'bg-emerald-400/10 text-emerald-400': appt.status === 'Confirmado',
-                  'bg-amber-400/10 text-amber-400': appt.status === 'Pendente',
-                  'bg-red-400/10 text-red-400': appt.status === 'Cancelado',
+                  'bg-success-subtle text-success':
+                    appt.status === 'Confirmado',
+                  'bg-warning-subtle text-warning': appt.status === 'Pendente',
+                  'bg-danger-subtle text-(--color-danger)': appt.status === 'Cancelado',
                 }"
                 >{{ appt.status }}</span
               >

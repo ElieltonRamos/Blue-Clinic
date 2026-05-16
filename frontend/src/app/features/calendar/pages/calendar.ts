@@ -24,7 +24,7 @@ export interface CalendarDay {
   providers: [CalendarService],
   templateUrl: './calendar.html',
 })
-export class Calendar implements OnInit {
+export class Calendar {
   private readonly service = inject(CalendarService);
 
   readonly weekDays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
@@ -107,34 +107,34 @@ export class Calendar implements OnInit {
 
   dayCellClass(day: CalendarDay): string {
     if (!day.currentMonth) {
-      return 'border-[#434652]/10 opacity-30 cursor-default';
+      return 'border-(--color-border) opacity-30 cursor-default';
     }
     if (day.isToday) {
-      return 'border-[#b0c6ff]/40 bg-[#0d47a1]/20 cursor-pointer hover:border-[#b0c6ff]/60';
+      return 'border-(--color-primary)/40 bg-(--color-primary-subtle) cursor-pointer hover:border-(--color-primary)/60';
     }
-    return 'border-[#434652]/20 bg-[#151b2d] cursor-pointer hover:border-[#434652]/50';
+    return 'border-(--color-border) bg-(--color-bg-card) cursor-pointer hover:border-(--color-border-md) hover:bg-(--color-bg-overlay)';
   }
 
   statusDotClass(status: AppointmentStatus): string {
     const map: Record<AppointmentStatus, string> = {
-      confirmed: 'bg-[#b0c6ff]',
-      pending: 'bg-[#44d8f1]',
-      checkin: 'bg-[#66d9cc]',
-      blocked: 'bg-[#ffb4ab]',
-      external: 'bg-[#8d9199]',
+      confirmed: 'bg-(--color-primary-text)',
+      pending: 'bg-(--color-info)',
+      checkin: 'bg-(--color-success)',
+      blocked: 'bg-(--color-danger)',
+      external: 'bg-(--color-dot-neutral)',
     };
-    return map[status] ?? 'bg-[#8d9199]';
+    return map[status] ?? 'bg-(--color-dot-neutral)';
   }
 
   statusBadgeClass(status: AppointmentStatus): string {
     const map: Record<AppointmentStatus, string> = {
-      confirmed: 'bg-[#0d47a1]/40 text-[#b0c6ff]',
-      pending: 'bg-[#004e59]/40 text-[#44d8f1]',
-      checkin: 'bg-[#005049]/40 text-[#66d9cc]',
-      blocked: 'bg-[#93000a]/40 text-[#ffb4ab]',
-      external: 'bg-[#434652]/40 text-[#c3c6d4]',
+      confirmed: 'bg-(--color-primary-subtle) text-(--color-primary-text)',
+      pending: 'bg-(--color-info-subtle) text-(--color-info)',
+      checkin: 'bg-(--color-success-subtle) text-(--color-success)',
+      blocked: 'bg-(--color-danger-subtle) text-(--color-danger)',
+      external: 'bg-(--color-bg-hover-md) text-(--color-text-secondary)',
     };
-    return map[status] ?? 'bg-[#434652]/40 text-[#c3c6d4]';
+    return map[status] ?? 'bg-(--color-bg-hover-md) text-(--color-text-secondary)';
   }
 
   statusLabel(status: AppointmentStatus): string {
@@ -160,7 +160,6 @@ export class Calendar implements OnInit {
   }
 
   private appointmentsForDate(_date: Date): Appointment[] {
-    // Filtrar por date quando o campo existir no tipo
     return this.allAppointments;
   }
 

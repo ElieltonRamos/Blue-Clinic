@@ -6,14 +6,14 @@
     <div class="flex items-center justify-between mb-4">
       <button
         (click)="prevMonth()"
-        class="border border-[#434652]/30 rounded-lg px-3 py-1 text-sm text-[#c3c6d4] hover:bg-[#151b2d] transition-colors"
+        class="border border-(--color-border) rounded-lg px-3 py-1 text-sm text-(--color-text-secondary) hover:bg-bg-sidebar transition-colors"
       >
         ←
       </button>
-      <span class="text-base font-semibold text-[#dce1fb]">{{ monthLabel }}</span>
+      <span class="text-base font-semibold text-(--color-text-primary)">{{ monthLabel }}</span>
       <button
         (click)="nextMonth()"
-        class="border border-[#434652]/30 rounded-lg px-3 py-1 text-sm text-[#c3c6d4] hover:bg-[#151b2d] transition-colors"
+        class="border border-(--color-border) rounded-lg px-3 py-1 text-sm text-(--color-text-secondary) hover:bg-bg-sidebar transition-colors"
       >
         →
       </button>
@@ -24,28 +24,35 @@
       <!-- Cabeçalho dias da semana -->
       @for (d of weekDays; track d) {
         <div
-          class="text-center text-[10px] font-medium text-[#8d9199] uppercase tracking-widest pb-2"
+          class="text-center text-[10px] font-medium text-(--color-text-muted) uppercase tracking-widest pb-2"
         >
           {{ d }}
         </div>
       }
 
       <!-- Células -->
+      <!-- dayCellClass() deve retornar apenas tokens de bg/border/cursor, ex:
+           currentMonth+today  → 'bg-(--color-bg-overlay) border-(--color-primary)/40 cursor-pointer'
+           currentMonth        → 'bg-(--color-bg-card) border-(--color-border) cursor-pointer hover:bg-(--color-bg-overlay)'
+           otherMonth          → 'bg-(--color-bg-sidebar) border-(--color-border) opacity-40 cursor-default'
+      -->
       @for (day of calendarDays(); track day.date) {
         <div
           (click)="day.currentMonth && openModal(day)"
           class="rounded-lg border p-1.5 min-h-18 transition-colors"
-          [class]="dayCellClass(day)"
+          [ngClass]="dayCellClass(day)"
         >
           <span
             class="block text-xs font-medium mb-1"
-            [class]="day.isToday ? 'text-[#b0c6ff]' : 'text-[#c3c6d4]'"
+            [class]="day.isToday ? 'text-(--color-primary-text)' : 'text-(--color-text-secondary)'"
           >
             {{ day.dayNumber }}
           </span>
 
           @for (apt of day.appointments.slice(0, 2); track apt.id) {
-            <div class="flex items-center gap-1 text-[11px] text-[#8d9199] truncate mb-0.5">
+            <div
+              class="flex items-center gap-1 text-[11px] text-(--color-text-muted) truncate mb-0.5"
+            >
               <span
                 class="w-1.5 h-1.5 rounded-full shrink-0"
                 [class]="statusDotClass(apt.status)"
@@ -55,7 +62,7 @@
           }
 
           @if (day.appointments.length > 2) {
-            <span class="text-[10px] text-[#8d9199]/60">
+            <span class="text-[10px] text-text-disabled">
               +{{ day.appointments.length - 2 }} mais
             </span>
           }
@@ -67,36 +74,36 @@
   <!-- Painel direito -->
   <aside class="w-60 flex flex-col gap-4 shrink-0">
     <!-- Form novo agendamento -->
-    <div class="bg-[#151b2d] rounded-xl border border-[#434652]/20 p-4">
-      <p class="text-[10px] font-bold text-[#b0c6ff] uppercase tracking-widest mb-3">
+    <div class="bg-bg-sidebar rounded-xl border border-(--color-border) p-4">
+      <p class="text-[10px] font-bold text-(--color-primary-text) uppercase tracking-widest mb-3">
         Novo agendamento
       </p>
       <div class="space-y-3">
         <div>
-          <label class="block text-[10px] text-[#c3c6d4] mb-1">Paciente</label>
+          <label class="block text-[10px] text-(--color-text-secondary) mb-1">Paciente</label>
           <input
             type="text"
             placeholder="Nome do paciente"
-            class="w-full bg-[#0c0e0f] rounded-lg px-2 py-1.5 text-sm text-[#e2e2e6] placeholder-[#8d9199] border-none outline-none focus:ring-1 focus:ring-[#b0c6ff]/40"
+            class="w-full bg-bg-base rounded-lg px-2 py-1.5 text-sm text-(--color-input-text) placeholder:text-(--color-input-placeholder) border-none outline-none focus:ring-1 focus:ring-(--color-focus-ring)/40"
           />
         </div>
         <div>
-          <label class="block text-[10px] text-[#c3c6d4] mb-1">Data</label>
+          <label class="block text-[10px] text-(--color-text-secondary) mb-1">Data</label>
           <input
             type="date"
-            class="w-full bg-[#0c0e0f] rounded-lg px-2 py-1.5 text-sm text-[#e2e2e6] border-none outline-none focus:ring-1 focus:ring-[#b0c6ff]/40"
+            class="w-full bg-bg-base rounded-lg px-2 py-1.5 text-sm text-(--color-input-text) border-none outline-none focus:ring-1 focus:ring-(--color-focus-ring)/40"
           />
         </div>
         <div>
-          <label class="block text-[10px] text-[#c3c6d4] mb-1">Hora</label>
+          <label class="block text-[10px] text-(--color-text-secondary) mb-1">Hora</label>
           <input
             type="time"
-            class="w-full bg-[#0c0e0f] rounded-lg px-2 py-1.5 text-sm text-[#e2e2e6] border-none outline-none focus:ring-1 focus:ring-[#b0c6ff]/40"
+            class="w-full bg-bg-base rounded-lg px-2 py-1.5 text-sm text-(--color-input-text) border-none outline-none focus:ring-1 focus:ring-(--color-focus-ring)/40"
           />
         </div>
         <button
           (click)="createAppointment()"
-          class="w-full bg-[#b0c6ff] text-[#001945] rounded-lg py-2 text-sm font-bold hover:opacity-90 transition-opacity active:scale-[0.98]"
+          class="w-full bg-(--color-btn-primary-bg) text-(--color-btn-primary-text) rounded-lg py-2 text-sm font-bold hover:opacity-90 transition-opacity active:scale-[0.98]"
         >
           Criar agendamento
         </button>
@@ -104,20 +111,24 @@
     </div>
 
     <!-- Bloqueios -->
-    <div class="bg-[#151b2d] rounded-xl border border-[#434652]/20 p-4">
-      <p class="text-[10px] font-bold text-[#b0c6ff] uppercase tracking-widest mb-3">
+    <div class="bg-bg-sidebar rounded-xl border border-(--color-border) p-4">
+      <p class="text-[10px] font-bold text-(--color-primary-text) uppercase tracking-widest mb-3">
         Horários bloqueados
       </p>
       <div class="space-y-2">
         @for (block of blockedHours; track block.label) {
-          <div class="flex items-center gap-2 py-1.5 border-b border-[#434652]/10 last:border-b-0">
+          <div
+            class="flex items-center gap-2 py-1.5 border-b border-(--color-border) last:border-b-0"
+          >
             <span
               class="w-2 h-2 rounded-full shrink-0"
-              [class]="block.color === 'error' ? 'bg-[#ffb4ab]' : 'bg-[#b0c6ff]'"
+              [class]="
+                block.color === 'error' ? 'bg-(--color-danger)' : 'bg-(--color-primary-text)'
+              "
             ></span>
             <div>
-              <p class="text-xs font-medium text-[#e2e2e6]">{{ block.label }}</p>
-              <p class="text-[10px] text-[#8d9199]">{{ block.recurrence }}</p>
+              <p class="text-xs font-medium text-(--color-text-primary)">{{ block.label }}</p>
+              <p class="text-[10px] text-(--color-text-muted)">{{ block.recurrence }}</p>
             </div>
           </div>
         }
@@ -126,13 +137,13 @@
 
     <!-- Auto-confirmações -->
     <div
-      class="bg-[#005049]/10 rounded-xl border border-[#005049]/30 p-4 flex items-center justify-between"
+      class="bg-info-subtle rounded-xl border border-info/30 p-4 flex items-center justify-between"
     >
       <div>
-        <p class="text-xl font-bold text-[#66d9cc]">
+        <p class="text-xl font-bold text-info">
           {{ autoConfirmation.confirmed }}/{{ autoConfirmation.total }}
         </p>
-        <p class="text-[10px] text-[#84f5e8]/70">Confirmados via WhatsApp</p>
+        <p class="text-[10px] text-(--color-text-secondary)">Confirmados via WhatsApp</p>
       </div>
       ✅
     </div>
@@ -142,18 +153,19 @@
 <!-- Modal -->
 @if (selectedDay) {
   <div
-    class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center"
+    class="fixed inset-0 z-50 flex items-center justify-center"
+    style="background-color: var(--color-backdrop)"
     (click)="closeModal()"
   >
     <div
-      class="bg-[#191c1e] rounded-xl border border-[#434652]/30 w-80 p-5"
+      class="bg-bg-card rounded-xl border border-(--color-border) w-80 p-5"
       (click)="$event.stopPropagation()"
     >
       <div class="flex items-center justify-between mb-4">
-        <p class="text-sm font-semibold text-[#dce1fb]">{{ selectedDay.label }}</p>
+        <p class="text-sm font-semibold text-(--color-text-primary)">{{ selectedDay.label }}</p>
         <button
           (click)="closeModal()"
-          class="text-[#8d9199] hover:text-[#dce1fb] transition-colors"
+          class="text-(--color-text-muted) hover:text-(--color-text-primary) transition-colors"
         >
           <span class="material-symbols-outlined text-base">close</span>
         </button>
@@ -161,13 +173,17 @@
 
       <div class="space-y-0">
         @for (apt of selectedDay.appointments; track apt.id) {
-          <div class="flex items-center gap-3 py-2.5 border-b border-[#434652]/10 last:border-b-0">
-            <span class="text-xs font-medium text-[#8d9199] w-12 shrink-0">
+          <div
+            class="flex items-center gap-3 py-2.5 border-b border-(--color-border) last:border-b-0"
+          >
+            <span class="text-xs font-medium text-(--color-text-muted) w-12 shrink-0">
               {{ apt.startTime }}
             </span>
             <div class="flex-1 min-w-0">
-              <p class="text-sm font-medium text-[#dce1fb] truncate">{{ apt.patientName }}</p>
-              <p class="text-[11px] text-[#8d9199]">{{ doctorNameFor(apt.doctorId) }}</p>
+              <p class="text-sm font-medium text-(--color-text-primary) truncate">
+                {{ apt.patientName }}
+              </p>
+              <p class="text-[11px] text-(--color-text-muted)">{{ doctorNameFor(apt.doctorId) }}</p>
             </div>
             <span
               class="text-[10px] font-medium px-2 py-0.5 rounded-full"

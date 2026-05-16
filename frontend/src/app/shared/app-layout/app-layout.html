@@ -1,8 +1,6 @@
-<div class="flex h-screen overflow-hidden bg-(--color-bg-base)">
+<div class="flex h-screen overflow-hidden bg-bg-base">
   <!-- SIDEBAR -->
-  <aside
-    class="w-50 shrink-0 flex flex-col bg-(--color-bg-sidebar) border-r border-(--color-border)"
-  >
+  <aside class="w-50 shrink-0 flex flex-col bg-bg-sidebar border-r border-(--color-border)">
     <!-- Logo -->
     <div class="px-4 py-5 border-b border-(--color-border)">
       <div class="flex items-center gap-2.5">
@@ -146,18 +144,58 @@
   <div class="flex flex-1 flex-col overflow-hidden">
     <!-- TOPBAR -->
     <header
-      class="h-14 shrink-0 flex items-center gap-3 px-5 bg-(--color-bg-sidebar) border-b border-(--color-border)"
+      class="h-14 shrink-0 flex items-center gap-3 px-5 bg-bg-sidebar border-b border-(--color-border)"
     >
       <span class="text-sm font-semibold text-(--color-text-primary)">
         {{ currentRouteTitle }}
       </span>
 
       <div class="ml-auto flex items-center gap-2">
+        <!-- Theme toggle -->
+        <button
+          (click)="toggleTheme()"
+          class="w-8 h-8 flex items-center justify-center rounded-lg text-(--color-text-muted) hover:bg-(--color-bg-hover) hover:text-(--color-text-primary) transition-all"
+          [attr.aria-label]="isDark ? 'Ativar tema claro' : 'Ativar tema escuro'"
+        >
+          @if (isDark) {
+            <!-- Sun -->
+            <svg
+              class="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+            >
+              <circle cx="12" cy="12" r="5" />
+              <line x1="12" y1="1" x2="12" y2="3" />
+              <line x1="12" y1="21" x2="12" y2="23" />
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+              <line x1="1" y1="12" x2="3" y2="12" />
+              <line x1="21" y1="12" x2="23" y2="12" />
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+            </svg>
+          } @else {
+            <!-- Moon -->
+            <svg
+              class="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+            >
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+            </svg>
+          }
+        </button>
+
+        <!-- User -->
         <div
           class="flex items-center gap-2 pl-1 pr-3 py-1 rounded-lg bg-(--color-bg-hover) border border-(--color-border) cursor-pointer hover:bg-(--color-bg-hover-md) transition-all"
         >
           <div
-            class="w-7 h-7 rounded-md avatar-gradient flex items-center justify-center text-[11px] font-semibold text-white"
+            class="w-7 h-7 rounded-md avatar-gradient flex items-center justify-center text-[11px] font-semibold text-(--color-text-inverse)"
           >
             {{ currentUser.initials }}
           </div>
@@ -174,7 +212,7 @@
     </header>
 
     <!-- ROUTER OUTLET -->
-    <main class="flex-1 overflow-y-auto bg-(--color-bg-base) relative">
+    <main class="flex-1 overflow-y-auto bg-bg-base relative">
       <div class="bg-grid absolute inset-0 pointer-events-none"></div>
       <div class="relative z-10 p-6">
         <router-outlet />
