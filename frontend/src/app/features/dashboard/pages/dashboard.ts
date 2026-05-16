@@ -1,112 +1,85 @@
-import { Component } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-
-interface StatCard {
-  label: string;
-  value: string;
-  trend: number;
-  icon: string;
-  highlight?: boolean;
-  extra?: string;
-  toggle?: boolean;
-}
-
-interface Appointment {
-  initials: string;
-  color: string;
-  patient: string;
-  type: string;
-  time: string;
-  doctorAvatar: string;
-  doctor: string;
-  status: 'Confirmado' | 'Pendente' | 'Cancelado';
-}
+import { AuthService } from '../../../core/services/auth.service';
+import { DashboardService } from '../services/dashboard.service';
+import {
+  Appointment,
+  ChatbotStats,
+  ChartData,
+  NextPatient,
+  Role,
+  StatCard,
+} from '../types/dashboard.types';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
   imports: [CommonModule],
+  providers: [DashboardService],
   templateUrl: './dashboard.html',
 })
 export class Dashboard {
-  readonly stats: StatCard[] = [
-    { label: 'Total de Consultas', value: '1.284', trend: 12, icon: 'calendar' },
-    { label: 'Receita Mensal', value: 'R$ 42.390', trend: 8, icon: 'dollar' },
-    { label: 'Taxa de Faltas', value: '2.4%', trend: -4, icon: 'x' },
-    {
-      label: 'Chats de WhatsApp Ativos',
-      value: '48',
-      trend: 0,
-      icon: 'chat',
-      highlight: true,
-      toggle: true,
-    },
-  ];
+  private authService = inject(AuthService);
+  private dashboardService = inject(DashboardService);
+  role: Role = 'admin';
+  currentUserId = '';
+  currentUserName = '';
 
-  readonly chartMonths = ['MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO'];
+  allStats: StatCard[] = [];
+  allAppointments: Appointment[] = [];
+  nextPatient!: NextPatient;
+  chartMonths: string[] = [];
+  chartData!: ChartData;
+  chatbotStats!: ChatbotStats;
 
-  readonly chartData = {
-    newPatients: [30, 45, 38, 55, 42, 65],
-    completed: [50, 60, 55, 70, 65, 80],
-  };
+  ngOnInit(): void {
+    this.loadData();
+    // TODO: descomentar quando tiver API
+    // const payload = this.authService.getTokenPayload();
+    // if (payload) {
+    //   this.role = payload.role ?? 'balconista';
+    //   this.currentUserId = payload.id ?? '';
+    //   this.currentUserName = payload.username ?? '';
+    // }
+    this.setRole('admin');
+  }
 
-  readonly appointments: Appointment[] = [
-    {
-      initials: 'EK',
-      color: '#4f8ef7',
-      patient: 'Eleanor Kade',
-      type: 'Check-up de Retina',
-      time: '09:00',
-      doctorAvatar: 'SV',
-      doctor: 'Dra. Sarah Vane',
-      status: 'Confirmado',
-    },
-    {
-      initials: 'ML',
-      color: '#a78bfa',
-      patient: 'Marcus Lowery',
-      type: 'Retorno Cardiologia',
-      time: '10:30',
-      doctorAvatar: 'JS',
-      doctor: 'Dr. Julian Smith',
-      status: 'Pendente',
-    },
-    {
-      initials: 'RB',
-      color: '#34d399',
-      patient: 'Riley Brooks',
-      type: 'Consulta Pediátrica',
-      time: '11:15',
-      doctorAvatar: 'SV',
-      doctor: 'Dra. Sarah Vane',
-      status: 'Confirmado',
-    },
-    {
-      initials: 'AT',
-      color: '#f59e0b',
-      patient: 'Ana Torres',
-      type: 'Dermatologia',
-      time: '13:00',
-      doctorAvatar: 'JS',
-      doctor: 'Dr. Julian Smith',
-      status: 'Pendente',
-    },
-  ];
+  private loadData(): void {
+    this.allStats = this.dashboardService.getStats();
+    this.allAppointments = this.dashboardService.getAppointments();
+    this.nextPatient = this.dashboardService.getNextPatient();
+    this.chartMonths = this.dashboardService.getChartMonths();
+    this.chartData = this.dashboardService.getChartData();
+    this.chatbotStats = this.dashboardService.getChatbotStats();
+  }
 
-  readonly chatbotStats = {
-    percent: 75,
-    botInteractions: 842,
-    humanInteractions: 214,
-  };
+  setRole(role: Role): void {
+    this.role = role;
+    this.currentUserId = role === 'medico' ? 'sarah-vane' : '';
+    this.currentUserName = role === 'medico' ? 'Dra. Sarah Vane' : 'Mariana Costa';
+  }
 
-  statusClass(status: string): string {
-    return (
-      {
-        Confirmado: 'status-confirmed',
-        Pendente: 'status-pending',
-        Cancelado: 'status-cancelled',
-      }[status] ?? ''
-    );
+  get stats(): StatCard[] {
+    return this.allStats.filter((s) => s.roles.includes(this.role));
+  }
+
+  get appointments(): Appointment[] {
+    if (this.role === 'medico') {
+      return this.allAppointments.filter((a) => a.doctorId === this.currentUserId);
+    }
+    return this.allAppointments;
+  }
+
+  get showGrowthChart(): boolean {
+    return this.role === 'admin';
+  }
+
+  get showChatbot(): boolean {
+    return this.role === 'admin' || this.role === 'balconista';
+  }
+
+  get showNextPatient(): boolean {
+    return this.role === 'medico';
   }
 
   maxChart(): number {
