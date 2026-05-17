@@ -35,7 +35,7 @@ export class AppLayout {
     {
       label: 'Chat/Automação',
       title: 'Chat e Automação',
-      route: '/dashboard/chat',
+      route: '/dashboard/chats',
       icon: 'message-square',
     },
     { label: 'Relatórios', title: 'Relatórios', route: '/dashboard/relatorios', icon: 'file-text' },

@@ -1,0 +1,276 @@
+<div class="p-6 flex flex-col gap-6">
+  <!-- Header -->
+  <div class="flex items-start justify-between">
+    <div>
+      <h1 class="text-xl font-semibold text-(--color-text-primary)">Relatórios e Insights</h1>
+      <p class="text-[13px] text-(--color-text-muted) mt-0.5">
+        Análise de performance clínica e financeira detalhada.
+      </p>
+    </div>
+    <div class="flex items-center gap-3">
+      <button
+        class="flex items-center gap-2 text-[12px] px-3 py-2 rounded-lg border border-(--color-border-md) bg-bg-card text-(--color-text-primary) hover:bg-(--color-bg-hover-md) transition-colors"
+      >
+        📅 Últimos 30 dias ▾
+      </button>
+      <button
+        class="flex items-center gap-2 text-[12px] px-4 py-2 rounded-lg bg-(--color-primary) text-(--color-text-inverse) hover:bg-(--color-primary-hover) transition-colors font-medium"
+      >
+        ⬇️ Exportar Relatório
+      </button>
+    </div>
+  </div>
+
+  <!-- Stat Cards -->
+  <div class="grid grid-cols-4 gap-4">
+    @for (stat of stats; track stat.label) {
+      <div class="rounded-xl p-4 border border-(--color-border) bg-bg-sidebar flex flex-col gap-2">
+        <p class="text-[10px] text-(--color-text-muted) uppercase tracking-wider">
+          {{ stat.label }}
+        </p>
+        <div class="flex items-end justify-between gap-2">
+          <p class="text-2xl font-bold text-(--color-text-primary) leading-none">
+            {{ stat.value }}
+          </p>
+          <span
+            class="text-[11px] font-semibold mb-0.5"
+            [class]="
+              trendPositive(stat.trend, stat.accent) ? 'text-success' : 'text-(--color-danger)'
+            "
+          >
+            {{ stat.trend > 0 ? '+' : '' }}{{ stat.trend }}%
+          </span>
+        </div>
+        <div class="h-1 rounded-full bg-(--color-bg-hover-md) mt-1">
+          <div
+            class="h-1 rounded-full"
+            [class]="accentClass(stat.accent)"
+            [style.width]="'60%'"
+          ></div>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Charts Row -->
+  <div class="grid grid-cols-[1fr_260px] gap-4">
+    <!-- Faturamento vs Meta -->
+    <div class="rounded-xl border border-(--color-border) bg-bg-sidebar p-5">
+      <div class="flex items-start justify-between mb-5">
+        <div>
+          <p class="text-[13px] font-semibold text-(--color-text-primary)">Faturamento vs. Meta</p>
+          <p class="text-[11px] text-(--color-text-muted)">
+            Performance financeira dos últimos 6 meses
+          </p>
+        </div>
+        <div class="flex items-center gap-4">
+          <div class="flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-(--color-primary)"></span>
+            <span class="text-[11px] text-(--color-text-muted)">Realizado</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-text-disabled"></span>
+            <span class="text-[11px] text-(--color-text-muted)">Meta</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bar chart -->
+      <div class="flex items-end gap-3 h-44">
+        @for (bar of chartBars; track bar.month) {
+          <div class="flex-1 flex flex-col items-center gap-1">
+            <div class="w-full flex items-end gap-1 h-36">
+              <!-- Realizado -->
+              <div
+                class="flex-1 rounded-t-md bg-chart-primary transition-all"
+                [style.height.%]="barH(bar.realized)"
+              ></div>
+              <!-- Meta -->
+              <div
+                class="flex-1 rounded-t-md bg-(--color-bg-overlay) border border-(--color-border-md) transition-all"
+                [style.height.%]="barH(bar.goal)"
+              ></div>
+            </div>
+            <span class="text-[10px] text-(--color-text-muted)">{{ bar.month }}</span>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Origem -->
+    <div class="rounded-xl border border-(--color-border) bg-bg-sidebar p-5 flex flex-col gap-4">
+      <div>
+        <p class="text-[13px] font-semibold text-(--color-text-primary)">Origem</p>
+        <p class="text-[11px] text-(--color-text-muted)">Agendamentos por canal</p>
+      </div>
+
+      <!-- Donut -->
+      <div class="flex justify-center">
+        <div class="relative w-32 h-32">
+          <svg viewBox="0 0 100 100" class="w-full h-full -rotate-90">
+            <circle
+              cx="50"
+              cy="50"
+              r="38"
+              fill="none"
+              stroke="var(--color-ring-track)"
+              stroke-width="14"
+            />
+            @for (ch of originChannels; track ch.label; let i = $index) {
+              <circle
+                cx="50"
+                cy="50"
+                r="38"
+                fill="none"
+                [attr.stroke]="ch.color"
+                stroke-width="14"
+                stroke-linecap="butt"
+                [attr.stroke-dasharray]="donutDash(ch.percent)"
+                [attr.stroke-dashoffset]="donutOffset(i)"
+              />
+            }
+          </svg>
+          <div class="absolute inset-0 flex flex-col items-center justify-center">
+            <span class="text-lg font-bold text-(--color-text-primary)">1.2k</span>
+            <span class="text-[9px] text-(--color-text-muted) uppercase tracking-wider">Total</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Legenda -->
+      <div class="flex flex-col gap-2">
+        @for (ch of originChannels; track ch.label) {
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full shrink-0" [style.background]="ch.color"></span>
+              <span class="text-[12px] text-(--color-text-muted)">{{ ch.label }}</span>
+            </div>
+            <span class="text-[12px] font-semibold text-(--color-text-primary)"
+              >{{ ch.percent }}%</span
+            >
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Consultas por Especialidade -->
+  <div class="rounded-xl border border-(--color-border) bg-bg-sidebar p-5">
+    <p class="text-[13px] font-semibold text-(--color-text-primary) mb-4">
+      Consultas por Especialidade
+    </p>
+    <div class="flex flex-col gap-4">
+      @for (spec of specialties; track spec.name) {
+        <div class="flex flex-col gap-1.5">
+          <div class="flex items-center justify-between">
+            <span class="text-[12px] text-(--color-text-primary)">{{ spec.name }}</span>
+            <span class="text-[12px] text-(--color-text-muted)">{{ spec.count }} atendimentos</span>
+          </div>
+          <div class="h-2 rounded-full bg-(--color-bg-hover-md)">
+            <div
+              class="h-2 rounded-full bg-(--color-primary) transition-all"
+              [style.width.%]="(spec.count / spec.max) * 100"
+            ></div>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Desempenho por Médico -->
+  <div class="rounded-xl border border-(--color-border) bg-bg-sidebar p-5">
+    <div class="flex items-center justify-between mb-4">
+      <p class="text-[13px] font-semibold text-(--color-text-primary)">Desempenho por Médico</p>
+      <div
+        class="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-(--color-border) bg-bg-card"
+      >
+        <span class="text-(--color-text-muted) text-[12px]">🔍</span>
+        <input
+          [(ngModel)]="doctorFilter"
+          type="text"
+          placeholder="Filtrar médico..."
+          class="bg-transparent text-[12px] text-(--color-text-primary) placeholder:text-(--color-text-muted) outline-none w-36"
+        />
+      </div>
+    </div>
+
+    <table class="w-full">
+      <thead>
+        <tr class="border-b border-(--color-border)">
+          <th
+            class="text-left text-[10px] font-medium text-(--color-text-muted) uppercase tracking-wider pb-2.5"
+          >
+            Médico
+          </th>
+          <th
+            class="text-left text-[10px] font-medium text-(--color-text-muted) uppercase tracking-wider pb-2.5"
+          >
+            Especialidade
+          </th>
+          <th
+            class="text-left text-[10px] font-medium text-(--color-text-muted) uppercase tracking-wider pb-2.5"
+          >
+            Atendimentos
+          </th>
+          <th
+            class="text-left text-[10px] font-medium text-(--color-text-muted) uppercase tracking-wider pb-2.5"
+          >
+            Faturamento Gerado
+          </th>
+          <th
+            class="text-left text-[10px] font-medium text-(--color-text-muted) uppercase tracking-wider pb-2.5"
+          >
+            Avaliação Média
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (doc of doctors; track doc.id) {
+          <tr
+            class="border-b border-(--color-border) last:border-0 hover:bg-(--color-bg-hover) transition-colors"
+          >
+            <td class="py-3 pr-4">
+              <div class="flex items-center gap-2.5">
+                <div
+                  class="w-8 h-8 rounded-full avatar-gradient flex items-center justify-center text-[10px] font-bold text-(--color-text-inverse) shrink-0"
+                >
+                  {{ doc.avatar }}
+                </div>
+                <span class="text-[12px] font-medium text-(--color-text-primary)">{{
+                  doc.name
+                }}</span>
+              </div>
+            </td>
+            <td class="py-3 pr-4">
+              <span class="text-[12px] text-(--color-text-secondary)">{{ doc.specialty }}</span>
+            </td>
+            <td class="py-3 pr-4">
+              <span class="text-[12px] text-(--color-text-primary)">{{ doc.appointments }}</span>
+            </td>
+            <td class="py-3 pr-4">
+              <span class="text-[12px] font-medium text-(--color-text-primary)">{{
+                doc.revenue
+              }}</span>
+            </td>
+            <td class="py-3">
+              <span class="text-[12px] font-semibold text-warning">{{ doc.rating }} ⭐</span>
+            </td>
+          </tr>
+        }
+        @if (doctors.length === 0) {
+          <tr>
+            <td colspan="5" class="py-8 text-center text-[12px] text-(--color-text-muted)">
+              Nenhum médico encontrado.
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+
+    <div class="flex justify-center mt-4">
+      <button class="text-[12px] text-(--color-primary) hover:opacity-80 transition-opacity">
+        Ver lista completa
+      </button>
+    </div>
+  </div>
+</div>

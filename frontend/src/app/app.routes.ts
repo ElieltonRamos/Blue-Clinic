@@ -3,6 +3,9 @@ import { Login } from './features/login/pages/login';
 import { AppLayout } from './shared/app-layout/app-layout';
 import { Dashboard } from './features/dashboard/pages/dashboard';
 import { Calendar } from './features/calendar/pages/calendar';
+import { Patients } from './features/patients/pages/patients';
+import { ChatAutomation } from './features/chat-automation/pages/chat-automation';
+import { Reports } from './features/reports/pages/reports';
 
 export const routes: Routes = [
   {
@@ -20,6 +23,18 @@ export const routes: Routes = [
       {
         path: 'agenda',
         component: Calendar,
+      },
+      {
+        path: 'pacientes',
+        component: Patients,
+      },
+      {
+        path: 'chats',
+        component: ChatAutomation,
+      },
+      {
+        path: 'relatorios',
+        component: Reports,
       },
     ],
   },

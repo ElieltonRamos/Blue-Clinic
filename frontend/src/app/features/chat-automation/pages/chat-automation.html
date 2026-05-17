@@ -1,0 +1,237 @@
+<div class="flex h-full overflow-hidden" style="height: calc(100vh - 60px)">
+
+  <!-- ── Coluna 1: Lista de conversas ── -->
+  <div class="w-72 shrink-0 border-r border-(--color-border) bg-bg-sidebar flex flex-col">
+
+    <!-- Filtros -->
+    <div class="p-4 border-b border-(--color-border)">
+      <p class="text-[13px] font-semibold text-(--color-text-primary) mb-3">Conversas Ativas</p>
+      <div class="flex gap-2">
+        <button
+          (click)="setFilter('todas')"
+          class="text-[12px] px-3 py-1 rounded-full font-medium transition-colors"
+          [class]="filterTab === 'todas'
+            ? 'bg-(--color-primary) text-(--color-text-inverse)'
+            : 'bg-(--color-bg-hover) text-(--color-text-muted) hover:bg-(--color-bg-hover-md)'"
+        >
+          Todas
+        </button>
+        <button
+          (click)="setFilter('aguardando')"
+          class="text-[12px] px-3 py-1 rounded-full font-medium transition-colors"
+          [class]="filterTab === 'aguardando'
+            ? 'bg-(--color-primary) text-(--color-text-inverse)'
+            : 'bg-(--color-bg-hover) text-(--color-text-muted) hover:bg-(--color-bg-hover-md)'"
+        >
+          Aguardando
+        </button>
+      </div>
+    </div>
+
+    <!-- Lista -->
+    <div class="flex-1 overflow-y-auto">
+      @for (conv of conversations; track conv.id) {
+        <button
+          (click)="selectConversation(conv.id)"
+          class="w-full text-left px-4 py-3 border-b border-(--color-border) transition-colors flex flex-col gap-1"
+          [class]="activeConversationId === conv.id
+            ? 'bg-(--color-primary-subtle)'
+            : 'hover:bg-(--color-bg-hover)'"
+        >
+          <div class="flex items-center justify-between">
+            <span class="text-[13px] font-medium text-(--color-text-primary)">{{ conv.patientName }}</span>
+            <span class="text-[10px] text-(--color-text-muted)">{{ conv.time }}</span>
+          </div>
+          <p class="text-[11px] text-(--color-text-muted) truncate">{{ conv.lastMessage }}</p>
+          <span
+            class="text-[10px] font-medium px-2 py-0.5 rounded-full w-fit mt-0.5"
+            [class]="statusClass(conv.status)"
+          >
+            @if (conv.status === 'bot') { 🤖 }
+            @if (conv.status === 'human') { 👤 }
+            @if (conv.status === 'waiting') { ⏳ }
+            {{ statusLabel(conv.status) }}
+          </span>
+        </button>
+      }
+
+      @if (conversations.length === 0) {
+        <p class="text-center text-[12px] text-(--color-text-muted) py-8">Nenhuma conversa.</p>
+      }
+    </div>
+
+  </div>
+
+  <!-- ── Coluna 2: Janela do chat ── -->
+  <div class="flex-1 flex flex-col overflow-hidden">
+
+    <!-- Header da conversa -->
+    <div class="flex items-center justify-between px-5 py-3 border-b border-(--color-border) bg-bg-sidebar shrink-0">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-full avatar-gradient flex items-center justify-center text-[11px] font-bold text-(--color-text-inverse)">
+          {{ activeConversation?.patientAvatar }}
+        </div>
+        <div>
+          <p class="text-[13px] font-semibold text-(--color-text-primary)">{{ activeConversation?.patientName }}</p>
+          <p class="text-[11px] text-(--color-text-muted)">Agendamento automático em curso...</p>
+        </div>
+      </div>
+
+      @if (isBotActive) {
+        <button
+          (click)="takeControl()"
+          class="flex items-center gap-2 text-[12px] font-medium px-4 py-2 rounded-lg bg-(--color-primary) text-(--color-text-inverse) hover:bg-(--color-primary-hover) transition-colors"
+        >
+          🖐️ Tomar Controle do Bot
+        </button>
+      } @else {
+        <span class="text-[11px] px-3 py-1 rounded-full bg-primary-subtle text-primary-text font-medium">
+          👤 Agente Humano
+        </span>
+      }
+    </div>
+
+    <!-- Mensagens -->
+    <div class="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-4">
+
+      <!-- Linha de automação -->
+      <div class="flex items-center gap-3">
+        <div class="h-px flex-1 bg-(--color-border)"></div>
+        <span class="text-[10px] text-(--color-text-muted) uppercase tracking-wider">Automação iniciada às 10:22 AM</span>
+        <div class="h-px flex-1 bg-(--color-border)"></div>
+      </div>
+
+      @for (msg of messages; track msg.id) {
+
+        <!-- Mensagem do paciente -->
+        @if (msg.sender === 'patient') {
+          <div class="flex justify-start">
+            <div class="max-w-[60%]">
+              <div class="bg-bg-card border border-(--color-border) rounded-2xl rounded-tl-sm px-4 py-3">
+                <p class="text-[13px] text-(--color-text-primary) leading-relaxed">{{ msg.text }}</p>
+              </div>
+              <p class="text-[10px] text-(--color-text-muted) mt-1 ml-1">{{ msg.time }}</p>
+            </div>
+          </div>
+        }
+
+        <!-- Mensagem do bot -->
+        @if (msg.sender === 'bot') {
+          <div class="flex justify-end">
+            <div class="max-w-[65%]">
+              <div class="flex items-center gap-2 mb-2 justify-end">
+                <span class="text-[10px] text-(--color-text-muted) uppercase tracking-wider font-medium">🤖 BlueClinic AI</span>
+              </div>
+              <div class="bg-(--color-bg-overlay) border border-(--color-border-md) rounded-2xl rounded-tr-sm px-4 py-3">
+                <p class="text-[13px] text-(--color-text-primary) leading-relaxed whitespace-pre-line">{{ msg.text }}</p>
+
+                @if (msg.slots && msg.slots.length > 0) {
+                  <div class="grid grid-cols-2 gap-2 mt-3">
+                    @for (slot of msg.slots; track slot.label) {
+                      <button class="text-[12px] px-3 py-2 rounded-lg border border-(--color-border-md) bg-bg-card text-(--color-text-primary) hover:border-(--color-primary) hover:text-(--color-primary-text) transition-colors">
+                        {{ slot.label }}
+                      </button>
+                    }
+                  </div>
+                }
+              </div>
+              <p class="text-[10px] text-(--color-text-muted) mt-1 mr-1 text-right">{{ msg.time }}</p>
+            </div>
+          </div>
+        }
+
+      }
+    </div>
+
+    <!-- Input de mensagem -->
+    <div class="px-5 py-4 border-t border-(--color-border) bg-bg-sidebar shrink-0">
+      <div class="flex items-center gap-3 bg-bg-card border border-(--color-border) rounded-xl px-4 py-2.5">
+        <button class="text-(--color-text-muted) hover:text-(--color-text-primary) transition-colors text-lg">
+          ➕
+        </button>
+        <input
+          [(ngModel)]="newMessage"
+          (keydown.enter)="sendMessage()"
+          type="text"
+          placeholder="Digite uma mensagem ou comando"
+          class="flex-1 bg-transparent text-[13px] text-(--color-text-primary) placeholder:text-(--color-text-muted) outline-none"
+        />
+        <button
+          (click)="sendMessage()"
+          class="w-8 h-8 rounded-lg bg-(--color-primary) hover:bg-(--color-primary-hover) transition-colors flex items-center justify-center text-white text-sm"
+        >
+          ➤
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Coluna 3: Info do paciente ── -->
+  <div class="w-64 shrink-0 border-l border-(--color-border) bg-bg-sidebar flex flex-col overflow-y-auto">
+
+    <!-- Avatar + nome -->
+    <div class="flex flex-col items-center pt-6 pb-5 px-4 border-b border-(--color-border)">
+      <img
+        [src]="patient.avatarUrl"
+        [alt]="patient.name"
+        class="w-20 h-20 rounded-full object-cover border-2 border-(--color-border-md)"
+      />
+      <p class="text-[14px] font-semibold text-(--color-text-primary) mt-3 text-center">{{ patient.name }}</p>
+      <p class="text-[10px] text-(--color-text-muted) uppercase tracking-wider mt-0.5">
+        Paciente desde {{ patient.since }}
+      </p>
+    </div>
+
+    <!-- Info cards -->
+    <div class="flex flex-col gap-3 p-4">
+
+      <div class="rounded-xl border border-(--color-border) bg-bg-card p-3">
+        <p class="text-[9px] text-(--color-text-muted) uppercase tracking-wider mb-1">Última Consulta</p>
+        <p class="text-[13px] font-semibold text-(--color-text-primary)">{{ patient.lastVisit }}</p>
+      </div>
+
+      <div class="rounded-xl border border-(--color-border) bg-bg-card p-3">
+        <p class="text-[9px] text-(--color-text-muted) uppercase tracking-wider mb-1.5">Status de Pagamento</p>
+        <div class="flex items-center justify-between">
+          <p class="text-[13px] font-semibold text-(--color-text-primary)">{{ patient.paymentStatus }}</p>
+          @if (patient) {
+            <span
+              class="text-[10px] font-medium px-2 py-0.5 rounded-full"
+              [class]="paymentClass(patient.paymentStatus)"
+            >
+              @if (patient.paymentStatus === 'Em dia') { ✅ Pago }
+              @if (patient.paymentStatus === 'Pendente') { ⚠️ Pendente }
+              @if (patient.paymentStatus === 'Atrasado') { ❌ Atrasado }
+            </span>
+          }
+        </div>
+      </div>
+
+      <div class="rounded-xl border border-(--color-border) bg-bg-card p-3">
+        <p class="text-[9px] text-(--color-text-muted) uppercase tracking-wider mb-1">Convênio</p>
+        <p class="text-[13px] font-semibold text-(--color-text-primary)">{{ patient.plan }}</p>
+      </div>
+
+    </div>
+
+    <!-- Ações rápidas -->
+    <div class="px-4 pb-4 flex flex-col gap-2 mt-auto">
+
+      <button class="w-full flex items-center gap-2 text-[12px] font-medium px-3 py-2.5 rounded-lg border border-(--color-border-md) bg-bg-card text-(--color-text-primary) hover:bg-(--color-bg-hover-md) transition-colors">
+        💳 Enviar Link de Pagamento
+      </button>
+
+      <button class="w-full flex items-center gap-2 text-[12px] font-medium px-3 py-2.5 rounded-lg border border-(--color-border-md) bg-bg-card text-(--color-text-primary) hover:bg-(--color-bg-hover-md) transition-colors">
+        ⭐ Solicitar Avaliação
+      </button>
+
+      <button class="w-full flex items-center gap-2 text-[12px] font-medium px-3 py-2.5 rounded-lg bg-(--color-danger) text-(--color-text-inverse) hover:bg-(--color-danger-dark) transition-colors">
+        🚫 Bloquear Contato
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
