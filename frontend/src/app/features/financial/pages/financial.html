@@ -1,0 +1,393 @@
+<div class="p-6 flex flex-col gap-6">
+  <!-- Header -->
+  <div class="flex flex-wrap items-start justify-between gap-4">
+    <div>
+      <h1 class="text-xl font-semibold text-(--color-text-primary)">
+        Financeiro e Controle de Caixa
+      </h1>
+      <p class="text-[13px] text-(--color-text-muted) mt-1">
+        Gestão completa de recebimentos, despesas e produtividade profissional.
+      </p>
+    </div>
+
+    <!-- Filtro de período -->
+    <div class="flex flex-wrap items-center gap-3">
+      <!-- Presets -->
+      <div class="flex items-center rounded-lg border border-(--color-border) overflow-hidden">
+        <button
+          (click)="setRange('hoje')"
+          [class.nav-active]="activeRange === 'hoje'"
+          class="px-3 py-1.5 text-[12px] font-medium text-(--color-text-muted) hover:bg-(--color-bg-hover-md) transition-colors"
+        >
+          Hoje
+        </button>
+        <button
+          (click)="setRange('semana')"
+          [class.nav-active]="activeRange === 'semana'"
+          class="px-3 py-1.5 text-[12px] font-medium text-(--color-text-muted) hover:bg-(--color-bg-hover-md) transition-colors border-x border-(--color-border)"
+        >
+          Essa Semana
+        </button>
+        <button
+          (click)="setRange('mes')"
+          [class.nav-active]="activeRange === 'mes'"
+          class="px-3 py-1.5 text-[12px] font-medium text-(--color-text-muted) hover:bg-(--color-bg-hover-md) transition-colors"
+        >
+          Esse Mês
+        </button>
+      </div>
+
+      <!-- Inputs de data -->
+      <div class="flex items-center gap-2">
+        <div class="flex flex-col gap-0.5">
+          <label class="text-[9px] uppercase tracking-wider text-(--color-text-muted)"
+            >Data Início</label
+          >
+          <input
+            [(ngModel)]="dateFrom"
+            (ngModelChange)="onDateChange()"
+            type="date"
+            class="bg-bg-card border border-(--color-border) rounded-lg px-2.5 py-1.5 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
+          />
+        </div>
+        <span class="text-[12px] text-(--color-text-muted) mt-3">até</span>
+        <div class="flex flex-col gap-0.5">
+          <label class="text-[9px] uppercase tracking-wider text-(--color-text-muted)"
+            >Data Fim</label
+          >
+          <input
+            [(ngModel)]="dateTo"
+            (ngModelChange)="onDateChange()"
+            type="date"
+            class="bg-bg-card border border-(--color-border) rounded-lg px-2.5 py-1.5 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cards: Entradas e Saídas -->
+  <div class="grid grid-cols-2 gap-4">
+    <!-- Entradas -->
+    <div
+      class="rounded-xl border border-(--color-border) bg-bg-sidebar p-5 relative overflow-hidden"
+    >
+      <div class="flex items-center justify-between mb-3">
+        <p class="text-[10px] font-semibold uppercase tracking-widest text-success">Entradas</p>
+        <span class="text-[18px]">↗</span>
+      </div>
+      <p class="text-3xl font-bold text-(--color-text-primary)">
+        {{ formatCurrency(summary.totalEntradas) }}
+      </p>
+      <p class="text-[12px] text-(--color-text-muted) mt-1">
+        <span class="text-success font-medium">+{{ summary.entradasChange }}%</span>
+        em relação ao período anterior
+      </p>
+      <div
+        class="absolute bottom-0 left-0 h-0.5 w-full bg-linear-to-r from-success to-transparent opacity-40"
+      ></div>
+    </div>
+
+    <!-- Saídas -->
+    <div
+      class="rounded-xl border border-(--color-border) bg-bg-sidebar p-5 relative overflow-hidden"
+    >
+      <div class="flex items-center justify-between mb-3">
+        <p class="text-[10px] font-semibold uppercase tracking-widest text-(--color-danger)">
+          Saídas
+        </p>
+        <span class="text-[18px]">↘</span>
+      </div>
+      <p class="text-3xl font-bold text-(--color-text-primary)">
+        {{ formatCurrency(summary.totalSaidas) }}
+      </p>
+      <p class="text-[12px] text-(--color-text-muted) mt-1">
+        {{ summary.saidasCount }} despesas registradas no período
+      </p>
+      <div
+        class="absolute bottom-0 left-0 h-0.5 w-full bg-linear-to-r from-(--color-danger) to-transparent opacity-40"
+      ></div>
+    </div>
+  </div>
+
+  <!-- Grid principal -->
+  <div class="grid grid-cols-[1fr_300px] gap-5 items-start">
+    <!-- Coluna esquerda -->
+    <div class="flex flex-col gap-5">
+      <!-- Gestão de Despesas -->
+      <div class="rounded-xl border border-(--color-border) bg-bg-sidebar p-5">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-3">
+            <p class="text-[13px] font-semibold text-(--color-text-primary)">Gestão de Despesas</p>
+            <span
+              class="text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full bg-(--color-bg-overlay) text-(--color-text-muted)"
+            >
+              {{ dateFrom | date: 'MM/yyyy' : '' : 'pt-BR' }}
+            </span>
+          </div>
+          <button
+            class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-(--color-primary) text-(--color-text-inverse) text-[12px] font-medium hover:bg-(--color-primary-hover) transition-colors"
+          >
+            ＋ Lançar Despesa
+          </button>
+        </div>
+
+        <!-- Tabela -->
+        <div class="w-full">
+          <div
+            class="grid grid-cols-[2fr_1.2fr_1.4fr_1fr_1fr_80px] gap-2 pb-2 border-b border-(--color-border)"
+          >
+            @for (
+              col of ['Descrição', 'Categoria', 'Recepcionista', 'Valor', 'Data', 'Status'];
+              track col
+            ) {
+              <p
+                class="text-[10px] uppercase tracking-wider text-(--color-text-muted) font-semibold"
+              >
+                {{ col }}
+              </p>
+            }
+          </div>
+
+          @for (expense of expenses; track expense.id) {
+            <div
+              class="grid grid-cols-[2fr_1.2fr_1.4fr_1fr_1fr_80px] gap-2 py-3 border-b border-(--color-border) items-center"
+            >
+              <p class="text-[12px] font-medium text-(--color-text-primary)">
+                {{ expense.description }}
+              </p>
+              <p class="text-[12px] text-(--color-text-muted)">{{ expense.category }}</p>
+              <p class="text-[12px] text-(--color-text-secondary) italic">
+                {{ expense.receptionist }}
+              </p>
+              <p class="text-[12px] font-semibold text-(--color-danger) text-right">
+                {{ formatCurrency(expense.value) }}
+              </p>
+              <p class="text-[12px] text-(--color-text-muted)">{{ expense.date }}</p>
+              <span
+                class="text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full text-center"
+                [class]="statusClass(expense.status)"
+              >
+                {{ expense.status === 'pago' ? 'PAGO' : 'PENDENT' }}
+              </span>
+            </div>
+          }
+        </div>
+
+        <button
+          class="mt-3 text-[12px] text-(--color-primary) hover:opacity-80 transition-opacity w-full text-center"
+        >
+          Ver Histórico Completo de Despesas
+        </button>
+      </div>
+
+      <!-- Produtividade por Profissional -->
+      <div class="rounded-xl border border-(--color-border) bg-bg-sidebar p-5">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <p class="text-[13px] font-semibold text-(--color-text-primary)">
+              Produtividade e Recebimento por Profissional
+            </p>
+            <p class="text-[11px] text-(--color-text-muted) mt-0.5">
+              Distribuição financeira baseada nos atendimentos concluídos.
+            </p>
+          </div>
+          <button
+            class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-(--color-border) bg-bg-card text-[12px] text-(--color-text-secondary) hover:bg-(--color-bg-hover-md) transition-colors"
+          >
+            ↑ Exportar
+          </button>
+        </div>
+
+        <div class="grid grid-cols-4 gap-3">
+          @for (prof of professionals; track prof.id) {
+            <div
+              class="rounded-xl border border-(--color-border) bg-bg-card p-3 flex flex-col gap-2"
+            >
+              <div class="flex items-center gap-2">
+                <div
+                  class="w-9 h-9 rounded-full bg-(--color-bg-overlay) border border-(--color-border-md) flex items-center justify-center text-base shrink-0"
+                >
+                  {{ prof.avatar }}
+                </div>
+                <p class="text-[11px] font-medium text-(--color-text-primary) leading-tight">
+                  {{ prof.name }}
+                </p>
+              </div>
+              <p class="text-[13px] font-bold text-(--color-primary-text)">
+                {{ formatCurrency(prof.value) }}
+              </p>
+              <div class="h-1 rounded-full bg-(--color-bg-overlay)">
+                <div
+                  class="h-1 rounded-full bg-(--color-primary) transition-all"
+                  [style.width.%]="(prof.value / maxProfessionalValue()) * 100"
+                ></div>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Fechamento de Caixa -->
+      <div class="rounded-xl border border-(--color-border) bg-bg-sidebar p-5">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <p class="text-[13px] font-semibold text-(--color-text-primary)">Fechamento de Caixa</p>
+            <p class="text-[11px] text-(--color-text-muted) mt-0.5">
+              Recebimentos por operador no período selecionado
+            </p>
+          </div>
+          <button
+            class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-(--color-border) bg-bg-card text-[12px] text-(--color-text-secondary) hover:bg-(--color-bg-hover-md) transition-colors"
+          >
+            🖨 Exportar PDF
+          </button>
+        </div>
+
+        <div class="w-full">
+          <!-- Header -->
+          <div
+            class="grid grid-cols-[2fr_1fr_1fr_1fr_1fr_1fr] gap-2 pb-2 border-b border-(--color-border)"
+          >
+            @for (
+              col of ['Operador', 'PIX', 'Dinheiro', 'Cartão', 'Convênio', 'Total'];
+              track col
+            ) {
+              <p
+                class="text-[10px] uppercase tracking-wider text-(--color-text-muted) font-semibold"
+              >
+                {{ col }}
+              </p>
+            }
+          </div>
+
+          @for (row of cashClosing; track row.operator) {
+            <div
+              class="grid grid-cols-[2fr_1fr_1fr_1fr_1fr_1fr] gap-2 py-3 border-b border-(--color-border) items-center"
+            >
+              <p class="text-[12px] font-medium text-(--color-text-primary)">{{ row.operator }}</p>
+              <p class="text-[12px] text-(--color-text-secondary)">{{ formatCurrency(row.pix) }}</p>
+              <p class="text-[12px] text-(--color-text-secondary)">
+                {{ formatCurrency(row.dinheiro) }}
+              </p>
+              <p class="text-[12px] text-(--color-text-secondary)">
+                {{ formatCurrency(row.cartao) }}
+              </p>
+              <p class="text-[12px] text-(--color-text-secondary)">
+                {{ formatCurrency(row.convenio) }}
+              </p>
+              <p class="text-[12px] font-semibold text-(--color-text-primary)">
+                {{ formatCurrency(rowTotal(row)) }}
+              </p>
+            </div>
+          }
+
+          <!-- Total row -->
+          <div
+            class="grid grid-cols-[2fr_1fr_1fr_1fr_1fr_1fr] gap-2 py-3 items-center bg-(--color-bg-overlay) rounded-lg px-2 mt-1"
+          >
+            <p class="text-[12px] font-bold text-(--color-text-primary)">TOTAL</p>
+            <p class="text-[12px] font-semibold text-(--color-primary-text)">
+              {{ formatCurrency(cashClosingTotals.pix) }}
+            </p>
+            <p class="text-[12px] font-semibold text-(--color-primary-text)">
+              {{ formatCurrency(cashClosingTotals.dinheiro) }}
+            </p>
+            <p class="text-[12px] font-semibold text-(--color-primary-text)">
+              {{ formatCurrency(cashClosingTotals.cartao) }}
+            </p>
+            <p class="text-[12px] font-semibold text-(--color-primary-text)">
+              {{ formatCurrency(cashClosingTotals.convenio) }}
+            </p>
+            <p class="text-[12px] font-bold text-(--color-primary-text)">
+              {{ formatCurrency(cashClosingGrandTotal) }}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Coluna direita: Transações Recentes -->
+    <div class="rounded-xl border border-(--color-border) bg-bg-sidebar p-4 flex flex-col gap-3">
+      <div class="flex items-center justify-between mb-1">
+        <p class="text-[13px] font-semibold text-(--color-text-primary)">Transações Recentes</p>
+        <button
+          class="text-(--color-text-muted) hover:text-(--color-text-primary) transition-colors text-[16px] leading-none"
+        >
+          ≡
+        </button>
+      </div>
+
+      <div class="flex flex-col gap-3">
+        @for (tx of transactions; track tx.id) {
+          <div class="rounded-xl border border-(--color-border) bg-bg-card p-3 flex flex-col gap-2">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-1.5">
+                <span
+                  class="w-2 h-2 rounded-full shrink-0"
+                  [class]="tx.type === 'entrada' ? 'bg-success' : 'bg-(--color-danger)'"
+                ></span>
+                <span
+                  class="text-[10px] font-semibold uppercase tracking-wider"
+                  [class]="tx.type === 'entrada' ? 'text-success' : 'text-(--color-danger)'"
+                >
+                  {{ tx.type }}
+                </span>
+                <span class="text-[10px] text-text-disabled">{{ tx.date }} • {{ tx.time }}</span>
+              </div>
+              <span
+                class="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full"
+                [class]="methodClass(tx.method)"
+              >
+                {{ methodLabel(tx.method) }}
+              </span>
+            </div>
+
+            <p class="text-[13px] font-semibold text-(--color-text-primary)">{{ tx.patient }}</p>
+
+            <div class="grid grid-cols-2 gap-1">
+              <div>
+                <p class="text-[9px] uppercase tracking-wider text-(--color-text-muted)">
+                  Médico Resp
+                </p>
+                <p class="text-[11px] text-(--color-text-secondary)">{{ tx.doctor }}</p>
+              </div>
+              <div>
+                <p class="text-[9px] uppercase tracking-wider text-(--color-text-muted)">
+                  Registrado por
+                </p>
+                <p class="text-[11px] text-(--color-text-secondary)">{{ tx.registeredBy }}</p>
+              </div>
+            </div>
+
+            <p
+              class="text-[14px] font-bold"
+              [class]="tx.type === 'entrada' ? 'text-success' : 'text-(--color-danger)'"
+            >
+              {{ tx.type === 'entrada' ? '+' : '-' }} {{ formatCurrency(tx.value) }}
+            </p>
+          </div>
+        }
+      </div>
+
+      <button
+        class="mt-1 w-full py-2 rounded-lg border border-(--color-border) bg-bg-card text-[12px] font-medium text-(--color-text-secondary) hover:bg-(--color-bg-hover-md) transition-colors"
+      >
+        Gerar Extrato em PDF
+      </button>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="flex items-center justify-between pt-2 border-t border-(--color-border)">
+    <div class="flex items-center gap-2">
+      <span class="w-2 h-2 rounded-full bg-success"></span>
+      <p class="text-[11px] text-(--color-text-muted)">SERVIDOR: ONLINE</p>
+      <span class="text-(--color-border-md)">•</span>
+      <p class="text-[11px] text-(--color-text-muted)">ÚLTIMO BACKUP: 14:02</p>
+    </div>
+    <p class="text-[11px] text-(--color-text-muted)">
+      © 2024 BlueClinic. Sistema de Alta Precisão Clínica.
+    </p>
+  </div>
+</div>

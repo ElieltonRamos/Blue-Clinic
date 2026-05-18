@@ -39,6 +39,12 @@ export class AppLayout {
       icon: 'message-square',
     },
     { label: 'Relatórios', title: 'Relatórios', route: '/dashboard/relatorios', icon: 'file-text' },
+    {
+      label: 'Financeiro',
+      title: 'Financeiro e Controle de Caixa',
+      route: '/dashboard/financeiro',
+      icon: 'dollar-sign',
+    },
   ];
 
   bottomNav: NavItem[] = [

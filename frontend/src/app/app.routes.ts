@@ -6,6 +6,8 @@ import { Calendar } from './features/calendar/pages/calendar';
 import { Patients } from './features/patients/pages/patients';
 import { ChatAutomation } from './features/chat-automation/pages/chat-automation';
 import { Reports } from './features/reports/pages/reports';
+import { Settings } from './features/settings/pages/settings';
+import { Financial } from './features/financial/pages/financial';
 
 export const routes: Routes = [
   {
@@ -35,6 +37,14 @@ export const routes: Routes = [
       {
         path: 'relatorios',
         component: Reports,
+      },
+      {
+        path: 'configuracoes',
+        component: Settings,
+      },
+      {
+        path: 'financeiro',
+        component: Financial,
       },
     ],
   },
