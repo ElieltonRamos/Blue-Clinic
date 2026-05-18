@@ -1,5 +1,16 @@
 import { Injectable } from '@angular/core';
-import User from '../../features/users/types/user';
+
+export default interface User {
+  id?: string;
+  username: string;
+  password: string;
+  workplace: string;
+  role?: string;
+  active?: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
+  deletedAt?: Date | null;
+}
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {

@@ -5,7 +5,10 @@ import {
   BlockedHour,
   BlockedSlot,
   Doctor,
+  PaymentMethodEntry,
+  PaymentRecord,
 } from '../types/calendar.types';
+import { Transaction } from '../../financial/types/financial.types';
 
 @Injectable()
 export class CalendarService {
@@ -87,5 +90,37 @@ export class CalendarService {
 
   getAutoConfirmation(): AutoConfirmation {
     return { confirmed: 14, total: 20 };
+  }
+
+  createPayment(
+    appointment: Appointment,
+    doctorName: string,
+    methods: PaymentMethodEntry[],
+  ): PaymentRecord {
+    const now = new Date();
+    const totalValue = methods.reduce((sum, m) => sum + m.value, 0);
+    const primaryMethod = methods[0].method;
+
+    const transaction: Transaction = {
+      id: crypto.randomUUID(),
+      type: 'entrada',
+      date: now.toLocaleDateString('pt-BR'),
+      time: now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+      patient: appointment.patientName,
+      doctor: doctorName,
+      registeredBy: 'Recepção',
+      value: totalValue,
+      method: primaryMethod,
+    };
+
+    return {
+      appointmentId: appointment.id,
+      patientName: appointment.patientName,
+      doctorId: appointment.doctorId,
+      specialty: appointment.specialty,
+      methods,
+      transaction,
+      paidAt: now.toISOString(),
+    };
   }
 }

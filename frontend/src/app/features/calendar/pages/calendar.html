@@ -1,4 +1,3 @@
-<!-- agenda-clinica.component.html -->
 <div class="flex h-full gap-6">
   <!-- Calendário -->
   <section class="flex-1 min-w-0 flex flex-col">
@@ -21,7 +20,6 @@
 
     <!-- Grid -->
     <div class="grid grid-cols-7 gap-1">
-      <!-- Cabeçalho dias da semana -->
       @for (d of weekDays; track d) {
         <div
           class="text-center text-[10px] font-medium text-(--color-text-muted) uppercase tracking-widest pb-2"
@@ -30,12 +28,6 @@
         </div>
       }
 
-      <!-- Células -->
-      <!-- dayCellClass() deve retornar apenas tokens de bg/border/cursor, ex:
-           currentMonth+today  → 'bg-(--color-bg-overlay) border-(--color-primary)/40 cursor-pointer'
-           currentMonth        → 'bg-(--color-bg-card) border-(--color-border) cursor-pointer hover:bg-(--color-bg-overlay)'
-           otherMonth          → 'bg-(--color-bg-sidebar) border-(--color-border) opacity-40 cursor-default'
-      -->
       @for (day of calendarDays(); track day.date) {
         <div
           (click)="day.currentMonth && openModal(day)"
@@ -52,6 +44,9 @@
           @for (apt of day.appointments.slice(0, 2); track apt.id) {
             <div
               class="flex items-center gap-1 text-[11px] text-(--color-text-muted) truncate mb-0.5"
+              (click)="
+                apt.status === 'checkin' && openContextMenu($event, apt); $event.stopPropagation()
+              "
             >
               <span
                 class="w-1.5 h-1.5 rounded-full shrink-0"
@@ -62,9 +57,9 @@
           }
 
           @if (day.appointments.length > 2) {
-            <span class="text-[10px] text-text-disabled">
-              +{{ day.appointments.length - 2 }} mais
-            </span>
+            <span class="text-[10px] text-text-disabled"
+              >+{{ day.appointments.length - 2 }} mais</span
+            >
           }
         </div>
       }
@@ -150,7 +145,146 @@
   </aside>
 </div>
 
-<!-- Modal -->
+<!-- ── Context menu (checkin) ───────────────────────────────────────────── -->
+@if (contextMenu) {
+  <div
+    class="fixed z-40 w-44 rounded-xl border border-(--color-border-md) bg-bg-card shadow-lg py-1 overflow-hidden"
+    [style.left.px]="contextMenu.x"
+    [style.top.px]="contextMenu.y"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="px-3 py-2 border-b border-(--color-border)">
+      <p class="text-[11px] font-semibold text-(--color-text-primary) truncate">
+        {{ contextMenu.appointment.patientName }}
+      </p>
+      <p class="text-[10px] text-(--color-text-muted)">
+        {{ contextMenu.appointment.startTime }} • Check-in
+      </p>
+    </div>
+    <button
+      (click)="openPaymentModal(contextMenu.appointment)"
+      class="w-full text-left px-3 py-2 text-[12px] text-success hover:bg-success-subtle transition-colors flex items-center gap-2"
+    >
+      💳 Receber pagamento
+    </button>
+    <button
+      (click)="closeContextMenu()"
+      class="w-full text-left px-3 py-2 text-[12px] text-(--color-text-muted) hover:bg-(--color-bg-hover-md) transition-colors"
+    >
+      ✕ Fechar
+    </button>
+  </div>
+}
+
+<!-- ── Modal de pagamento ───────────────────────────────────────────────── -->
+@if (paymentModal) {
+  <div
+    class="fixed inset-0 z-50 flex items-center justify-center"
+    style="background-color: var(--color-backdrop)"
+    (click)="closePaymentModal()"
+  >
+    <div
+      class="bg-bg-card rounded-2xl border border-(--color-border-md) shadow-xl w-full max-w-sm p-6 flex flex-col gap-4"
+      (click)="$event.stopPropagation()"
+    >
+      <!-- Header -->
+      <div class="flex items-start justify-between">
+        <div>
+          <p class="text-[14px] font-semibold text-(--color-text-primary)">Receber Pagamento</p>
+          <p class="text-[11px] text-(--color-text-muted) mt-0.5">{{ paymentModal.patientName }}</p>
+        </div>
+        <button
+          (click)="closePaymentModal()"
+          class="w-7 h-7 flex items-center justify-center rounded-lg text-(--color-text-muted) hover:bg-(--color-bg-hover-md) transition-colors"
+        >
+          ✕
+        </button>
+      </div>
+
+      <!-- Info consulta -->
+      <div
+        class="rounded-xl bg-(--color-bg-overlay) border border-(--color-border) px-3 py-2.5 flex items-center justify-between"
+      >
+        <div>
+          <p class="text-[11px] text-(--color-text-muted)">Médico</p>
+          <p class="text-[12px] font-medium text-(--color-text-primary)">
+            {{ doctorNameFor(paymentModal.doctorId) }}
+          </p>
+        </div>
+        <div class="text-right">
+          <p class="text-[11px] text-(--color-text-muted)">Especialidade</p>
+          <p class="text-[12px] font-medium text-(--color-text-primary)">
+            {{ paymentModal.specialty }}
+          </p>
+        </div>
+        <div class="text-right">
+          <p class="text-[11px] text-(--color-text-muted)">Horário</p>
+          <p class="text-[12px] font-medium text-(--color-text-primary)">
+            {{ paymentModal.startTime }}
+          </p>
+        </div>
+      </div>
+
+      <!-- Métodos de pagamento -->
+      <div class="flex flex-col gap-2">
+        <p class="text-[10px] uppercase tracking-wider text-(--color-text-muted) font-semibold">
+          Formas de pagamento
+        </p>
+
+        @for (entry of paymentEntries; track entry.method) {
+          <div class="flex items-center gap-3">
+            <input
+              type="checkbox"
+              [(ngModel)]="entry.enabled"
+              class="w-4 h-4 accent-(--color-primary) shrink-0"
+            />
+            <span class="text-[12px] text-(--color-text-secondary) w-20 shrink-0">{{
+              methodLabel(entry.method)
+            }}</span>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="R$ 0,00"
+              [(ngModel)]="entry.value"
+              [disabled]="!entry.enabled"
+              class="flex-1 bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-2.5 py-1.5 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors disabled:opacity-30"
+            />
+          </div>
+        }
+      </div>
+
+      <!-- Total -->
+      <div
+        class="flex items-center justify-between rounded-xl bg-(--color-primary-subtle) border border-(--color-primary)/20 px-4 py-2.5"
+      >
+        <p class="text-[12px] font-semibold text-(--color-primary-text)">Total</p>
+        <p class="text-[16px] font-bold text-(--color-primary-text)">
+          {{ paymentTotal | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}
+        </p>
+      </div>
+
+      <!-- Ações -->
+      <div class="flex justify-end gap-2">
+        <button
+          (click)="closePaymentModal()"
+          class="px-4 py-2 rounded-lg text-[12px] font-medium text-(--color-text-secondary) hover:bg-(--color-bg-hover-md) transition-colors"
+        >
+          Cancelar
+        </button>
+        <button
+          (click)="confirmPayment()"
+          [disabled]="!paymentValid"
+          class="px-4 py-2 rounded-lg text-[12px] font-medium bg-success text-white hover:opacity-90 transition-opacity disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          ✓ Confirmar Pagamento
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ── Modal do dia (existente) ─────────────────────────────────────────── -->
 @if (selectedDay) {
   <div
     class="fixed inset-0 z-50 flex items-center justify-center"
@@ -167,7 +301,7 @@
           (click)="closeModal()"
           class="text-(--color-text-muted) hover:text-(--color-text-primary) transition-colors"
         >
-          <span class="material-symbols-outlined text-base">close</span>
+          ✕
         </button>
       </div>
 
@@ -175,10 +309,12 @@
         @for (apt of selectedDay.appointments; track apt.id) {
           <div
             class="flex items-center gap-3 py-2.5 border-b border-(--color-border) last:border-b-0"
+            [class.cursor-pointer]="apt.status === 'checkin'"
+            (click)="apt.status === 'checkin' && openContextMenu($event, apt)"
           >
-            <span class="text-xs font-medium text-(--color-text-muted) w-12 shrink-0">
-              {{ apt.startTime }}
-            </span>
+            <span class="text-xs font-medium text-(--color-text-muted) w-12 shrink-0">{{
+              apt.startTime
+            }}</span>
             <div class="flex-1 min-w-0">
               <p class="text-sm font-medium text-(--color-text-primary) truncate">
                 {{ apt.patientName }}
@@ -191,6 +327,9 @@
             >
               {{ statusLabel(apt.status) }}
             </span>
+            @if (apt.status === 'checkin') {
+              <span class="text-[10px] text-success font-medium shrink-0">💳</span>
+            }
           </div>
         }
       </div>

@@ -1,4 +1,12 @@
-export type AppointmentStatus = 'confirmed' | 'pending' | 'checkin' | 'blocked' | 'external';
+import { PaymentMethod, Transaction } from "../../financial/types/financial.types";
+
+export type AppointmentStatus =
+  | 'confirmed'
+  | 'pending'
+  | 'checkin'
+  | 'blocked'
+  | 'external'
+  | 'paid';
 
 export interface Doctor {
   id: string;
@@ -17,7 +25,7 @@ export interface Appointment {
   status: AppointmentStatus;
   responsible?: string;
   startSlot: number; // px offset from top
-  height: number;   // px height
+  height: number; // px height
 }
 
 export interface BlockedSlot {
@@ -37,4 +45,19 @@ export interface BlockedHour {
 export interface AutoConfirmation {
   confirmed: number;
   total: number;
+}
+
+export interface PaymentMethodEntry {
+  method: PaymentMethod;
+  value: number;
+}
+
+export interface PaymentRecord {
+  appointmentId: string;
+  patientName: string;
+  doctorId: string;
+  specialty: string;
+  methods: PaymentMethodEntry[];
+  transaction: Transaction;
+  paidAt: string; // ISO
 }
