@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 // src/common/guards/roles.guard.ts
 import {
@@ -25,6 +26,7 @@ export class RolesGuard implements CanActivate {
 
     const { user } = context.switchToHttp().getRequest();
 
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     if (!requiredRoles.includes(user.role)) {
       throw new ForbiddenException(
         'Você não tem permissão para acessar este recurso',
