@@ -22,7 +22,7 @@ const dbConfig = {
   ),
   user: process.env.DATABASE_USER || 'root',
   password: process.env.DATABASE_PASSWORD || 'password',
-  database: process.env.DATABASE_NAME || 'db_blue_erp',
+  database: process.env.DATABASE_NAME || 'db_blue_clinic',
   port: Number(process.env.DATABASE_PORT) || 3306,
 };
 

@@ -8,10 +8,409 @@ datasource db {
   provider = "mysql"
 }
 
+// ─────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────
+
+enum Role {
+  admin
+  medico
+  atendimento
+}
+
+enum AppointmentStatus {
+  confirmed
+  pending
+  checkin
+  blocked
+  external
+  paid
+  cancelled
+}
+
+enum PaymentMethod {
+  pix
+  dinheiro
+  cartao
+  convenio
+}
+
+enum TransactionType {
+  entrada
+  saida
+}
+
+enum ExpenseStatus {
+  pago
+  pendente
+}
+
+enum ConversationStatus {
+  bot
+  human
+  waiting
+}
+
+enum MessageSender {
+  patient
+  bot
+  human
+}
+
+enum PatientStatus {
+  Ativo
+  Inativo
+}
+
+enum BlockedSlotType {
+  break
+  external
+}
+
+enum RecurrenceType {
+  none
+  daily
+  weekly
+  monthly
+}
+
+// ─────────────────────────────────────────────
+// COMPANY / LICENSE
+// ─────────────────────────────────────────────
 
 model Company {
   id           Int     @id @default(autoincrement())
-  cnpj         String
+  name         String
+  cnpj         String  @unique
+  phone        String?
+  email        String?
+  address      String?
   licenseKey   String?
   licenseToken String?
+
+  users          User[]
+  doctors        Doctor[]
+  patients       Patient[]
+  expenses       Expense[]
+  blockedHours   BlockedHour[]
+  integrations   Integration[]
+  whatsappConfig WhatsappConfig?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────────
+// USER
+// ─────────────────────────────────────────────
+
+model User {
+  id        String  @id @default(uuid())
+  companyId Int
+  username  String
+  email     String  @unique
+  password  String
+  role      Role
+  active    Boolean @default(true)
+
+  company Company @relation(fields: [companyId], references: [id])
+  doctor  Doctor? // se role = medico
+
+  registeredExpenses     Expense[]      @relation("ExpenseRegisteredBy")
+  registeredTransactions Transaction[]  @relation("TransactionRegisteredBy")
+  conversations          Conversation[] @relation("ConversationAssignedTo")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────────
+// DOCTOR
+// ─────────────────────────────────────────────
+
+model Doctor {
+  id        String  @id @default(uuid())
+  companyId Int
+  userId    String? @unique
+  name      String
+  specialty String
+  avatarUrl String?
+  active    Boolean @default(true)
+
+  company      Company               @relation(fields: [companyId], references: [id])
+  user         User?                 @relation(fields: [userId], references: [id])
+  appointments Appointment[]
+  blockedSlots BlockedSlot[]
+  revenues     ProfessionalRevenue[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────────
+// PATIENT
+// ─────────────────────────────────────────────
+
+model Patient {
+  id             String        @id @default(uuid())
+  companyId      Int
+  name           String
+  email          String?
+  phone          String?
+  cpf            String?       @unique
+  birthDate      DateTime?
+  status         PatientStatus @default(Ativo)
+  whatsappActive Boolean       @default(false)
+  lgpdConsent    Boolean       @default(false)
+  memberSince    DateTime      @default(now())
+
+  company       Company           @relation(fields: [companyId], references: [id])
+  appointments  Appointment[]
+  documents     PatientDocument[]
+  conversations Conversation[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────────
+// PATIENT DOCUMENTS
+// ─────────────────────────────────────────────
+
+model PatientDocument {
+  id        String @id @default(uuid())
+  patientId String
+  name      String
+  size      String
+  type      String // 'pdf' | 'image'
+  url       String
+
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+}
+
+// ─────────────────────────────────────────────
+// APPOINTMENT
+// ─────────────────────────────────────────────
+
+model Appointment {
+  id          String            @id @default(uuid())
+  doctorId    String
+  patientId   String
+  specialty   String
+  date        DateTime // data da consulta
+  startTime   String // 'HH:MM'
+  endTime     String
+  status      AppointmentStatus @default(pending)
+  responsible String? // balconista/atendimento que agendou
+  notes       String?
+
+  doctor       Doctor         @relation(fields: [doctorId], references: [id])
+  patient      Patient        @relation(fields: [patientId], references: [id])
+  payment      PaymentRecord?
+  consultation Consultation?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────────
+// CONSULTATION (prontuário/registro da consulta)
+// ─────────────────────────────────────────────
+
+model Consultation {
+  id            String  @id @default(uuid())
+  appointmentId String  @unique
+  title         String
+  notes         String? @db.Text
+  active        Boolean @default(true)
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────────
+// BLOCKED SLOTS (agenda bloqueada por médico ou geral)
+// ─────────────────────────────────────────────
+
+model BlockedSlot {
+  id        String          @id @default(uuid())
+  doctorId  String? // null = 'all'
+  date      DateTime
+  startTime String
+  endTime   String
+  label     String
+  type      BlockedSlotType
+
+  doctor Doctor? @relation(fields: [doctorId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+// ─────────────────────────────────────────────
+// BLOCKED HOURS (recorrentes — horários fixos bloqueados)
+// ─────────────────────────────────────────────
+
+model BlockedHour {
+  id         String         @id @default(uuid())
+  companyId  Int
+  label      String
+  startTime  String
+  endTime    String
+  recurrence RecurrenceType @default(weekly)
+  color      String // 'error' | 'primary'
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+// ─────────────────────────────────────────────
+// FINANCIAL — PAYMENT RECORD (pagamento de consulta)
+// ─────────────────────────────────────────────
+
+model PaymentRecord {
+  id            String   @id @default(uuid())
+  appointmentId String   @unique
+  paidAt        DateTime @default(now())
+
+  appointment Appointment          @relation(fields: [appointmentId], references: [id])
+  methods     PaymentMethodEntry[]
+  transaction Transaction?
+}
+
+model PaymentMethodEntry {
+  id              String        @id @default(uuid())
+  paymentRecordId String
+  method          PaymentMethod
+  value           Decimal       @db.Decimal(10, 2)
+
+  paymentRecord PaymentRecord @relation(fields: [paymentRecordId], references: [id], onDelete: Cascade)
+}
+
+// ─────────────────────────────────────────────
+// FINANCIAL — TRANSACTION (extrato)
+// ─────────────────────────────────────────────
+
+model Transaction {
+  id              String          @id @default(uuid())
+  paymentRecordId String?         @unique
+  type            TransactionType
+  date            DateTime
+  patient         String?
+  doctor          String?
+  registeredById  String
+  value           Decimal         @db.Decimal(10, 2)
+  method          PaymentMethod
+
+  paymentRecord PaymentRecord? @relation(fields: [paymentRecordId], references: [id])
+  registeredBy  User           @relation("TransactionRegisteredBy", fields: [registeredById], references: [id])
+}
+
+// ─────────────────────────────────────────────
+// FINANCIAL — EXPENSE (saídas)
+// ─────────────────────────────────────────────
+
+model Expense {
+  id             String        @id @default(uuid())
+  companyId      Int
+  description    String
+  category       String
+  registeredById String
+  value          Decimal       @db.Decimal(10, 2)
+  date           DateTime
+  status         ExpenseStatus @default(pendente)
+
+  company      Company @relation(fields: [companyId], references: [id])
+  registeredBy User    @relation("ExpenseRegisteredBy", fields: [registeredById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────────
+// FINANCIAL — PROFESSIONAL REVENUE (repasse médico)
+// ─────────────────────────────────────────────
+
+model ProfessionalRevenue {
+  id       String  @id @default(uuid())
+  doctorId String
+  period   String // ex: '2025-05'
+  value    Decimal @db.Decimal(10, 2)
+
+  doctor Doctor @relation(fields: [doctorId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+// ─────────────────────────────────────────────
+// WHATSAPP / CHAT
+// ─────────────────────────────────────────────
+
+model WhatsappConfig {
+  id            Int     @id @default(autoincrement())
+  companyId     Int     @unique
+  instanceId    String
+  apiToken      String
+  webhookUrl    String?
+  botEnabled    Boolean @default(true)
+  autoConfirm   Boolean @default(false) // confirmar consultas automaticamente
+  autoReminder  Boolean @default(true) // lembrete antes da consulta
+  reminderHours Int     @default(24) // horas antes do lembrete
+  humanFallback Boolean @default(true) // transfere para humano se bot não resolver
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Conversation {
+  id            String             @id @default(uuid())
+  patientId     String?
+  assignedToId  String?
+  phone         String // número WhatsApp
+  status        ConversationStatus @default(bot)
+  unread        Int                @default(0)
+  lastMessage   String?
+  lastMessageAt DateTime?
+
+  patient    Patient?      @relation(fields: [patientId], references: [id])
+  assignedTo User?         @relation("ConversationAssignedTo", fields: [assignedToId], references: [id])
+  messages   ChatMessage[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ChatMessage {
+  id             String        @id @default(uuid())
+  conversationId String
+  sender         MessageSender
+  text           String        @db.Text
+  sentAt         DateTime      @default(now())
+  read           Boolean       @default(false)
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+}
+
+// ─────────────────────────────────────────────
+// INTEGRATIONS
+// ─────────────────────────────────────────────
+
+model Integration {
+  id         Int     @id @default(autoincrement())
+  companyId  Int
+  label      String
+  status     String  @default("disconnected") // 'connected' | 'disconnected'
+  syncInfo   String?
+  apiKey     String?
+  webhookUrl String?
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  updatedAt DateTime @updatedAt
 }
