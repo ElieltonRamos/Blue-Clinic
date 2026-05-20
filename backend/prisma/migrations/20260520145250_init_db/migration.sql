@@ -17,25 +17,24 @@ CREATE TABLE `Company` (
 
 -- CreateTable
 CREATE TABLE `User` (
-    `id` VARCHAR(191) NOT NULL,
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
     `companyId` INTEGER NOT NULL,
     `username` VARCHAR(191) NOT NULL,
-    `email` VARCHAR(191) NOT NULL,
     `password` VARCHAR(191) NOT NULL,
     `role` ENUM('admin', 'medico', 'atendimento') NOT NULL,
     `active` BOOLEAN NOT NULL DEFAULT true,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
 
-    UNIQUE INDEX `User_email_key`(`email`),
+    UNIQUE INDEX `User_username_key`(`username`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
 CREATE TABLE `Doctor` (
-    `id` VARCHAR(191) NOT NULL,
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
     `companyId` INTEGER NOT NULL,
-    `userId` VARCHAR(191) NULL,
+    `userId` INTEGER NULL,
     `name` VARCHAR(191) NOT NULL,
     `specialty` VARCHAR(191) NOT NULL,
     `avatarUrl` VARCHAR(191) NULL,
@@ -49,7 +48,7 @@ CREATE TABLE `Doctor` (
 
 -- CreateTable
 CREATE TABLE `Patient` (
-    `id` VARCHAR(191) NOT NULL,
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
     `companyId` INTEGER NOT NULL,
     `name` VARCHAR(191) NOT NULL,
     `email` VARCHAR(191) NULL,
@@ -69,8 +68,8 @@ CREATE TABLE `Patient` (
 
 -- CreateTable
 CREATE TABLE `PatientDocument` (
-    `id` VARCHAR(191) NOT NULL,
-    `patientId` VARCHAR(191) NOT NULL,
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `patientId` INTEGER NOT NULL,
     `name` VARCHAR(191) NOT NULL,
     `size` VARCHAR(191) NOT NULL,
     `type` VARCHAR(191) NOT NULL,
@@ -82,9 +81,9 @@ CREATE TABLE `PatientDocument` (
 
 -- CreateTable
 CREATE TABLE `Appointment` (
-    `id` VARCHAR(191) NOT NULL,
-    `doctorId` VARCHAR(191) NOT NULL,
-    `patientId` VARCHAR(191) NOT NULL,
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `doctorId` INTEGER NOT NULL,
+    `patientId` INTEGER NOT NULL,
     `specialty` VARCHAR(191) NOT NULL,
     `date` DATETIME(3) NOT NULL,
     `startTime` VARCHAR(191) NOT NULL,
@@ -100,8 +99,8 @@ CREATE TABLE `Appointment` (
 
 -- CreateTable
 CREATE TABLE `Consultation` (
-    `id` VARCHAR(191) NOT NULL,
-    `appointmentId` VARCHAR(191) NOT NULL,
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `appointmentId` INTEGER NOT NULL,
     `title` VARCHAR(191) NOT NULL,
     `notes` TEXT NULL,
     `active` BOOLEAN NOT NULL DEFAULT true,
@@ -114,8 +113,8 @@ CREATE TABLE `Consultation` (
 
 -- CreateTable
 CREATE TABLE `BlockedSlot` (
-    `id` VARCHAR(191) NOT NULL,
-    `doctorId` VARCHAR(191) NULL,
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `doctorId` INTEGER NULL,
     `date` DATETIME(3) NOT NULL,
     `startTime` VARCHAR(191) NOT NULL,
     `endTime` VARCHAR(191) NOT NULL,
@@ -128,7 +127,7 @@ CREATE TABLE `BlockedSlot` (
 
 -- CreateTable
 CREATE TABLE `BlockedHour` (
-    `id` VARCHAR(191) NOT NULL,
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
     `companyId` INTEGER NOT NULL,
     `label` VARCHAR(191) NOT NULL,
     `startTime` VARCHAR(191) NOT NULL,
@@ -142,8 +141,8 @@ CREATE TABLE `BlockedHour` (
 
 -- CreateTable
 CREATE TABLE `PaymentRecord` (
-    `id` VARCHAR(191) NOT NULL,
-    `appointmentId` VARCHAR(191) NOT NULL,
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `appointmentId` INTEGER NOT NULL,
     `paidAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
     UNIQUE INDEX `PaymentRecord_appointmentId_key`(`appointmentId`),
@@ -152,8 +151,8 @@ CREATE TABLE `PaymentRecord` (
 
 -- CreateTable
 CREATE TABLE `PaymentMethodEntry` (
-    `id` VARCHAR(191) NOT NULL,
-    `paymentRecordId` VARCHAR(191) NOT NULL,
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `paymentRecordId` INTEGER NOT NULL,
     `method` ENUM('pix', 'dinheiro', 'cartao', 'convenio') NOT NULL,
     `value` DECIMAL(10, 2) NOT NULL,
 
@@ -162,13 +161,13 @@ CREATE TABLE `PaymentMethodEntry` (
 
 -- CreateTable
 CREATE TABLE `Transaction` (
-    `id` VARCHAR(191) NOT NULL,
-    `paymentRecordId` VARCHAR(191) NULL,
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `paymentRecordId` INTEGER NULL,
     `type` ENUM('entrada', 'saida') NOT NULL,
     `date` DATETIME(3) NOT NULL,
     `patient` VARCHAR(191) NULL,
     `doctor` VARCHAR(191) NULL,
-    `registeredById` VARCHAR(191) NOT NULL,
+    `registeredById` INTEGER NOT NULL,
     `value` DECIMAL(10, 2) NOT NULL,
     `method` ENUM('pix', 'dinheiro', 'cartao', 'convenio') NOT NULL,
 
@@ -178,11 +177,11 @@ CREATE TABLE `Transaction` (
 
 -- CreateTable
 CREATE TABLE `Expense` (
-    `id` VARCHAR(191) NOT NULL,
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
     `companyId` INTEGER NOT NULL,
     `description` VARCHAR(191) NOT NULL,
     `category` VARCHAR(191) NOT NULL,
-    `registeredById` VARCHAR(191) NOT NULL,
+    `registeredById` INTEGER NOT NULL,
     `value` DECIMAL(10, 2) NOT NULL,
     `date` DATETIME(3) NOT NULL,
     `status` ENUM('pago', 'pendente') NOT NULL DEFAULT 'pendente',
@@ -194,8 +193,8 @@ CREATE TABLE `Expense` (
 
 -- CreateTable
 CREATE TABLE `ProfessionalRevenue` (
-    `id` VARCHAR(191) NOT NULL,
-    `doctorId` VARCHAR(191) NOT NULL,
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `doctorId` INTEGER NOT NULL,
     `period` VARCHAR(191) NOT NULL,
     `value` DECIMAL(10, 2) NOT NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
@@ -224,9 +223,9 @@ CREATE TABLE `WhatsappConfig` (
 
 -- CreateTable
 CREATE TABLE `Conversation` (
-    `id` VARCHAR(191) NOT NULL,
-    `patientId` VARCHAR(191) NULL,
-    `assignedToId` VARCHAR(191) NULL,
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `patientId` INTEGER NULL,
+    `assignedToId` INTEGER NULL,
     `phone` VARCHAR(191) NOT NULL,
     `status` ENUM('bot', 'human', 'waiting') NOT NULL DEFAULT 'bot',
     `unread` INTEGER NOT NULL DEFAULT 0,
@@ -240,8 +239,8 @@ CREATE TABLE `Conversation` (
 
 -- CreateTable
 CREATE TABLE `ChatMessage` (
-    `id` VARCHAR(191) NOT NULL,
-    `conversationId` VARCHAR(191) NOT NULL,
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `conversationId` INTEGER NOT NULL,
     `sender` ENUM('patient', 'bot', 'human') NOT NULL,
     `text` TEXT NOT NULL,
     `sentAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),

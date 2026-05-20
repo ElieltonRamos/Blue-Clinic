@@ -105,16 +105,15 @@ model Company {
 // ─────────────────────────────────────────────
 
 model User {
-  id        String  @id @default(uuid())
+  id        Int     @id @default(autoincrement())
   companyId Int
-  username  String
-  email     String  @unique
+  username  String  @unique
   password  String
   role      Role
   active    Boolean @default(true)
 
   company Company @relation(fields: [companyId], references: [id])
-  doctor  Doctor? // se role = medico
+  doctor  Doctor?
 
   registeredExpenses     Expense[]      @relation("ExpenseRegisteredBy")
   registeredTransactions Transaction[]  @relation("TransactionRegisteredBy")
@@ -129,9 +128,9 @@ model User {
 // ─────────────────────────────────────────────
 
 model Doctor {
-  id        String  @id @default(uuid())
+  id        Int     @id @default(autoincrement())
   companyId Int
-  userId    String? @unique
+  userId    Int?    @unique
   name      String
   specialty String
   avatarUrl String?
@@ -152,7 +151,7 @@ model Doctor {
 // ─────────────────────────────────────────────
 
 model Patient {
-  id             String        @id @default(uuid())
+  id             Int           @id @default(autoincrement())
   companyId      Int
   name           String
   email          String?
@@ -178,8 +177,8 @@ model Patient {
 // ─────────────────────────────────────────────
 
 model PatientDocument {
-  id        String @id @default(uuid())
-  patientId String
+  id        Int    @id @default(autoincrement())
+  patientId Int
   name      String
   size      String
   type      String // 'pdf' | 'image'
@@ -195,15 +194,15 @@ model PatientDocument {
 // ─────────────────────────────────────────────
 
 model Appointment {
-  id          String            @id @default(uuid())
-  doctorId    String
-  patientId   String
+  id          Int               @id @default(autoincrement())
+  doctorId    Int
+  patientId   Int
   specialty   String
-  date        DateTime // data da consulta
+  date        DateTime
   startTime   String // 'HH:MM'
   endTime     String
   status      AppointmentStatus @default(pending)
-  responsible String? // balconista/atendimento que agendou
+  responsible String?
   notes       String?
 
   doctor       Doctor         @relation(fields: [doctorId], references: [id])
@@ -216,12 +215,12 @@ model Appointment {
 }
 
 // ─────────────────────────────────────────────
-// CONSULTATION (prontuário/registro da consulta)
+// CONSULTATION
 // ─────────────────────────────────────────────
 
 model Consultation {
-  id            String  @id @default(uuid())
-  appointmentId String  @unique
+  id            Int     @id @default(autoincrement())
+  appointmentId Int     @unique
   title         String
   notes         String? @db.Text
   active        Boolean @default(true)
@@ -233,12 +232,12 @@ model Consultation {
 }
 
 // ─────────────────────────────────────────────
-// BLOCKED SLOTS (agenda bloqueada por médico ou geral)
+// BLOCKED SLOTS
 // ─────────────────────────────────────────────
 
 model BlockedSlot {
-  id        String          @id @default(uuid())
-  doctorId  String? // null = 'all'
+  id        Int             @id @default(autoincrement())
+  doctorId  Int? // null = 'all'
   date      DateTime
   startTime String
   endTime   String
@@ -251,17 +250,17 @@ model BlockedSlot {
 }
 
 // ─────────────────────────────────────────────
-// BLOCKED HOURS (recorrentes — horários fixos bloqueados)
+// BLOCKED HOURS
 // ─────────────────────────────────────────────
 
 model BlockedHour {
-  id         String         @id @default(uuid())
+  id         Int            @id @default(autoincrement())
   companyId  Int
   label      String
   startTime  String
   endTime    String
   recurrence RecurrenceType @default(weekly)
-  color      String // 'error' | 'primary'
+  color      String
 
   company Company @relation(fields: [companyId], references: [id])
 
@@ -269,12 +268,12 @@ model BlockedHour {
 }
 
 // ─────────────────────────────────────────────
-// FINANCIAL — PAYMENT RECORD (pagamento de consulta)
+// FINANCIAL — PAYMENT RECORD
 // ─────────────────────────────────────────────
 
 model PaymentRecord {
-  id            String   @id @default(uuid())
-  appointmentId String   @unique
+  id            Int      @id @default(autoincrement())
+  appointmentId Int      @unique
   paidAt        DateTime @default(now())
 
   appointment Appointment          @relation(fields: [appointmentId], references: [id])
@@ -283,8 +282,8 @@ model PaymentRecord {
 }
 
 model PaymentMethodEntry {
-  id              String        @id @default(uuid())
-  paymentRecordId String
+  id              Int           @id @default(autoincrement())
+  paymentRecordId Int
   method          PaymentMethod
   value           Decimal       @db.Decimal(10, 2)
 
@@ -292,17 +291,17 @@ model PaymentMethodEntry {
 }
 
 // ─────────────────────────────────────────────
-// FINANCIAL — TRANSACTION (extrato)
+// FINANCIAL — TRANSACTION
 // ─────────────────────────────────────────────
 
 model Transaction {
-  id              String          @id @default(uuid())
-  paymentRecordId String?         @unique
+  id              Int             @id @default(autoincrement())
+  paymentRecordId Int?            @unique
   type            TransactionType
   date            DateTime
   patient         String?
   doctor          String?
-  registeredById  String
+  registeredById  Int
   value           Decimal         @db.Decimal(10, 2)
   method          PaymentMethod
 
@@ -311,15 +310,15 @@ model Transaction {
 }
 
 // ─────────────────────────────────────────────
-// FINANCIAL — EXPENSE (saídas)
+// FINANCIAL — EXPENSE
 // ─────────────────────────────────────────────
 
 model Expense {
-  id             String        @id @default(uuid())
+  id             Int           @id @default(autoincrement())
   companyId      Int
   description    String
   category       String
-  registeredById String
+  registeredById Int
   value          Decimal       @db.Decimal(10, 2)
   date           DateTime
   status         ExpenseStatus @default(pendente)
@@ -332,12 +331,12 @@ model Expense {
 }
 
 // ─────────────────────────────────────────────
-// FINANCIAL — PROFESSIONAL REVENUE (repasse médico)
+// FINANCIAL — PROFESSIONAL REVENUE
 // ─────────────────────────────────────────────
 
 model ProfessionalRevenue {
-  id       String  @id @default(uuid())
-  doctorId String
+  id       Int     @id @default(autoincrement())
+  doctorId Int
   period   String // ex: '2025-05'
   value    Decimal @db.Decimal(10, 2)
 
@@ -357,10 +356,10 @@ model WhatsappConfig {
   apiToken      String
   webhookUrl    String?
   botEnabled    Boolean @default(true)
-  autoConfirm   Boolean @default(false) // confirmar consultas automaticamente
-  autoReminder  Boolean @default(true) // lembrete antes da consulta
-  reminderHours Int     @default(24) // horas antes do lembrete
-  humanFallback Boolean @default(true) // transfere para humano se bot não resolver
+  autoConfirm   Boolean @default(false)
+  autoReminder  Boolean @default(true)
+  reminderHours Int     @default(24)
+  humanFallback Boolean @default(true)
 
   company Company @relation(fields: [companyId], references: [id])
 
@@ -369,10 +368,10 @@ model WhatsappConfig {
 }
 
 model Conversation {
-  id            String             @id @default(uuid())
-  patientId     String?
-  assignedToId  String?
-  phone         String // número WhatsApp
+  id            Int                @id @default(autoincrement())
+  patientId     Int?
+  assignedToId  Int?
+  phone         String
   status        ConversationStatus @default(bot)
   unread        Int                @default(0)
   lastMessage   String?
@@ -387,8 +386,8 @@ model Conversation {
 }
 
 model ChatMessage {
-  id             String        @id @default(uuid())
-  conversationId String
+  id             Int           @id @default(autoincrement())
+  conversationId Int
   sender         MessageSender
   text           String        @db.Text
   sentAt         DateTime      @default(now())
@@ -405,7 +404,7 @@ model Integration {
   id         Int     @id @default(autoincrement())
   companyId  Int
   label      String
-  status     String  @default("disconnected") // 'connected' | 'disconnected'
+  status     String  @default("disconnected")
   syncInfo   String?
   apiKey     String?
   webhookUrl String?
