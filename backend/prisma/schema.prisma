@@ -74,10 +74,6 @@ enum RecurrenceType {
   monthly
 }
 
-// ─────────────────────────────────────────────
-// COMPANY / LICENSE
-// ─────────────────────────────────────────────
-
 model Company {
   id           Int     @id @default(autoincrement())
   name         String
@@ -86,23 +82,20 @@ model Company {
   email        String?
   address      String?
   licenseKey   String?
-  licenseToken String?
+  licenseToken String? @db.Text
 
   users          User[]
   doctors        Doctor[]
   patients       Patient[]
   expenses       Expense[]
   blockedHours   BlockedHour[]
-  integrations   Integration[]
   whatsappConfig WhatsappConfig?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-}
 
-// ─────────────────────────────────────────────
-// USER
-// ─────────────────────────────────────────────
+  @@map("company")
+}
 
 model User {
   id        Int     @id @default(autoincrement())
@@ -121,11 +114,9 @@ model User {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-}
 
-// ─────────────────────────────────────────────
-// DOCTOR
-// ─────────────────────────────────────────────
+  @@map("user")
+}
 
 model Doctor {
   id        Int     @id @default(autoincrement())
@@ -140,15 +131,12 @@ model Doctor {
   user         User?                 @relation(fields: [userId], references: [id])
   appointments Appointment[]
   blockedSlots BlockedSlot[]
-  revenues     ProfessionalRevenue[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-}
 
-// ─────────────────────────────────────────────
-// PATIENT
-// ─────────────────────────────────────────────
+  @@map("doctor")
+}
 
 model Patient {
   id             Int           @id @default(autoincrement())
@@ -170,28 +158,24 @@ model Patient {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-}
 
-// ─────────────────────────────────────────────
-// PATIENT DOCUMENTS
-// ─────────────────────────────────────────────
+  @@map("patient")
+}
 
 model PatientDocument {
   id        Int    @id @default(autoincrement())
   patientId Int
   name      String
   size      String
-  type      String // 'pdf' | 'image'
+  type      String
   url       String
 
   patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
-}
 
-// ─────────────────────────────────────────────
-// APPOINTMENT
-// ─────────────────────────────────────────────
+  @@map("patient_document")
+}
 
 model Appointment {
   id          Int               @id @default(autoincrement())
@@ -199,7 +183,7 @@ model Appointment {
   patientId   Int
   specialty   String
   date        DateTime
-  startTime   String // 'HH:MM'
+  startTime   String
   endTime     String
   status      AppointmentStatus @default(pending)
   responsible String?
@@ -212,11 +196,9 @@ model Appointment {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-}
 
-// ─────────────────────────────────────────────
-// CONSULTATION
-// ─────────────────────────────────────────────
+  @@map("appointment")
+}
 
 model Consultation {
   id            Int     @id @default(autoincrement())
@@ -229,15 +211,13 @@ model Consultation {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-}
 
-// ─────────────────────────────────────────────
-// BLOCKED SLOTS
-// ─────────────────────────────────────────────
+  @@map("consultation")
+}
 
 model BlockedSlot {
   id        Int             @id @default(autoincrement())
-  doctorId  Int? // null = 'all'
+  doctorId  Int?
   date      DateTime
   startTime String
   endTime   String
@@ -247,11 +227,9 @@ model BlockedSlot {
   doctor Doctor? @relation(fields: [doctorId], references: [id])
 
   createdAt DateTime @default(now())
-}
 
-// ─────────────────────────────────────────────
-// BLOCKED HOURS
-// ─────────────────────────────────────────────
+  @@map("blocked_slot")
+}
 
 model BlockedHour {
   id         Int            @id @default(autoincrement())
@@ -265,11 +243,9 @@ model BlockedHour {
   company Company @relation(fields: [companyId], references: [id])
 
   createdAt DateTime @default(now())
-}
 
-// ─────────────────────────────────────────────
-// FINANCIAL — PAYMENT RECORD
-// ─────────────────────────────────────────────
+  @@map("blocked_hour")
+}
 
 model PaymentRecord {
   id            Int      @id @default(autoincrement())
@@ -279,6 +255,8 @@ model PaymentRecord {
   appointment Appointment          @relation(fields: [appointmentId], references: [id])
   methods     PaymentMethodEntry[]
   transaction Transaction?
+
+  @@map("payment_record")
 }
 
 model PaymentMethodEntry {
@@ -288,11 +266,9 @@ model PaymentMethodEntry {
   value           Decimal       @db.Decimal(10, 2)
 
   paymentRecord PaymentRecord @relation(fields: [paymentRecordId], references: [id], onDelete: Cascade)
-}
 
-// ─────────────────────────────────────────────
-// FINANCIAL — TRANSACTION
-// ─────────────────────────────────────────────
+  @@map("payment_method_entry")
+}
 
 model Transaction {
   id              Int             @id @default(autoincrement())
@@ -307,11 +283,9 @@ model Transaction {
 
   paymentRecord PaymentRecord? @relation(fields: [paymentRecordId], references: [id])
   registeredBy  User           @relation("TransactionRegisteredBy", fields: [registeredById], references: [id])
-}
 
-// ─────────────────────────────────────────────
-// FINANCIAL — EXPENSE
-// ─────────────────────────────────────────────
+  @@map("transaction")
+}
 
 model Expense {
   id             Int           @id @default(autoincrement())
@@ -328,26 +302,9 @@ model Expense {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@map("expense")
 }
-
-// ─────────────────────────────────────────────
-// FINANCIAL — PROFESSIONAL REVENUE
-// ─────────────────────────────────────────────
-
-model ProfessionalRevenue {
-  id       Int     @id @default(autoincrement())
-  doctorId Int
-  period   String // ex: '2025-05'
-  value    Decimal @db.Decimal(10, 2)
-
-  doctor Doctor @relation(fields: [doctorId], references: [id])
-
-  createdAt DateTime @default(now())
-}
-
-// ─────────────────────────────────────────────
-// WHATSAPP / CHAT
-// ─────────────────────────────────────────────
 
 model WhatsappConfig {
   id            Int     @id @default(autoincrement())
@@ -365,6 +322,8 @@ model WhatsappConfig {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@map("whatsapp_config")
 }
 
 model Conversation {
@@ -383,6 +342,8 @@ model Conversation {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@map("conversation")
 }
 
 model ChatMessage {
@@ -394,22 +355,6 @@ model ChatMessage {
   read           Boolean       @default(false)
 
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-}
 
-// ─────────────────────────────────────────────
-// INTEGRATIONS
-// ─────────────────────────────────────────────
-
-model Integration {
-  id         Int     @id @default(autoincrement())
-  companyId  Int
-  label      String
-  status     String  @default("disconnected")
-  syncInfo   String?
-  apiKey     String?
-  webhookUrl String?
-
-  company Company @relation(fields: [companyId], references: [id])
-
-  updatedAt DateTime @updatedAt
+  @@map("chat_message")
 }

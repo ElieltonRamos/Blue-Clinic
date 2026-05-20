@@ -7,7 +7,7 @@ CREATE TABLE `Company` (
     `email` VARCHAR(191) NULL,
     `address` VARCHAR(191) NULL,
     `licenseKey` VARCHAR(191) NULL,
-    `licenseToken` VARCHAR(191) NULL,
+    `licenseToken` TEXT NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
 
