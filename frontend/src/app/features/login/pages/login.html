@@ -32,7 +32,7 @@
       </div>
 
       <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
-        <!-- E-mail -->
+        <!-- Usuario -->
         <div class="mb-5">
           <label
             class="block text-xs font-semibold tracking-widest text-(--color-text-secondary) uppercase mb-2"
@@ -73,14 +73,12 @@
         </div>
 
         <!-- Senha -->
-        <div class="mb-5">
-          <div class="flex items-center justify-between mb-2">
-            <label
-              class="block text-xs font-semibold tracking-widest text-(--color-text-secondary) uppercase"
-            >
-              Senha
-            </label>
-          </div>
+        <div class="mb-6">
+          <label
+            class="block text-xs font-semibold tracking-widest text-(--color-text-secondary) uppercase mb-2"
+          >
+            Senha
+          </label>
           <div class="relative">
             <span class="absolute left-3 top-1/2 -translate-y-1/2 text-(--color-text-muted)">
               <svg
@@ -158,51 +156,26 @@
           }
         </div>
 
-        <!-- Erro geral -->
-        @if (errorMessage()) {
-          <div
-            class="mb-4 px-3 py-2 rounded-lg text-sm text-(--color-danger) bg-danger-subtle border border-(--color-danger)"
-          >
-            {{ errorMessage() }}
-          </div>
-        }
-
         <!-- Submit -->
         <button
           type="submit"
-          [disabled]="loading()"
           class="w-full h-11 rounded-lg text-(--color-btn-primary-text) text-sm font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer bg-(--color-btn-primary-bg) hover:bg-(--color-btn-primary-hover)"
         >
-          @if (loading()) {
-            <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-              <circle
-                class="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                stroke-width="4"
-              />
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-            </svg>
-            Entrando...
-          } @else {
-            Entrar no Sistema
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="w-4 h-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M17 8l4 4m0 0l-4 4m4-4H3"
-              />
-            </svg>
-          }
+          Entrar no Sistema
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="w-4 h-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M17 8l4 4m0 0l-4 4m4-4H3"
+            />
+          </svg>
         </button>
       </form>
     </div>

@@ -8,6 +8,7 @@ import { ChatAutomation } from './features/chat-automation/pages/chat-automation
 import { Reports } from './features/reports/pages/reports';
 import { Settings } from './features/settings/pages/settings';
 import { Financial } from './features/financial/pages/financial';
+import { authGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
   {
@@ -17,6 +18,7 @@ export const routes: Routes = [
   {
     path: 'dashboard',
     component: AppLayout,
+    canActivate: [authGuard],
     children: [
       {
         path: '',

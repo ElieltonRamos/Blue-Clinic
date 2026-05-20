@@ -12,6 +12,11 @@ export default interface User {
   deletedAt?: Date | null;
 }
 
+export interface Token {
+  token: string;
+  licenseWarning?: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   isValidToken(token: string): boolean {
