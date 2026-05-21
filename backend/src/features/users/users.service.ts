@@ -196,6 +196,7 @@ export class UsersService {
       userId: user.id,
       username: user.username,
       role: user.role,
+      companyId: user.companyId,
     };
     const token = await this.jwtService.signAsync(payload);
 

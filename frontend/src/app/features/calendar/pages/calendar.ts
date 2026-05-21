@@ -6,8 +6,8 @@ import {
   AppointmentStatus,
   AutoConfirmation,
   BlockedHour,
+  Doctor,
   PaymentMethodEntry,
-  PaymentRecord,
 } from '../types/calendar.types';
 import { CalendarService } from '../services/calendar.service';
 import { PaymentMethod } from '../../financial/types/financial.types';
@@ -38,7 +38,6 @@ const PAYMENT_METHODS: { method: PaymentMethod; label: string }[] = [
   selector: 'app-agenda',
   standalone: true,
   imports: [CommonModule, FormsModule],
-  providers: [CalendarService],
   templateUrl: './calendar.html',
 })
 export class Calendar implements OnInit {
@@ -49,23 +48,30 @@ export class Calendar implements OnInit {
 
   private currentDate = signal(new Date());
   private allAppointments: Appointment[] = [];
-  private doctorMap = new Map<string, string>();
+  private doctorMap = new Map<number, string>();
 
+  doctors: Doctor[] = [];
   blockedHours: BlockedHour[] = [];
-  autoConfirmation!: AutoConfirmation;
+  autoConfirmation: AutoConfirmation = { confirmed: 0, total: 0 };
   selectedDay: CalendarDay | null = null;
-  paymentRecords: PaymentRecord[] = [];
 
-  // menu de contexto
   contextMenu: ContextMenu | null = null;
-
-  // modal de pagamento
   paymentModal: Appointment | null = null;
   paymentEntries: { method: PaymentMethod; value: number; enabled: boolean }[] = [];
+
+  loading = false;
+  error: string | null = null;
 
   get monthLabel(): string {
     const d = this.currentDate();
     return d.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+  }
+
+  private get currentMonthParam(): string {
+    const d = this.currentDate();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    return `${y}-${m}`;
   }
 
   readonly calendarDays = computed((): CalendarDay[] => {
@@ -99,10 +105,8 @@ export class Calendar implements OnInit {
   });
 
   ngOnInit(): void {
-    this.service.getDoctors().forEach((d) => this.doctorMap.set(d.id, d.name));
-    this.allAppointments = this.service.getAppointments();
-    this.blockedHours = this.service.getBlockedHours();
-    this.autoConfirmation = this.service.getAutoConfirmation();
+    this.loadDoctors();
+    this.loadMonthData();
   }
 
   @HostListener('document:click')
@@ -113,11 +117,13 @@ export class Calendar implements OnInit {
   prevMonth(): void {
     const d = this.currentDate();
     this.currentDate.set(new Date(d.getFullYear(), d.getMonth() - 1, 1));
+    this.loadMonthData();
   }
 
   nextMonth(): void {
     const d = this.currentDate();
     this.currentDate.set(new Date(d.getFullYear(), d.getMonth() + 1, 1));
+    this.loadMonthData();
   }
 
   openModal(day: CalendarDay): void {
@@ -174,39 +180,23 @@ export class Calendar implements OnInit {
     if (!this.paymentModal || !this.paymentValid) return;
 
     const apt = this.paymentModal;
-    const methods: PaymentMethodEntry[] = this.paymentEntries
+    const entries: PaymentMethodEntry[] = this.paymentEntries
       .filter((e) => e.enabled && e.value > 0)
       .map((e) => ({ method: e.method, value: e.value }));
 
-    const doctorName = this.doctorMap.get(apt.doctorId) ?? apt.doctorId;
-    const record = this.service.createPayment(apt, doctorName, methods);
-    this.paymentRecords.push(record);
-
-    // atualiza status do agendamento para 'paid'
-    const idx = this.allAppointments.findIndex((a) => a.id === apt.id);
-    if (idx !== -1) {
-      this.allAppointments = [
-        ...this.allAppointments.slice(0, idx),
-        { ...this.allAppointments[idx], status: 'paid' as AppointmentStatus },
-        ...this.allAppointments.slice(idx + 1),
-      ];
-    }
-
-    // atualiza o dia selecionado no modal do calendário, se aberto
-    if (this.selectedDay) {
-      this.selectedDay = {
-        ...this.selectedDay,
-        appointments: this.selectedDay.appointments.map((a) =>
-          a.id === apt.id ? { ...a, status: 'paid' as AppointmentStatus } : a,
-        ),
-      };
-    }
-
-    this.closePaymentModal();
+    this.service.createPayment(apt.id, entries).subscribe({
+      next: () => {
+        this.updateAppointmentStatus(apt.id, 'paid');
+        this.closePaymentModal();
+      },
+      error: () => {
+        this.error = 'Erro ao registrar pagamento';
+      },
+    });
   }
 
-  doctorNameFor(doctorId: string): string {
-    return this.doctorMap.get(doctorId) ?? doctorId;
+  doctorNameFor(doctorId: number): string {
+    return this.doctorMap.get(doctorId) ?? String(doctorId);
   }
 
   methodLabel(method: PaymentMethod): string {
@@ -228,6 +218,7 @@ export class Calendar implements OnInit {
       blocked: 'bg-(--color-danger)',
       external: 'bg-(--color-dot-neutral)',
       paid: 'bg-(--color-warning)',
+      cancelled: 'bg-(--color-dot-neutral)',
     };
     return map[status] ?? 'bg-(--color-dot-neutral)';
   }
@@ -240,6 +231,7 @@ export class Calendar implements OnInit {
       blocked: 'bg-(--color-danger-subtle) text-(--color-danger)',
       external: 'bg-(--color-bg-hover-md) text-(--color-text-secondary)',
       paid: 'bg-(--color-warning-subtle) text-(--color-warning)',
+      cancelled: 'bg-(--color-bg-hover-md) text-(--color-text-muted)',
     };
     return map[status] ?? 'bg-(--color-bg-hover-md) text-(--color-text-secondary)';
   }
@@ -252,8 +244,57 @@ export class Calendar implements OnInit {
       blocked: 'Bloqueado',
       external: 'Externo',
       paid: 'Pago',
+      cancelled: 'Cancelado',
     };
     return map[status] ?? status;
+  }
+
+  // ── Private ───────────────────────────────────────────────────
+
+  private loadDoctors(): void {
+    this.service.getDoctors().subscribe({
+      next: (doctors) => {
+        this.doctors = doctors;
+        doctors.forEach((d) => this.doctorMap.set(d.id, d.name));
+      },
+      error: () => {
+        this.error = 'Erro ao carregar médicos';
+      },
+    });
+  }
+
+  private loadMonthData(): void {
+    const month = this.currentMonthParam;
+    this.loading = true;
+    this.error = null;
+
+    this.service.getAppointments(month).subscribe({
+      next: (appointments) => {
+        this.allAppointments = appointments;
+        this.loading = false;
+      },
+      error: () => {
+        this.error = 'Erro ao carregar agendamentos';
+        this.loading = false;
+      },
+    });
+
+    this.service.getAutoConfirmation(month).subscribe({
+      next: (data) => (this.autoConfirmation = data),
+    });
+  }
+
+  private updateAppointmentStatus(id: number, status: AppointmentStatus): void {
+    this.allAppointments = this.allAppointments.map((a) => (a.id === id ? { ...a, status } : a));
+
+    if (this.selectedDay) {
+      this.selectedDay = {
+        ...this.selectedDay,
+        appointments: this.selectedDay.appointments.map((a) =>
+          a.id === id ? { ...a, status } : a,
+        ),
+      };
+    }
   }
 
   private buildDay(date: Date, currentMonth: boolean, today: Date): CalendarDay {
@@ -267,8 +308,11 @@ export class Calendar implements OnInit {
     };
   }
 
-  private appointmentsForDate(_date: Date): Appointment[] {
-    return this.allAppointments;
+  private appointmentsForDate(date: Date): Appointment[] {
+    return this.allAppointments.filter((a) => {
+      const d = new Date(a.date);
+      return this.isSameDay(d, date);
+    });
   }
 
   private isSameDay(a: Date, b: Date): boolean {

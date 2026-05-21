@@ -1,4 +1,4 @@
-import { PaymentMethod, Transaction } from "../../financial/types/financial.types";
+import { PaymentMethod } from '../../financial/types/financial.types';
 
 export type AppointmentStatus =
   | 'confirmed'
@@ -6,34 +6,40 @@ export type AppointmentStatus =
   | 'checkin'
   | 'blocked'
   | 'external'
-  | 'paid';
+  | 'paid'
+  | 'cancelled';
 
 export interface Doctor {
-  id: string;
+  id: number;
   name: string;
   specialty: string;
   avatarUrl?: string;
 }
 
 export interface Appointment {
-  id: string;
-  doctorId: string;
+  id: number;
+  doctorId: number;
   patientName: string;
   specialty: string;
-  startTime: string; // 'HH:MM'
+  date: string;
+  startTime: string;
   endTime: string;
   status: AppointmentStatus;
   responsible?: string;
-  startSlot: number; // px offset from top
-  height: number; // px height
+  notes?: string;
 }
 
 export interface BlockedSlot {
-  doctorId: string | 'all';
+  id: number;
+  companyId: number;
+  doctorId: number | null;
+  date?: string;
+  startTime: string;
+  endTime: string;
   label: string;
-  startSlot: number;
-  height: number;
   type: 'break' | 'external';
+  recurrence: string;
+  color?: string;
 }
 
 export interface BlockedHour {
@@ -53,11 +59,24 @@ export interface PaymentMethodEntry {
 }
 
 export interface PaymentRecord {
-  appointmentId: string;
-  patientName: string;
-  doctorId: string;
-  specialty: string;
-  methods: PaymentMethodEntry[];
-  transaction: Transaction;
-  paidAt: string; // ISO
+  id: number;
+  appointmentId: number;
+  date: string;
+  patient: string;
+  doctor: string;
+  value: number;
+  entries: {
+    id: number;
+    method: PaymentMethod;
+    amount: number;
+    change: number;
+  }[];
+}
+
+export interface CreatePaymentRequest {
+  entries: {
+    method: string;
+    amount: number;
+    change?: number;
+  }[];
 }
