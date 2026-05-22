@@ -1,76 +1,55 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { forkJoin, map } from 'rxjs';
+import { environment } from '../../../core/services/environment';
 import {
   CompanyData,
   IntegrationStatus,
-  SecurityAlert,
-  SecurityConfig,
   TeamMember,
+  CreateMemberRequest,
 } from '../types/settings.types';
 
-@Injectable()
+@Injectable({
+  providedIn: 'root',
+})
 export class SettingsService {
-  getTeamMembers(): TeamMember[] {
-    return [
-      {
-        id: 'ricardo-menezes',
-        name: 'Dr. Ricardo Menezes',
-        role: 'Cardiologista',
-        detail: 'CRM 12345-SP',
-        level: 'medico',
-        icon: '🩺',
-      },
-      {
-        id: 'mariana-costa',
-        name: 'Mariana Costa',
-        role: 'Recepção',
-        detail: 'Turno Manhã',
-        level: 'atendimento',
-        icon: '🎧',
-      },
-      {
-        id: 'beatriz-santos',
-        name: 'Dra. Beatriz Santos',
-        role: 'Neurologista',
-        detail: 'CRM 98765-SP',
-        level: 'medico',
-        icon: '🩹',
-      },
-    ];
+  private apiUrl = environment.apiUrl;
+  private http = inject(HttpClient);
+
+  getCompany(id: number) {
+    return this.http.get<CompanyData>(`${this.apiUrl}/companies/${id}`);
   }
 
-  getCompanyData(): CompanyData {
-    return {
-      name: 'Clínica Digital Ltda.',
-      cnpj: '12.345.678/0001-99',
-      phone: '(11) 99999-0000',
-      email: 'contato@clinicadigital.com.br',
-      address: 'Av. Paulista, 1000 – São Paulo, SP',
-    };
+  updateCompany(id: number, dto: Partial<CompanyData>) {
+    return this.http.patch<CompanyData>(`${this.apiUrl}/companies/${id}`, dto);
   }
 
-  getSecurityAlert(): SecurityAlert {
-    return {
-      message:
-        'Existem 2 colaboradores com Autenticação de Dois Fatores (2FA) desativada. Recomenda a ativação imediata.',
-    };
+  getTeamMembers() {
+    const doctors$ = this.http.get<TeamMember[]>(`${this.apiUrl}/doctors?active=true`);
+    const staff$ = this.http.get<TeamMember[]>(`${this.apiUrl}/users?active=true`);
+    return forkJoin([doctors$, staff$]).pipe(map(([doctors, staff]) => [...doctors, ...staff]));
   }
 
-  getIntegration(): IntegrationStatus {
-    return {
-      label: 'WhatsApp Business',
-      status: 'connected',
-      syncInfo: 'Última sincronização: hoje às 14:32',
-    };
+  createMember(dto: CreateMemberRequest) {
+    if (dto.level === 'medico') {
+      return this.http.post<TeamMember>(`${this.apiUrl}/doctors`, dto);
+    }
+    return this.http.post<TeamMember>(`${this.apiUrl}/users`, dto);
   }
 
-  getSecurity(): SecurityConfig {
-    return {
-      backupLabel: 'Backup em Nuvem',
-      backupStatus: 'Ativado (Diário)',
-    };
+  removeMember(id: number, level: TeamMember['level']) {
+    if (level === 'medico') {
+      return this.http.delete<{ message: string }>(`${this.apiUrl}/doctors/${id}`);
+    }
+    return this.http.delete<{ message: string }>(`${this.apiUrl}/users/${id}`);
   }
 
-  getLicenseUsage(): { used: number; total: number; plan: string } {
-    return { used: 8, total: 10, plan: 'Advanced' };
+  getUsersByRole(role: 'admin' | 'atendimento' | 'medico') {
+    const params = new HttpParams().set('role', role).set('active', 'true');
+    return this.http.get<TeamMember[]>(`${this.apiUrl}/users`, { params });
+  }
+
+  getIntegration(companyId: number) {
+    return this.http.get<IntegrationStatus>(`${this.apiUrl}/whatsapp-config/${companyId}`);
   }
 }

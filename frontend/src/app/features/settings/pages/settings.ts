@@ -6,8 +6,6 @@ import {
   CompanyData,
   IntegrationStatus,
   NewMemberForm,
-  SecurityAlert,
-  SecurityConfig,
   TeamMember,
   UserLevel,
 } from '../types/settings.types';
@@ -16,7 +14,6 @@ import {
   selector: 'app-settings',
   standalone: true,
   imports: [CommonModule, FormsModule],
-  providers: [SettingsService],
   templateUrl: './settings.html',
 })
 export class Settings implements OnInit {
@@ -24,17 +21,14 @@ export class Settings implements OnInit {
 
   allMembers: TeamMember[] = [];
   companyData!: CompanyData;
-  securityAlert!: SecurityAlert;
   integration!: IntegrationStatus;
-  security!: SecurityConfig;
-  license = { used: 0, total: 0, plan: '' };
 
   memberFilter = '';
-  menuOpenId: string | null = null;
+  menuOpenId: number | null = null;
 
   showAddMemberModal = false;
-  companySaving = false;
   companySaved = false;
+  loading = false;
 
   newMember: NewMemberForm = {
     name: '',
@@ -44,13 +38,34 @@ export class Settings implements OnInit {
     icon: '👤',
   };
 
+  // TODO: pegar do token JWT (companyId do usuário logado)
+  private companyId = 1;
+
   ngOnInit(): void {
-    this.allMembers = this.settingsService.getTeamMembers();
-    this.companyData = this.settingsService.getCompanyData();
-    this.securityAlert = this.settingsService.getSecurityAlert();
-    this.integration = this.settingsService.getIntegration();
-    this.security = this.settingsService.getSecurity();
-    this.license = this.settingsService.getLicenseUsage();
+    this.loadTeamMembers();
+    this.loadCompany();
+    this.loadIntegration();
+  }
+
+  private loadTeamMembers(): void {
+    this.settingsService.getTeamMembers().subscribe({
+      next: (members) => (this.allMembers = members),
+      error: (err) => console.error('Erro ao carregar membros', err),
+    });
+  }
+
+  private loadCompany(): void {
+    this.settingsService.getCompany(this.companyId).subscribe({
+      next: (company) => (this.companyData = company),
+      error: (err) => console.error('Erro ao carregar empresa', err),
+    });
+  }
+
+  private loadIntegration(): void {
+    this.settingsService.getIntegration(this.companyId).subscribe({
+      next: (integration) => (this.integration = integration),
+      error: (err) => console.error('Erro ao carregar integração', err),
+    });
   }
 
   get members(): TeamMember[] {
@@ -60,10 +75,6 @@ export class Settings implements OnInit {
           (m) => m.name.toLowerCase().includes(q) || m.role.toLowerCase().includes(q),
         )
       : this.allMembers;
-  }
-
-  get licensePercent(): number {
-    return Math.round((this.license.used / this.license.total) * 100);
   }
 
   levelLabel(level: UserLevel): string {
@@ -78,13 +89,18 @@ export class Settings implements OnInit {
     }[level];
   }
 
-  toggleMenu(id: string): void {
+  toggleMenu(id: number): void {
     this.menuOpenId = this.menuOpenId === id ? null : id;
   }
 
-  removeMember(id: string): void {
-    this.allMembers = this.allMembers.filter((m) => m.id !== id);
-    this.menuOpenId = null;
+  removeMember(id: number, level: UserLevel): void {
+    this.settingsService.removeMember(id, level).subscribe({
+      next: () => {
+        this.allMembers = this.allMembers.filter((m) => m.id !== id);
+        this.menuOpenId = null;
+      },
+      error: (err) => console.error('Erro ao remover membro', err),
+    });
   }
 
   openAddMemberModal(): void {
@@ -98,21 +114,35 @@ export class Settings implements OnInit {
 
   submitNewMember(): void {
     if (!this.newMember.name.trim() || !this.newMember.role.trim()) return;
-    const member: TeamMember = {
-      id: crypto.randomUUID(),
-      ...this.newMember,
-    };
-    this.allMembers = [...this.allMembers, member];
-    this.closeAddMemberModal();
+
+    this.loading = true;
+    this.settingsService
+      .createMember({
+        ...this.newMember,
+        companyId: this.companyId,
+        specialty: this.newMember.role,
+      })
+      .subscribe({
+        next: (member) => {
+          this.allMembers = [...this.allMembers, member];
+          this.loading = false;
+          this.closeAddMemberModal();
+        },
+        error: (err) => {
+          console.error('Erro ao cadastrar membro', err);
+          this.loading = false;
+        },
+      });
   }
 
   saveCompany(): void {
-    this.companySaving = true;
-    // substituir por chamada real ao service
-    setTimeout(() => {
-      this.companySaving = false;
-      this.companySaved = true;
-      setTimeout(() => (this.companySaved = false), 2000);
-    }, 600);
+    if (!this.companyData) return;
+    this.settingsService.updateCompany(this.companyId, this.companyData).subscribe({
+      next: () => {
+        this.companySaved = true;
+        setTimeout(() => (this.companySaved = false), 2000);
+      },
+      error: (err) => console.error('Erro ao salvar empresa', err),
+    });
   }
 }

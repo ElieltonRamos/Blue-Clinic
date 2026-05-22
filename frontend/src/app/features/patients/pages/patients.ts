@@ -26,7 +26,7 @@ const AVATAR_COLORS = [
   'bg-success text-btn-primary-text',
 ];
 
-const ITEMS_PER_PAGE = 10;
+const ITEMS_PER_PAGE = 100;
 
 @Component({
   selector: 'app-patients',

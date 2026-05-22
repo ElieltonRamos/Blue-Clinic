@@ -1,7 +1,16 @@
 export type UserLevel = 'medico' | 'atendimento' | 'admin';
 
+export interface CompanyData {
+  id: number;
+  name: string;
+  cnpj: string;
+  phone: string | null;
+  email: string | null;
+  address: string | null;
+}
+
 export interface TeamMember {
-  id: string;
+  id: number;
   name: string;
   role: string;
   detail: string;
@@ -9,27 +18,26 @@ export interface TeamMember {
   icon: string;
 }
 
-export interface CompanyData {
+export interface CreateMemberRequest {
+  companyId: number;
   name: string;
-  cnpj: string;
-  phone: string;
-  email: string;
-  address: string;
-}
-
-export interface SecurityAlert {
-  message: string;
+  specialty: string; // para médico
+  role?: string; // para atendimento/admin (mapeado para username no backend)
+  detail?: string;
+  level: UserLevel;
+  icon: string;
+  username?: string;
+  password?: string;
 }
 
 export interface IntegrationStatus {
-  label: string;
-  status: 'connected' | 'disconnected';
-  syncInfo: string;
-}
-
-export interface SecurityConfig {
-  backupLabel: string;
-  backupStatus: string;
+  instanceId: string;
+  botEnabled: boolean;
+  autoConfirm: boolean;
+  autoReminder: boolean;
+  reminderHours: number;
+  humanFallback: boolean;
+  syncInfo?: string;
 }
 
 export interface NewMemberForm {
@@ -38,4 +46,6 @@ export interface NewMemberForm {
   detail: string;
   level: UserLevel;
   icon: string;
+  username?: string;
+  password?: string;
 }

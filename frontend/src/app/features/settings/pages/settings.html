@@ -1,259 +1,182 @@
 <div class="p-6 flex flex-col gap-6">
   <!-- Header -->
-  <div class="flex items-start justify-between">
-    <div>
-      <h1 class="text-xl font-semibold text-(--color-text-primary)">Configurações</h1>
-      <p class="text-[13px] text-(--color-text-muted) mt-1 max-w-md">
-        Gerencie os dados da empresa, profissionais e controle de acessos.
-      </p>
-    </div>
-    <div
-      class="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-(--color-primary-subtle) bg-(--color-primary-subtle)"
-    >
-      <span class="text-sm">🛡️</span>
-      <div>
-        <p class="text-[9px] text-(--color-text-muted) uppercase tracking-wider">
-          Status do Sistema
-        </p>
-        <p class="text-[12px] font-semibold text-(--color-primary-text)">Monitoramento Ativo</p>
-      </div>
-    </div>
+  <div>
+    <h1 class="text-xl font-semibold text-(--color-text-primary)">Configurações</h1>
+    <p class="text-[13px] text-(--color-text-muted) mt-1 max-w-md">
+      Gerencie os dados da empresa, profissionais e controle de acessos.
+    </p>
   </div>
 
-  <!-- Main grid -->
-  <div class="grid grid-cols-[1fr_300px] gap-5 items-start">
-    <!-- Coluna esquerda -->
-    <div class="flex flex-col gap-5">
-      <!-- Dados da Empresa -->
-      <div class="rounded-xl border border-(--color-border) bg-bg-sidebar p-5">
-        <div class="flex items-center justify-between mb-4">
-          <p class="text-[13px] font-semibold text-(--color-text-primary)">Dados da Empresa</p>
-          @if (companySaved) {
-            <span class="text-[11px] text-success flex items-center gap-1">✓ Salvo</span>
-          }
-        </div>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div class="flex flex-col gap-1">
-            <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)"
-              >Razão Social</label
-            >
-            <input
-              [(ngModel)]="companyData.name"
-              (blur)="saveCompany()"
-              type="text"
-              class="bg-bg-card border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
-            />
-          </div>
-          <div class="flex flex-col gap-1">
-            <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)"
-              >CNPJ</label
-            >
-            <input
-              [(ngModel)]="companyData.cnpj"
-              (blur)="saveCompany()"
-              type="text"
-              class="bg-bg-card border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
-            />
-          </div>
-          <div class="flex flex-col gap-1">
-            <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)"
-              >Telefone</label
-            >
-            <input
-              [(ngModel)]="companyData.phone"
-              (blur)="saveCompany()"
-              type="text"
-              class="bg-bg-card border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
-            />
-          </div>
-          <div class="flex flex-col gap-1">
-            <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)"
-              >E-mail</label
-            >
-            <input
-              [(ngModel)]="companyData.email"
-              (blur)="saveCompany()"
-              type="email"
-              class="bg-bg-card border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
-            />
-          </div>
-          <div class="col-span-2 flex flex-col gap-1">
-            <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)"
-              >Endereço</label
-            >
-            <input
-              [(ngModel)]="companyData.address"
-              (blur)="saveCompany()"
-              type="text"
-              class="bg-bg-card border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
-            />
-          </div>
-        </div>
+  <!-- Main content -->
+  <div class="flex flex-col gap-5">
+    <!-- Dados da Empresa -->
+    <div class="rounded-xl border border-(--color-border) bg-bg-sidebar p-5">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-[13px] font-semibold text-(--color-text-primary)">Dados da Empresa</p>
+        @if (companySaved) {
+          <span class="text-[11px] text-success flex items-center gap-1">✓ Salvo</span>
+        }
       </div>
 
-      <!-- Profissionais e Recepção -->
-      <div class="rounded-xl border border-(--color-border) bg-bg-sidebar p-5">
-        <div class="flex items-center justify-between mb-4">
-          <p class="text-[13px] font-semibold text-(--color-text-primary)">
-            Profissionais e Recepção
-          </p>
-          <div class="flex items-center gap-2">
-            <div
-              class="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-(--color-border) bg-bg-card"
-            >
-              <span class="text-[12px] text-(--color-text-muted)">🔍</span>
-              <input
-                [(ngModel)]="memberFilter"
-                type="text"
-                placeholder="Buscar por nome..."
-                class="bg-transparent text-[12px] text-(--color-text-primary) placeholder:text-(--color-text-muted) outline-none w-36"
-              />
-            </div>
-            <button
-              (click)="openAddMemberModal()"
-              class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-(--color-primary) text-(--color-text-inverse) text-[12px] font-medium hover:bg-(--color-primary-hover) transition-colors"
-            >
-              ＋ Cadastrar
-            </button>
-          </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div class="flex flex-col gap-1">
+          <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)"
+            >Razão Social</label
+          >
+          <input
+            [(ngModel)]="companyData.name"
+            (blur)="saveCompany()"
+            type="text"
+            class="bg-bg-card border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
+          />
         </div>
-
-        <div class="flex flex-col divide-y divide-(--color-border)">
-          @for (member of members; track member.id) {
-            <div class="flex items-center gap-4 py-3 relative">
-              <div
-                class="w-10 h-10 rounded-full bg-(--color-bg-overlay) border border-(--color-border-md) flex items-center justify-center text-lg shrink-0"
-              >
-                {{ member.icon }}
-              </div>
-              <div class="flex-1">
-                <p class="text-[13px] font-medium text-(--color-text-primary)">{{ member.name }}</p>
-                <p class="text-[11px] text-(--color-text-muted)">
-                  {{ member.role }} • {{ member.detail }}
-                </p>
-              </div>
-              <span
-                class="text-[10px] font-semibold px-3 py-1 rounded-full uppercase tracking-wide"
-                [class]="levelClass(member.level)"
-              >
-                Nível: {{ levelLabel(member.level) }}
-              </span>
-              <div class="relative">
-                <button
-                  (click)="toggleMenu(member.id)"
-                  class="w-7 h-7 flex items-center justify-center rounded-lg text-(--color-text-muted) hover:bg-(--color-bg-hover-md) hover:text-(--color-text-primary) transition-colors"
-                >
-                  ⋮
-                </button>
-                @if (menuOpenId === member.id) {
-                  <div
-                    class="absolute right-0 top-8 z-10 w-40 rounded-xl border border-(--color-border-md) bg-bg-card shadow-lg py-1 overflow-hidden"
-                  >
-                    <button
-                      class="w-full text-left px-3 py-2 text-[12px] text-(--color-text-primary) hover:bg-(--color-bg-hover-md) transition-colors"
-                    >
-                      ✏️ Editar
-                    </button>
-                    <button
-                      class="w-full text-left px-3 py-2 text-[12px] text-(--color-text-primary) hover:bg-(--color-bg-hover-md) transition-colors"
-                    >
-                      🔑 Redefinir Senha
-                    </button>
-                    <button
-                      (click)="removeMember(member.id)"
-                      class="w-full text-left px-3 py-2 text-[12px] text-(--color-danger) hover:bg-danger-subtle transition-colors"
-                    >
-                      🗑️ Remover
-                    </button>
-                  </div>
-                }
-              </div>
-            </div>
-          }
-
-          @if (members.length === 0) {
-            <p class="text-center text-[12px] text-(--color-text-muted) py-6">
-              Nenhum profissional encontrado.
-            </p>
-          }
+        <div class="flex flex-col gap-1">
+          <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)">CNPJ</label>
+          <input
+            [(ngModel)]="companyData.cnpj"
+            (blur)="saveCompany()"
+            type="text"
+            class="bg-bg-card border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
+          />
         </div>
-      </div>
-
-      <!-- Cards inferiores -->
-      <div class="grid grid-cols-2 gap-4">
-        <!-- WhatsApp Business -->
-        <div
-          class="rounded-xl border border-(--color-border) bg-bg-sidebar p-4 flex flex-col gap-3"
-        >
-          <div class="flex items-center gap-2">
-            <span class="text-xl">💬</span>
-            <p class="text-[13px] font-semibold text-(--color-text-primary)">WhatsApp Business</p>
-          </div>
-          <div class="flex items-center justify-between">
-            <span class="text-[12px] text-(--color-text-muted)">Status da API</span>
-            <div class="flex items-center gap-1.5">
-              <span class="w-2 h-2 rounded-full bg-success"></span>
-              <span class="text-[12px] font-medium text-success">Conectado</span>
-            </div>
-          </div>
-          <p class="text-[11px] text-(--color-text-muted)">{{ integration.syncInfo }}</p>
+        <div class="flex flex-col gap-1">
+          <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)"
+            >Telefone</label
+          >
+          <input
+            [(ngModel)]="companyData.phone"
+            (blur)="saveCompany()"
+            type="text"
+            class="bg-bg-card border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
+          />
         </div>
-
-        <!-- Segurança & LGPD -->
-        <div
-          class="rounded-xl border border-(--color-border) bg-bg-sidebar p-4 flex flex-col gap-3"
-        >
-          <div class="flex items-center gap-2">
-            <span class="text-xl">🛡️</span>
-            <p class="text-[13px] font-semibold text-(--color-text-primary)">Segurança & LGPD</p>
-          </div>
-          <div class="flex items-center justify-between">
-            <span class="text-[12px] text-(--color-text-muted)">{{ security.backupLabel }}</span>
-            <span class="text-[12px] font-semibold text-(--color-text-primary)">{{
-              security.backupStatus
-            }}</span>
-          </div>
+        <div class="flex flex-col gap-1">
+          <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)"
+            >E-mail</label
+          >
+          <input
+            [(ngModel)]="companyData.email"
+            (blur)="saveCompany()"
+            type="email"
+            class="bg-bg-card border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
+          />
+        </div>
+        <div class="col-span-2 flex flex-col gap-1">
+          <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)"
+            >Endereço</label
+          >
+          <input
+            [(ngModel)]="companyData.address"
+            (blur)="saveCompany()"
+            type="text"
+            class="bg-bg-card border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
+          />
         </div>
       </div>
     </div>
 
-    <!-- Coluna direita -->
-    <div class="flex flex-col gap-4">
-      <!-- Uso de Licenças -->
-      <div class="rounded-xl bg-(--color-primary) p-5 flex flex-col gap-3 relative overflow-hidden">
-        <p class="text-[9px] font-semibold uppercase tracking-wider text-white/70">
-          Uso de Licenças
+    <!-- Profissionais e Recepção -->
+    <div class="rounded-xl border border-(--color-border) bg-bg-sidebar p-5">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-[13px] font-semibold text-(--color-text-primary)">
+          Profissionais e Recepção
         </p>
-        <div class="flex items-baseline gap-2">
-          <span class="text-3xl font-bold text-white">{{ license.used }}/{{ license.total }}</span>
-          <span class="text-[13px] text-white/80">Usuários Ativos</span>
-        </div>
-        <div class="h-2 rounded-full bg-white/20">
+        <div class="flex items-center gap-2">
           <div
-            class="h-2 rounded-full bg-white transition-all"
-            [style.width.%]="licensePercent"
-          ></div>
+            class="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-(--color-border) bg-bg-card"
+          >
+            <span class="text-[12px] text-(--color-text-muted)">🔍</span>
+            <input
+              [(ngModel)]="memberFilter"
+              type="text"
+              placeholder="Buscar por nome..."
+              class="bg-transparent text-[12px] text-(--color-text-primary) placeholder:text-(--color-text-muted) outline-none w-36"
+            />
+          </div>
+          <button
+            (click)="openAddMemberModal()"
+            class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-(--color-primary) text-(--color-text-inverse) text-[12px] font-medium hover:bg-(--color-primary-hover) transition-colors"
+          >
+            ＋ Cadastrar
+          </button>
         </div>
-        <p class="text-[11px] text-white/70">
-          Você está utilizando {{ licensePercent }}% da sua capacidade contratada no plano
-          {{ license.plan }}.
-        </p>
-        <span class="absolute right-4 bottom-3 text-4xl opacity-20">📊</span>
       </div>
 
-      <!-- Aviso de Segurança -->
-      <div
-        class="rounded-xl border border-danger-subtle bg-danger-subtle p-4 flex gap-3"
-      >
-        <span class="text-lg shrink-0 mt-0.5">⚠️</span>
-        <div>
-          <p class="text-[12px] font-semibold text-(--color-danger) mb-1">Aviso de Segurança</p>
-          <p class="text-[11px] text-(--color-text-secondary) leading-relaxed">
-            {{ securityAlert.message }}
+      <div class="flex flex-col divide-y divide-(--color-border)">
+        @for (member of members; track member.id) {
+          <div class="flex items-center gap-4 py-3 relative">
+            <div
+              class="w-10 h-10 rounded-full bg-(--color-bg-overlay) border border-(--color-border-md) flex items-center justify-center text-lg shrink-0"
+            >
+              {{ member.icon }}
+            </div>
+            <div class="flex-1">
+              <p class="text-[13px] font-medium text-(--color-text-primary)">{{ member.name }}</p>
+              <p class="text-[11px] text-(--color-text-muted)">
+                {{ member.role }} • {{ member.detail }}
+              </p>
+            </div>
+            <span
+              class="text-[10px] font-semibold px-3 py-1 rounded-full uppercase tracking-wide"
+              [class]="levelClass(member.level)"
+            >
+              Nível: {{ levelLabel(member.level) }}
+            </span>
+            <div class="relative">
+              <button
+                (click)="toggleMenu(member.id)"
+                class="w-7 h-7 flex items-center justify-center rounded-lg text-(--color-text-muted) hover:bg-(--color-bg-hover-md) hover:text-(--color-text-primary) transition-colors"
+              >
+                ⋮
+              </button>
+              @if (menuOpenId === member.id) {
+                <div
+                  class="absolute right-0 top-8 z-10 w-40 rounded-xl border border-(--color-border-md) bg-bg-card shadow-lg py-1 overflow-hidden"
+                >
+                  <button
+                    class="w-full text-left px-3 py-2 text-[12px] text-(--color-text-primary) hover:bg-(--color-bg-hover-md) transition-colors"
+                  >
+                    ✏️ Editar
+                  </button>
+                  <button
+                    class="w-full text-left px-3 py-2 text-[12px] text-(--color-text-primary) hover:bg-(--color-bg-hover-md) transition-colors"
+                  >
+                    🔑 Redefinir Senha
+                  </button>
+                  <button
+                    (click)="removeMember(member.id)"
+                    class="w-full text-left px-3 py-2 text-[12px] text-(--color-danger) hover:bg-danger-subtle transition-colors"
+                  >
+                    🗑️ Remover
+                  </button>
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        @if (members.length === 0) {
+          <p class="text-center text-[12px] text-(--color-text-muted) py-6">
+            Nenhum profissional encontrado.
           </p>
+        }
+      </div>
+    </div>
+
+    <!-- WhatsApp Business -->
+    <div class="rounded-xl border border-(--color-border) bg-bg-sidebar p-4 flex flex-col gap-3">
+      <div class="flex items-center gap-2">
+        <span class="text-xl">💬</span>
+        <p class="text-[13px] font-semibold text-(--color-text-primary)">WhatsApp Business</p>
+      </div>
+      <div class="flex items-center justify-between">
+        <span class="text-[12px] text-(--color-text-muted)">Status da API</span>
+        <div class="flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-success"></span>
+          <span class="text-[12px] font-medium text-success">Conectado</span>
         </div>
       </div>
+      <p class="text-[11px] text-(--color-text-muted)">{{ integration.syncInfo }}</p>
     </div>
   </div>
 
