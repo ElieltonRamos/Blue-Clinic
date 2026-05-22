@@ -10,8 +10,6 @@ export const authGuard: CanActivateFn = (route, state) => {
   const notification = inject(NotificationService);
 
   const token = localStorage.getItem('token');
-  console.log('authGuard chamado', state.url);
-  console.log('token:', token);
 
   // ✅ 1. TOKEN EXISTE?
   if (!token) {

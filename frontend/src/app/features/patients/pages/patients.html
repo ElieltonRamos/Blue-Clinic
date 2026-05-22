@@ -1,5 +1,4 @@
 <section class="mt-14 p-8 flex-1 overflow-y-auto custom-scrollbar flex gap-8">
-  <!-- Left: Table -->
   <div class="flex-1 flex flex-col min-w-0">
     <div class="flex items-center justify-between mb-8">
       <div>
@@ -9,10 +8,11 @@
           Gestão de Pacientes
         </h2>
         <p class="text-[13px] text-(--color-text-secondary) mt-1">
-          Revisando {{ totalCount | number: '1.0-0' }} registros clínicos ativos
+          Revisando {{ totalCount() | number: '1.0-0' }} registros clínicos ativos
         </p>
       </div>
       <button
+        (click)="openCreateModal()"
         class="flex items-center gap-2 bg-primary-dark text-(--color-text-primary) px-5 py-2.5 rounded-lg font-bold shadow-sm hover:brightness-110 transition-all active:scale-95"
       >
         <span>➕</span>
@@ -36,12 +36,11 @@
             </tr>
           </thead>
           <tbody class="divide-y divide-(--color-border)">
-            @for (patient of patients; track patient.id; let odd = $odd) {
+            @for (patient of patients(); track patient.id; let odd = $odd) {
               <tr
-                (click)="selectPatient(patient.id)"
-                class="transition-colors group cursor-pointer"
-                [class.bg-(--color-bg-sidebar)]="odd && !isSelected(patient.id)"
-                [class.bg-(--color-bg-overlay)]="isSelected(patient.id)"
+                class="transition-colors cursor-pointer"
+                [class.bg-bg-sidebar]="odd && !isSelected(patient.id)"
+                [class.bg-bg-overlay]="isSelected(patient.id)"
               >
                 <td class="px-6 py-4">
                   <div class="flex items-center space-x-3">
@@ -62,7 +61,7 @@
                   {{ patient.cpf }}
                 </td>
                 <td class="px-6 py-4 text-sm text-(--color-text-secondary)">
-                  {{ patient.lastVisit }}
+                  {{ formatDate(patient.lastVisit) }}
                 </td>
                 <td class="px-6 py-4">
                   @if (patient.status === 'Ativo') {
@@ -73,7 +72,7 @@
                     </span>
                   } @else {
                     <span
-                      class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-danger-subtle text-(--color-danger)"
+                      class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-danger-subtle text-danger"
                     >
                       INATIVO
                     </span>
@@ -81,10 +80,11 @@
                 </td>
                 <td class="px-6 py-4 text-right">
                   <button
+                    (click)="selectPatient(patient.id)"
                     class="bg-(--color-bg-hover-md) text-(--color-primary-text) px-3 py-1.5 rounded-full text-xs font-bold hover:bg-primary-dark hover:text-(--color-text-inverse) transition-all flex items-center gap-1 ml-auto"
                   >
-                    <span>📨</span>
-                    Lembrete
+                    <span>👤</span>
+                    Detalhes
                   </button>
                 </td>
               </tr>
@@ -93,13 +93,12 @@
         </table>
       </div>
 
-      <!-- Pagination -->
       <div
         class="px-6 py-4 flex items-center justify-between bg-bg-sidebar border-t border-(--color-border)"
       >
         <p class="text-xs text-(--color-text-secondary)">
           Exibindo <span class="font-bold">1</span> a <span class="font-bold">10</span> de
-          <span class="font-bold">{{ totalCount | number: '1.0-0' }}</span> pacientes
+          <span class="font-bold">{{ totalCount() | number: '1.0-0' }}</span> pacientes
         </p>
         <div class="flex space-x-1">
           <button
@@ -132,58 +131,40 @@
     </div>
   </div>
 
-  <!-- Right: Detail Panel -->
-  @if (selectedDetail) {
+  @if (selectedDetail(); as detail) {
     <div class="w-96 flex flex-col gap-6 shrink-0">
-      <!-- Patient Overview -->
       <div class="bg-bg-card rounded-xl p-6 border border-(--color-border) flex flex-col">
         <div class="flex justify-between items-start mb-6">
           <div
-            class="w-20 h-20 rounded-2xl bg-(--color-primary-subtle) overflow-hidden border-4 border-(--color-bg-overlay)"
+            class="w-20 h-20 rounded-2xl bg-primary flex items-center justify-center border-4 border-(--color-bg-overlay)"
           >
-            <img
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuDuV3RgZcyoDIs84tR6MAdtey2o3BEp5BefIQ1WcBLGX09mm8Cck0OxRO7agMebeLDxxVC-ogqES-DV9EGdBltpUuxZGC6Kf2eLOoOQ2haCLXzflnlPi-Ur5vqjonmbZEWSGTK2TQ20FP9ie0FOUkn_rSvDDZXIW5a5gsu1jhTzKnqeeG_shyjd56pCugeHRvIkj-4Y2_KWZ0v7nGtYyjLqnTaE5f0NlHS79E2u6hoR3bkDtI_rcKqK_OluAZWmckCF5osNlWSM7lzc"
-              alt="Foto do paciente"
-              class="w-full h-full object-cover"
-            />
+            <span class="text-2xl font-extrabold text-btn-primary-text">
+              {{ getInitials(detail.name) }}
+            </span>
           </div>
-          <button
-            class="text-(--color-text-muted) hover:text-(--color-primary-text) transition-colors text-base"
-          >
-            ✏️
-          </button>
+          <div class="flex gap-2">
+            <button
+              (click)="openEditModal()"
+              class="text-(--color-text-muted) hover:text-(--color-primary-text) transition-colors text-sm font-bold cursor-pointer px-2 py-1 rounded hover:bg-(--color-bg-hover-md)"
+            >
+              ✏️ Editar
+            </button>
+            <button
+              (click)="clearSelection()"
+              class="text-(--color-text-muted) hover:text-danger transition-colors text-sm font-bold cursor-pointer px-2 py-1 rounded hover:bg-(--color-bg-hover-md)"
+            >
+              ✖
+            </button>
+          </div>
         </div>
 
         <h3 class="text-xl font-extrabold text-(--color-primary-text) font-headline">
-          {{ selectedDetail.name }}
+          {{ detail.name }}
         </h3>
         <p class="text-xs text-(--color-text-secondary) mb-4">
-          Paciente desde {{ selectedDetail.memberSince }}
+          Paciente desde {{ formatMemberSince(detail.memberSince) }}
         </p>
 
-        <!-- Integration Status -->
-        <div class="grid grid-cols-2 gap-3 mb-6">
-          <div class="bg-bg-sidebar p-3 rounded-lg border border-(--color-border)">
-            <div class="flex items-center gap-2 text-success mb-1">
-              <span>✅</span>
-              <span class="text-[10px] font-bold uppercase tracking-wide">WhatsApp</span>
-            </div>
-            <p class="text-[10px] text-(--color-text-secondary)">
-              {{ selectedDetail.whatsappActive ? 'Alertas ativos' : 'Inativo' }}
-            </p>
-          </div>
-          <div class="bg-info-subtle p-3 rounded-lg border border-(--color-border)">
-            <div class="flex items-center gap-2 text-info mb-1">
-              <span>🔒</span>
-              <span class="text-[10px] font-bold uppercase tracking-wide">LGPD</span>
-            </div>
-            <p class="text-[10px] text-(--color-text-secondary)">
-              {{ selectedDetail.lgpdConsent ? 'Consentimento ok' : 'Pendente' }}
-            </p>
-          </div>
-        </div>
-
-        <!-- Consultation History -->
         <div class="space-y-4 flex-1">
           <div class="flex items-center justify-between border-b border-(--color-border) pb-2">
             <span class="text-xs font-bold uppercase text-(--color-text-muted) tracking-wider"
@@ -192,13 +173,13 @@
             <span class="text-sm">🕐</span>
           </div>
           <div class="space-y-4">
-            @for (item of selectedDetail.consultationHistory; track item.title) {
+            @for (item of detail.consultationHistory; track item.title) {
               <div class="flex gap-3">
                 <div class="w-px bg-(--color-border) relative">
                   <div
                     class="absolute -left-1 top-0 w-2.5 h-2.5 rounded-full border-2 border-bg-card"
-                    [class.bg-(--color-primary-subtle)]="item.active"
-                    [class.bg-(--color-border-md)]="!item.active"
+                    [class.bg-primary-subtle]="item.active"
+                    [class.bg-border-md]="!item.active"
                   ></div>
                 </div>
                 <div>
@@ -206,15 +187,11 @@
                   <p class="text-xs text-(--color-text-secondary)">
                     {{ item.date }} • {{ item.doctor }}
                   </p>
-                  @if (item.note) {
-                    <p class="text-xs text-(--color-text-muted) mt-1 italic">"{{ item.note }}"</p>
-                  }
                 </div>
               </div>
             }
           </div>
 
-          <!-- Documents -->
           <div class="mt-8">
             <div
               class="flex items-center justify-between border-b border-(--color-border) pb-2 mb-3"
@@ -225,7 +202,7 @@
               <span class="text-sm">📎</span>
             </div>
             <div class="grid grid-cols-2 gap-2">
-              @for (doc of selectedDetail.documents; track doc.name) {
+              @for (doc of detail.documents; track doc.name) {
                 <div
                   class="p-2 rounded-lg bg-bg-sidebar border border-(--color-border) flex items-center space-x-2 cursor-pointer hover:bg-(--color-bg-overlay) transition-colors"
                 >
@@ -261,8 +238,7 @@
         </div>
       </div>
 
-      <!-- Next Appointment -->
-      @if (selectedDetail.nextAppointment) {
+      @if (detail.nextAppointment) {
         <div
           class="bg-linear-to-br from-bg-sidebar to-primary-dark p-6 rounded-xl text-(--color-text-inverse) overflow-hidden relative"
         >
@@ -271,8 +247,11 @@
               <span class="text-sm">🕐</span>
               <span class="text-[10px] font-bold uppercase tracking-widest">Próxima Consulta</span>
             </div>
-            <p class="text-xl font-bold">{{ selectedDetail.nextAppointment.label }}</p>
-            <p class="text-xs opacity-70">{{ selectedDetail.nextAppointment.location }}</p>
+            <p class="text-xl font-bold">
+              {{
+                formatNextAppointment(detail.nextAppointment.date, detail.nextAppointment.startTime)
+              }}
+            </p>
           </div>
           <span class="absolute -right-4 -bottom-4 text-8xl opacity-5 rotate-12">📅</span>
         </div>
@@ -280,3 +259,21 @@
     </div>
   }
 </section>
+
+<app-modal-edit-entity
+  title="Registrar Paciente"
+  [show]="showCreateModal()"
+  [fields]="patientFields"
+  [entity]="newPatient()"
+  (close)="showCreateModal.set(false)"
+  (save)="onSavePatient($event)"
+/>
+
+<app-modal-edit-entity
+  title="Editar Paciente"
+  [show]="showEditModal()"
+  [fields]="editFields"
+  [entity]="editPatient()"
+  (close)="showEditModal.set(false)"
+  (save)="onUpdatePatient($event)"
+/>

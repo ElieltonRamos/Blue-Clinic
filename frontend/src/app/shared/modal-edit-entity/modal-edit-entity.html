@@ -1,0 +1,136 @@
+@if (show) {
+  <div class="fixed inset-0 flex items-center justify-center z-50 bg-backdrop backdrop-blur-sm">
+    <div
+      class="bg-bg-card w-full max-w-lg rounded-2xl shadow-lg overflow-hidden transition-all max-h-[90vh] flex flex-col border border-border"
+    >
+      <div class="flex justify-between items-center border-b border-border px-6 py-4">
+        <h2 class="text-text-primary text-xl font-bold">{{ title }}</h2>
+        <button
+          class="text-text-muted hover:text-text-primary text-2xl font-bold cursor-pointer"
+          (click)="onClose()"
+        >
+          ✖
+        </button>
+      </div>
+
+      <div class="p-6 flex flex-col gap-4 overflow-y-auto">
+        <ng-content></ng-content>
+
+        @for (field of fields; track field.name) {
+          <div>
+            <label class="text-text-primary font-semibold block mb-1">
+              {{ field.label }}
+            </label>
+
+            @if (field.type === 'text' || field.type === 'email' || field.type === 'number') {
+              <input
+                [type]="field.type"
+                [(ngModel)]="entity[field.name]"
+                [placeholder]="field.placeholder ?? ''"
+                class="text-lg w-full p-2 rounded-md bg-input-bg border border-input-border text-input-text font-semibold placeholder:text-input-placeholder focus:border-input-border-focus outline-hidden"
+              />
+            }
+
+            @if (field.type === 'password') {
+              <div
+                class="flex items-center rounded-md bg-input-bg border border-input-border px-3 py-2 focus-within:border-input-border-focus"
+              >
+                <input
+                  [type]="showPassword ? 'text' : 'password'"
+                  [(ngModel)]="entity[field.name]"
+                  [placeholder]="field.placeholder ?? 'Digite a senha'"
+                  class="text-lg w-full bg-transparent text-input-text font-semibold placeholder:text-input-placeholder focus:outline-none border-none"
+                />
+                <button
+                  type="button"
+                  (click)="showPassword = !showPassword"
+                  class="ml-2 text-text-muted hover:text-text-secondary transition-colors focus:outline-none cursor-pointer"
+                >
+                  @if (showPassword) {
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="w-5 h-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 4.411m0 0L21 21"
+                      />
+                    </svg>
+                  } @else {
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="w-5 h-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                      />
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                      />
+                    </svg>
+                  }
+                </button>
+              </div>
+            }
+
+            @if (field.type === 'date') {
+              <input
+                type="date"
+                [(ngModel)]="entity[field.name]"
+                class="text-lg w-full p-2 rounded-md bg-input-bg border border-input-border text-input-text font-semibold focus:border-input-border-focus outline-hidden"
+              />
+            }
+
+            @if (field.type === 'datetime-local') {
+              <input
+                type="datetime-local"
+                [(ngModel)]="entity[field.name]"
+                class="text-lg w-full p-2 rounded-md bg-input-bg border border-input-border text-input-text font-semibold focus:border-input-border-focus outline-hidden"
+              />
+            }
+
+            @if (field.type === 'select') {
+              <select
+                [(ngModel)]="entity[field.name]"
+                class="text-lg w-full p-2 rounded-md bg-input-bg border border-input-border text-input-text font-semibold focus:border-input-border-focus outline-hidden"
+              >
+                @for (opt of field.options; track opt) {
+                  <option [value]="opt">{{ opt }}</option>
+                }
+              </select>
+            }
+          </div>
+        }
+      </div>
+
+      <div class="flex justify-end gap-4 border-t border-border px-6 py-4 bg-bg-base/50">
+        <button
+          class="bg-secondary hover:bg-secondary-hover text-secondary-text px-6 py-2 rounded-lg font-bold transition-colors cursor-pointer"
+          (click)="onClose()"
+        >
+          Cancelar
+        </button>
+        <button
+          class="bg-btn-primary-bg hover:bg-btn-primary-hover text-btn-primary-text px-6 py-2 rounded-lg font-bold transition-all shadow-md cursor-pointer active:scale-95"
+          (click)="onSave()"
+        >
+          Salvar
+        </button>
+      </div>
+    </div>
+  </div>
+}
