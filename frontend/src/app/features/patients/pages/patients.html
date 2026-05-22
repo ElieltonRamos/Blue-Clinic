@@ -1,6 +1,6 @@
 <section class="mt-14 p-8 flex-1 overflow-y-auto custom-scrollbar flex gap-8">
   <div class="flex-1 flex flex-col min-w-0">
-    <div class="flex items-center justify-between mb-8">
+    <div class="flex items-center justify-between mb-6">
       <div>
         <h2
           class="text-3xl font-extrabold text-(--color-primary-text) tracking-tight font-headline"
@@ -17,6 +17,32 @@
       >
         <span>➕</span>
         <span>Registrar Paciente</span>
+      </button>
+    </div>
+
+    <!-- Filtros -->
+    <div class="flex gap-3 mb-4">
+      <input
+        type="text"
+        placeholder="Buscar por nome..."
+        [ngModel]="searchName()"
+        (ngModelChange)="searchName.set($event)"
+        (keydown.enter)="onSearch()"
+        class="w-full p-2 rounded-md bg-input-bg border border-input-border text-input-text placeholder:text-input-placeholder focus:border-input-border-focus outline-hidden text-sm"
+      />
+      <input
+        type="text"
+        placeholder="Buscar por CPF..."
+        [ngModel]="searchCpf()"
+        (ngModelChange)="searchCpf.set($event)"
+        (keydown.enter)="onSearch()"
+        class="w-full p-2 rounded-md bg-input-bg border border-input-border text-input-text placeholder:text-input-placeholder focus:border-input-border-focus outline-hidden text-sm"
+      />
+      <button
+        (click)="onSearch()"
+        class="px-4 py-2 bg-primary hover:bg-primary-hover text-btn-primary-text rounded-md font-bold text-sm transition-colors cursor-pointer whitespace-nowrap"
+      >
+        Buscar
       </button>
     </div>
 
@@ -67,15 +93,13 @@
                   @if (patient.status === 'Ativo') {
                     <span
                       class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-success-subtle text-success"
+                      >ATIVO</span
                     >
-                      ATIVO
-                    </span>
                   } @else {
                     <span
                       class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-danger-subtle text-danger"
+                      >INATIVO</span
                     >
-                      INATIVO
-                    </span>
                   }
                 </td>
                 <td class="px-6 py-4 text-right">
@@ -97,36 +121,19 @@
         class="px-6 py-4 flex items-center justify-between bg-bg-sidebar border-t border-(--color-border)"
       >
         <p class="text-xs text-(--color-text-secondary)">
-          Exibindo <span class="font-bold">1</span> a <span class="font-bold">10</span> de
-          <span class="font-bold">{{ totalCount() | number: '1.0-0' }}</span> pacientes
+          Exibindo
+          <span class="font-bold">{{ (page() - 1) * itemsPerPage + 1 }}</span> a
+          <span class="font-bold">{{
+            page() * itemsPerPage > totalCount() ? totalCount() : page() * itemsPerPage
+          }}</span>
+          de <span class="font-bold">{{ totalCount() | number: '1.0-0' }}</span> pacientes
         </p>
-        <div class="flex space-x-1">
-          <button
-            class="p-1.5 rounded hover:bg-(--color-bg-overlay) text-(--color-text-secondary) text-lg leading-none"
-          >
-            ‹
-          </button>
-          <button
-            class="w-8 h-8 rounded bg-primary-dark text-(--color-text-inverse) text-xs font-bold"
-          >
-            1
-          </button>
-          <button
-            class="w-8 h-8 rounded hover:bg-(--color-bg-overlay) text-(--color-text-secondary) text-xs font-bold"
-          >
-            2
-          </button>
-          <button
-            class="w-8 h-8 rounded hover:bg-(--color-bg-overlay) text-(--color-text-secondary) text-xs font-bold"
-          >
-            3
-          </button>
-          <button
-            class="p-1.5 rounded hover:bg-(--color-bg-overlay) text-(--color-text-secondary) text-lg leading-none"
-          >
-            ›
-          </button>
-        </div>
+        <app-paginator
+          [page]="page()"
+          [totalItems]="totalCount()"
+          [itemsPerPage]="itemsPerPage"
+          (pageChanged)="onPageChange($event)"
+        />
       </div>
     </div>
   </div>
@@ -138,9 +145,9 @@
           <div
             class="w-20 h-20 rounded-2xl bg-primary flex items-center justify-center border-4 border-(--color-bg-overlay)"
           >
-            <span class="text-2xl font-extrabold text-btn-primary-text">
-              {{ getInitials(detail.name) }}
-            </span>
+            <span class="text-2xl font-extrabold text-btn-primary-text">{{
+              getInitials(detail.name)
+            }}</span>
           </div>
           <div class="flex gap-2">
             <button
@@ -203,7 +210,10 @@
             </div>
             <div class="grid grid-cols-2 gap-2">
               @for (doc of detail.documents; track doc.name) {
-                <div
+                <a
+                  [href]="getDocumentUrl(doc.url)"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   class="p-2 rounded-lg bg-bg-sidebar border border-(--color-border) flex items-center space-x-2 cursor-pointer hover:bg-(--color-bg-overlay) transition-colors"
                 >
                   <div
@@ -217,14 +227,20 @@
                     </p>
                     <p class="text-[8px] text-(--color-text-muted)">{{ doc.size }}</p>
                   </div>
-                </div>
+                </a>
               }
             </div>
-            <button
-              class="w-full mt-4 py-2 border border-dashed border-(--color-border-md) rounded-lg text-xs font-bold text-(--color-text-muted) hover:bg-(--color-bg-overlay) transition-colors"
+            <label
+              class="w-full mt-4 py-2 border border-dashed border-(--color-border-md) rounded-lg text-xs font-bold text-(--color-text-muted) hover:bg-(--color-bg-overlay) transition-colors cursor-pointer flex items-center justify-center gap-2"
             >
+              <input
+                type="file"
+                class="hidden"
+                accept=".pdf,image/*"
+                (change)="onUploadDocument($event)"
+              />
               + Adicionar Documento
-            </button>
+            </label>
           </div>
         </div>
 
@@ -233,7 +249,7 @@
             class="w-full bg-primary-dark text-(--color-text-inverse) font-bold py-3 rounded-lg text-sm flex items-center justify-center gap-2 hover:brightness-110 transition-all active:scale-95"
           >
             <span>🩺</span>
-            <span>Iniciar Nova Consulta</span>
+            <span>Criar Novo Agendamento</span>
           </button>
         </div>
       </div>

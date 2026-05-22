@@ -7,6 +7,14 @@ import { PatientResponseDto } from './dto/patient-response.dto.js';
 import { PatientDetailResponseDto } from './dto/patient-detail-response.dto.js';
 import { CreatePatientDto } from './dto/create-patient.dto.js';
 import { UpdatePatientDto } from './dto/update-patient.dto.js';
+import { PatientDocument } from '../../../generated/prisma/client.js';
+
+export interface UploadedFileCustom {
+  originalname: string;
+  filename: string;
+  mimetype: string;
+  size: number;
+}
 
 @Injectable()
 export class PatientsService {
@@ -142,5 +150,27 @@ export class PatientsService {
     });
 
     return new PatientDetailResponseDto(patient);
+  }
+
+  async uploadDocument(
+    id: number,
+    companyId: number,
+    file: UploadedFileCustom,
+  ): Promise<PatientDocument> {
+    await this.findOne(id, companyId);
+
+    const url = `/uploads/patients/${id}/${file.filename}`;
+    const sizeMb = (file.size / (1024 * 1024)).toFixed(2) + ' MB';
+    const type = file.mimetype.includes('pdf') ? 'pdf' : 'image';
+
+    return this.prisma.client.patientDocument.create({
+      data: {
+        patientId: id,
+        name: file.originalname,
+        size: sizeMb,
+        type,
+        url,
+      },
+    });
   }
 }

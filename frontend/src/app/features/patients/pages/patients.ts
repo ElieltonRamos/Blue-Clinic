@@ -1,5 +1,13 @@
-import { Component, inject, OnInit, ChangeDetectionStrategy, signal } from '@angular/core';
+import {
+  Component,
+  inject,
+  OnInit,
+  ChangeDetectionStrategy,
+  signal,
+  computed,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { PatientsService } from '../services/patients.service';
 import {
   Patient,
@@ -9,6 +17,8 @@ import {
 } from '../types/patients.types';
 import { FormField, ModalEditEntity } from '../../../shared/modal-edit-entity/modal-edit-entity';
 import { NotificationService } from '../../../shared/toastr/notification.service';
+import { PaginatorComponent } from '../../../shared/paginator/paginator.component';
+import { environment } from '../../../core/services/environment';
 
 const AVATAR_COLORS = [
   'bg-primary text-btn-primary-text',
@@ -16,10 +26,12 @@ const AVATAR_COLORS = [
   'bg-success text-btn-primary-text',
 ];
 
+const ITEMS_PER_PAGE = 10;
+
 @Component({
   selector: 'app-patients',
   standalone: true,
-  imports: [CommonModule, ModalEditEntity],
+  imports: [CommonModule, FormsModule, ModalEditEntity, PaginatorComponent],
   templateUrl: './patients.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -31,6 +43,11 @@ export class Patients implements OnInit {
   selectedDetail = signal<PatientDetail | null>(null);
   totalCount = signal(0);
   loading = signal(false);
+
+  page = signal(1);
+  searchName = signal('');
+  searchCpf = signal('');
+  readonly itemsPerPage = ITEMS_PER_PAGE;
 
   showCreateModal = signal(false);
   newPatient = signal<Partial<CreatePatientRequest>>({});
@@ -61,7 +78,10 @@ export class Patients implements OnInit {
 
   loadPatients(): void {
     this.loading.set(true);
-    this.patientsService.getPatients().subscribe({
+    const skip = (this.page() - 1) * this.itemsPerPage;
+    const search = this.searchName().trim() || this.searchCpf().trim() || undefined;
+
+    this.patientsService.getPatients({ skip, take: this.itemsPerPage, search }).subscribe({
       next: ({ data, total }) => {
         this.patients.set(
           data.map((p, i) => ({
@@ -75,6 +95,16 @@ export class Patients implements OnInit {
       },
       error: () => this.loading.set(false),
     });
+  }
+
+  onSearch(): void {
+    this.page.set(1);
+    this.loadPatients();
+  }
+
+  onPageChange(page: number): void {
+    this.page.set(page);
+    this.loadPatients();
   }
 
   selectPatient(id: number): void {
@@ -176,5 +206,31 @@ export class Patients implements OnInit {
         ? 'Amanhã'
         : d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
     return `${label}, ${startTime}`;
+  }
+
+  onUploadDocument(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    const detail = this.selectedDetail();
+    if (!file || !detail) return;
+
+    this.patientsService.uploadDocument(detail.id, file).subscribe({
+      next: (doc) => {
+        this.selectedDetail.update((d) => (d ? { ...d, documents: [...d.documents, doc] } : d));
+        this.notification.success('Documento enviado com sucesso.');
+      },
+      error: (err) => {
+        const msg = err?.error?.message;
+        this.notification.error(
+          Array.isArray(msg) ? msg.join('<br>') : (msg ?? 'Erro ao enviar documento.'),
+        );
+      },
+    });
+
+    input.value = '';
+  }
+
+  getDocumentUrl(url: string): string {
+    return `${environment.apiUrl}${url}`;
   }
 }

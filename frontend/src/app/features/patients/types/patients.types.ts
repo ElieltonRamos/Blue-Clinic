@@ -8,6 +8,13 @@ export interface PatientFilters {
   take?: number;
 }
 
+export interface UploadDocumentResponse {
+  name: string;
+  size: string;
+  type: string;
+  url: string;
+}
+
 export interface Patient {
   id: number;
   name: string;

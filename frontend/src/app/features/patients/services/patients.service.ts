@@ -9,6 +9,7 @@ import {
   PatientListResponse,
   CreatePatientRequest,
   UpdatePatientRequest,
+  UploadDocumentResponse,
 } from '../types/patients.types';
 
 @Injectable({
@@ -37,5 +38,14 @@ export class PatientsService {
 
   updatePatient(id: number, dto: UpdatePatientRequest) {
     return this.http.patch<PatientDetail>(`${this.apiUrl}/patients/${id}`, dto);
+  }
+
+  uploadDocument(patientId: number, file: File) {
+    const form = new FormData();
+    form.append('file', file);
+    return this.http.post<UploadDocumentResponse>(
+      `${this.apiUrl}/patients/${patientId}/documents`,
+      form,
+    );
   }
 }
