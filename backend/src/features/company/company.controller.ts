@@ -1,34 +1,54 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
-import { CompanyService } from './company.service';
-import { CreateCompanyDto } from './dto/create-company.dto';
-import { UpdateCompanyDto } from './dto/update-company.dto';
+import {
+  Controller,
+  Get,
+  Patch,
+  Body,
+  UseGuards,
+  HttpStatus,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
+import { JwtAuthGuard } from '../../core/guards/jwt-auth.guard.js';
+import { RolesGuard } from '../../core/guards/roles.guard.js';
+import { CurrentUser } from '../../core/decorators/current-user.decorator.js';
+import { UpdateCompanyDto } from './dto/update-company.dto.js';
+import { CompanyService } from './company.service.js';
 
+@ApiTags('company')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('company')
 export class CompanyController {
   constructor(private readonly companyService: CompanyService) {}
 
-  @Post()
-  create(@Body() createCompanyDto: CreateCompanyDto) {
-    return this.companyService.create(createCompanyDto);
-  }
-
   @Get()
-  findAll() {
-    return this.companyService.findAll();
+  @ApiOperation({ summary: 'Buscar dados da empresa' })
+  @ApiResponse({ status: HttpStatus.OK })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND })
+  getCompany(@CurrentUser('companyId') companyId: number) {
+    return this.companyService.getCompany(companyId);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.companyService.findOne(+id);
+  @Patch()
+  @ApiOperation({ summary: 'Atualizar dados da empresa' })
+  @ApiResponse({ status: HttpStatus.OK })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND })
+  updateCompany(
+    @CurrentUser('companyId') companyId: number,
+    @Body() dto: UpdateCompanyDto,
+  ) {
+    return this.companyService.updateCompany(companyId, dto);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateCompanyDto: UpdateCompanyDto) {
-    return this.companyService.update(+id, updateCompanyDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.companyService.remove(+id);
+  @Get('integration')
+  @ApiOperation({ summary: 'Buscar configuração WhatsApp' })
+  @ApiResponse({ status: HttpStatus.OK })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND })
+  getIntegration(@CurrentUser('companyId') companyId: number) {
+    return this.companyService.getIntegration(companyId);
   }
 }

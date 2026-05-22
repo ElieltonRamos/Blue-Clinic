@@ -1,6 +1,5 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { forkJoin, map } from 'rxjs';
 import { environment } from '../../../core/services/environment';
 import {
   CompanyData,
@@ -17,12 +16,16 @@ export class SettingsService {
   private apiUrl = environment.apiUrl;
   private http = inject(HttpClient);
 
-  getCompany(id: number) {
-    return this.http.get<CompanyData>(`${this.apiUrl}/companies/${id}`);
+  getCompany() {
+    return this.http.get<CompanyData>(`${this.apiUrl}/company`);
   }
 
-  updateCompany(id: number, dto: Partial<CompanyData>) {
-    return this.http.patch<CompanyData>(`${this.apiUrl}/companies/${id}`, dto);
+  updateCompany(dto: Partial<CompanyData>) {
+    return this.http.patch<CompanyData>(`${this.apiUrl}/company`, dto);
+  }
+
+  getIntegration() {
+    return this.http.get<IntegrationStatus>(`${this.apiUrl}/company/integration`);
   }
 
   getUsers(filters?: { username?: string; role?: UserLevel }) {
@@ -38,10 +41,6 @@ export class SettingsService {
 
   removeMember(id: number) {
     return this.http.delete<{ message: string }>(`${this.apiUrl}/users/${id}`);
-  }
-  
-  getIntegration(companyId: number) {
-    return this.http.get<IntegrationStatus>(`${this.apiUrl}/whatsapp-config/${companyId}`);
   }
 
   updateMember(id: number, dto: Partial<CreateMemberRequest> & { active?: boolean }) {

@@ -2,6 +2,7 @@ import { Component, inject, OnInit, ChangeDetectionStrategy, signal } from '@ang
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SettingsService } from '../services/settings.service';
+import { version } from '../../../../../package.json';
 import {
   CompanyData,
   IntegrationStatus,
@@ -24,6 +25,7 @@ export class Settings implements OnInit {
   private settingsService = inject(SettingsService);
   private notification = inject(NotificationService);
 
+  version = version;
   members = signal<TeamMember[]>([]);
   companyData = signal<CompanyData | null>(null);
   integration = signal<IntegrationStatus | null>(null);
@@ -41,9 +43,9 @@ export class Settings implements OnInit {
   editMember = signal<Partial<NewMemberForm & { active: string }>>({});
   editMemberId = signal<number | null>(null);
 
-  // TODO: extrair do token JWT
-  private companyId = 1;
+  private originalCompany: CompanyData | null = null;
 
+  // memberCreateFields vai precisar de name e specialty condicionais ao role medico
   memberCreateFields: FormField[] = [
     {
       name: 'username',
@@ -112,8 +114,11 @@ export class Settings implements OnInit {
   }
 
   private loadCompany(): void {
-    this.settingsService.getCompany(this.companyId).subscribe({
-      next: (company) => this.companyData.set(company),
+    this.settingsService.getCompany().subscribe({
+      next: (company) => {
+        this.companyData.set(company);
+        this.originalCompany = { ...company };
+      },
       error: (err) => {
         const msg = err?.error?.message;
         this.notification.error(
@@ -124,13 +129,17 @@ export class Settings implements OnInit {
   }
 
   private loadIntegration(): void {
-    this.settingsService.getIntegration(this.companyId).subscribe({
+    this.settingsService.getIntegration().subscribe({
       next: (integration) => this.integration.set(integration),
       error: (err) => {
-        const msg = err?.error?.message;
-        this.notification.error(
-          Array.isArray(msg) ? msg.join('<br>') : (msg ?? 'Erro ao carregar integração.'),
-        );
+        if (err?.status === 404) {
+          this.integration.set(null);
+        } else {
+          const msg = err?.error?.message;
+          this.notification.error(
+            Array.isArray(msg) ? msg.join('<br>') : (msg ?? 'Erro ao carregar integração.'),
+          );
+        }
       },
     });
   }
@@ -160,7 +169,6 @@ export class Settings implements OnInit {
     this.loading.set(true);
     this.settingsService
       .createMember({
-        companyId: this.companyId,
         username: entity.username,
         password: entity.password,
         role: entity.role ?? 'atendimento',
@@ -200,7 +208,7 @@ export class Settings implements OnInit {
     if (entity.username?.trim()) dto['username'] = entity.username.trim();
     if (entity.password?.trim()) dto['password'] = entity.password.trim();
     if (entity.role) dto['role'] = entity.role;
-    if (entity.active !== undefined) dto['active'] = entity.active; // backend transforma via @Transform
+    if (entity.active !== undefined) dto['active'] = entity.active;
 
     this.settingsService.updateMember(id, dto as any).subscribe({
       next: (updated) => {
@@ -236,10 +244,23 @@ export class Settings implements OnInit {
   }
 
   saveCompany(): void {
-    const company = this.companyData();
-    if (!company) return;
-    this.settingsService.updateCompany(this.companyId, company).subscribe({
-      next: () => {
+    const current = this.companyData();
+    if (!current || !this.originalCompany) return;
+
+    const dto = (Object.keys(current) as (keyof CompanyData)[]).reduce((acc, key) => {
+      if (current[key] !== this.originalCompany![key]) acc[key] = current[key] as any;
+      return acc;
+    }, {} as Partial<CompanyData>);
+
+    if (!Object.keys(dto).length) {
+      this.notification.warning('Nenhuma alteração detectada.');
+      return;
+    }
+
+    this.settingsService.updateCompany(dto).subscribe({
+      next: (updated) => {
+        this.companyData.set(updated);
+        this.originalCompany = { ...updated };
         this.companySaved.set(true);
         this.notification.success('Dados da empresa salvos.');
         setTimeout(() => this.companySaved.set(false), 2000);

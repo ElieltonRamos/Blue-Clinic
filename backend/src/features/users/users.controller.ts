@@ -24,6 +24,7 @@ import { UserFiltersDto } from './dto/user-filter.dto.js';
 import { LoginDto } from './dto/login.dto.js';
 import { JwtAuthGuard } from '../../core/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../../core/guards/roles.guard.js';
+import { CurrentUser } from '../../core/decorators/current-user.decorator.js';
 
 @ApiTags('users')
 @Controller('users')
@@ -53,16 +54,13 @@ export class UsersController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Criar novo usuário' })
-  @ApiResponse({
-    status: HttpStatus.CREATED,
-    description: 'Usuário criado com sucesso',
-  })
-  @ApiResponse({
-    status: HttpStatus.BAD_REQUEST,
-    description: 'Dados inválidos',
-  })
-  create(@Body() createUserDto: CreateUserDto) {
-    return this.usersService.create(createUserDto);
+  @ApiResponse({ status: HttpStatus.CREATED })
+  @ApiResponse({ status: HttpStatus.BAD_REQUEST })
+  create(
+    @CurrentUser('companyId') companyId: number,
+    @Body() createUserDto: CreateUserDto,
+  ) {
+    return this.usersService.create({ ...createUserDto, companyId });
   }
 
   @Get()

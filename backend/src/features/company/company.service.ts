@@ -1,26 +1,32 @@
-import { Injectable } from '@nestjs/common';
-import { CreateCompanyDto } from './dto/create-company.dto';
-import { UpdateCompanyDto } from './dto/update-company.dto';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { PrismaService } from '../../core/database/prisma.service.js';
+import { Prisma } from '../../../generated/prisma/client.js';
 
 @Injectable()
 export class CompanyService {
-  create(createCompanyDto: CreateCompanyDto) {
-    return 'This action adds a new company';
+  constructor(private prisma: PrismaService) {}
+
+  async getCompany(id: number) {
+    const company = await this.prisma.client.company.findUnique({
+      where: { id },
+    });
+    if (!company) throw new NotFoundException('Empresa não encontrada');
+    return company;
   }
 
-  findAll() {
-    return `This action returns all company`;
+  async updateCompany(id: number, dto: Prisma.CompanyUpdateInput) {
+    await this.getCompany(id);
+    return this.prisma.client.company.update({
+      where: { id },
+      data: dto,
+    });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} company`;
-  }
-
-  update(id: number, updateCompanyDto: UpdateCompanyDto) {
-    return `This action updates a #${id} company`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} company`;
+  async getIntegration(companyId: number) {
+    const config = await this.prisma.client.whatsappConfig.findUnique({
+      where: { companyId },
+    });
+    if (!config) throw new NotFoundException('Configuração não encontrada');
+    return config;
   }
 }

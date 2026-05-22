@@ -51,12 +51,22 @@ export class UsersService {
     }
   }
 
-  async create(createUserDto: CreateUserDto): Promise<UserResponseDto> {
+  async create(
+    createUserDto: CreateUserDto & { companyId: number },
+  ): Promise<UserResponseDto> {
     const existing = await this.prisma.client.user.findUnique({
       where: { username: createUserDto.username },
     });
     if (existing) {
       throw new ConflictException('Nome de usuário já está em uso');
+    }
+
+    if (createUserDto.role === Role.medico) {
+      if (!createUserDto.name || !createUserDto.specialty) {
+        throw new BadRequestException(
+          'Nome e especialidade são obrigatórios para médicos',
+        );
+      }
     }
 
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
@@ -70,6 +80,18 @@ export class UsersService {
         active: createUserDto.active ?? true,
       },
     });
+
+    if (user.role === Role.medico) {
+      await this.prisma.client.doctor.create({
+        data: {
+          companyId: createUserDto.companyId,
+          name: createUserDto.name!,
+          specialty: createUserDto.specialty!,
+          userId: user.id,
+          active: true,
+        },
+      });
+    }
 
     return this.omitPassword(user);
   }

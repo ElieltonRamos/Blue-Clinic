@@ -22,7 +22,6 @@ export interface TeamMember {
 }
 
 export interface CreateMemberRequest {
-  companyId: number;
   username: string;
   password: string;
   role: UserLevel;

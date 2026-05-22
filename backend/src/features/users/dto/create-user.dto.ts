@@ -1,22 +1,16 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsString,
   IsNotEmpty,
   MinLength,
   IsOptional,
   IsBoolean,
-  IsInt,
   IsEnum,
 } from 'class-validator';
 import { ValidationMessages } from '../../../core/utils/validation-messages';
 import { Role } from '../../../../generated/prisma/client';
 
 export class CreateUserDto {
-  @ApiProperty({ example: 1 })
-  @IsInt()
-  @IsNotEmpty({ message: ValidationMessages.IS_NOT_EMPTY('Empresa') })
-  companyId: number;
-
   @ApiProperty({ example: 'john_doe' })
   @IsString({ message: ValidationMessages.IS_STRING('Nome de usuário') })
   @IsNotEmpty({ message: ValidationMessages.IS_NOT_EMPTY('Nome de usuário') })
@@ -37,4 +31,14 @@ export class CreateUserDto {
   @IsBoolean({ message: ValidationMessages.IS_BOOLEAN('Ativo') })
   @IsOptional()
   active?: boolean;
+
+  @ApiPropertyOptional({ example: 'Dr. João Silva' })
+  @IsString()
+  @IsOptional()
+  name?: string;
+
+  @ApiPropertyOptional({ example: 'Cardiologia' })
+  @IsString()
+  @IsOptional()
+  specialty?: string;
 }
