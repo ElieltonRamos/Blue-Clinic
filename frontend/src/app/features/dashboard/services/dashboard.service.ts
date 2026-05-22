@@ -16,7 +16,7 @@ export class DashboardService {
         value: '1.284',
         trend: 12,
         icon: 'calendar',
-        roles: ['admin', 'medico', 'balconista'],
+        roles: ['admin', 'medico', 'atendimento'],
       },
       {
         label: 'Receita Mensal',
@@ -39,7 +39,7 @@ export class DashboardService {
         icon: 'chat',
         highlight: true,
         toggle: true,
-        roles: ['admin', 'balconista'],
+        roles: ['admin', 'atendimento'],
       },
     ];
   }

@@ -16,11 +16,11 @@
     Médico
   </button>
   <button
-    (click)="setRole('balconista')"
-    [class.font-bold]="role === 'balconista'"
+    (click)="setRole('atendimento')"
+    [class.font-bold]="role === 'atendimento'"
     class="text-[11px] px-2 py-1 rounded bg-(--color-bg-hover) text-(--color-text-muted)"
   >
-    Balconista
+    atendimento
   </button>
 </div>
 <!-- DEV ONLY - remover antes de produção -->
@@ -36,7 +36,7 @@
         @case ('medico') {
           Minha Agenda
         }
-        @case ('balconista') {
+        @case ('atendimento') {
           Painel de Atendimento
         }
       }
@@ -50,7 +50,7 @@
         @case ('medico') {
           Bem-vindo, {{ currentUserName }}. Suas consultas de hoje.
         }
-        @case ('balconista') {
+        @case ('atendimento') {
           Bem-vindo, {{ currentUserName }}. Consultas e atendimentos do dia.
         }
       }

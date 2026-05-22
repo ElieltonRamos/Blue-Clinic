@@ -75,7 +75,7 @@ export class Dashboard {
   }
 
   get showChatbot(): boolean {
-    return this.role === 'admin' || this.role === 'balconista';
+    return this.role === 'admin' || this.role === 'atendimento';
   }
 
   get showNextPatient(): boolean {

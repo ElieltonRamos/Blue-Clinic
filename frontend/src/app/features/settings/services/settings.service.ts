@@ -7,6 +7,7 @@ import {
   IntegrationStatus,
   TeamMember,
   CreateMemberRequest,
+  UserLevel,
 } from '../types/settings.types';
 
 @Injectable({
@@ -24,32 +25,26 @@ export class SettingsService {
     return this.http.patch<CompanyData>(`${this.apiUrl}/companies/${id}`, dto);
   }
 
-  getTeamMembers() {
-    const doctors$ = this.http.get<TeamMember[]>(`${this.apiUrl}/doctors?active=true`);
-    const staff$ = this.http.get<TeamMember[]>(`${this.apiUrl}/users?active=true`);
-    return forkJoin([doctors$, staff$]).pipe(map(([doctors, staff]) => [...doctors, ...staff]));
-  }
-
-  createMember(dto: CreateMemberRequest) {
-    if (dto.level === 'medico') {
-      return this.http.post<TeamMember>(`${this.apiUrl}/doctors`, dto);
-    }
-    return this.http.post<TeamMember>(`${this.apiUrl}/users`, dto);
-  }
-
-  removeMember(id: number, level: TeamMember['level']) {
-    if (level === 'medico') {
-      return this.http.delete<{ message: string }>(`${this.apiUrl}/doctors/${id}`);
-    }
-    return this.http.delete<{ message: string }>(`${this.apiUrl}/users/${id}`);
-  }
-
-  getUsersByRole(role: 'admin' | 'atendimento' | 'medico') {
-    const params = new HttpParams().set('role', role).set('active', 'true');
+  getUsers(filters?: { username?: string; role?: UserLevel }) {
+    let params = new HttpParams().set('active', 'true');
+    if (filters?.username) params = params.set('username', filters.username);
+    if (filters?.role) params = params.set('role', filters.role);
     return this.http.get<TeamMember[]>(`${this.apiUrl}/users`, { params });
   }
 
+  createMember(dto: CreateMemberRequest) {
+    return this.http.post<TeamMember>(`${this.apiUrl}/users`, dto);
+  }
+
+  removeMember(id: number) {
+    return this.http.delete<{ message: string }>(`${this.apiUrl}/users/${id}`);
+  }
+  
   getIntegration(companyId: number) {
     return this.http.get<IntegrationStatus>(`${this.apiUrl}/whatsapp-config/${companyId}`);
+  }
+
+  updateMember(id: number, dto: Partial<CreateMemberRequest> & { active?: boolean }) {
+    return this.http.patch<TeamMember>(`${this.apiUrl}/users/${id}`, dto);
   }
 }

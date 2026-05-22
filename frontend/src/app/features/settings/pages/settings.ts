@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, ChangeDetectionStrategy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SettingsService } from '../services/settings.service';
@@ -9,72 +9,130 @@ import {
   TeamMember,
   UserLevel,
 } from '../types/settings.types';
+import { NotificationService } from '../../../shared/toastr/notification.service';
+import { FormField, ModalEditEntity } from '../../../shared/modal-edit-entity/modal-edit-entity';
+import { alertConfirm } from '../../../shared/alerts/custom-alerts';
 
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ModalEditEntity],
   templateUrl: './settings.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Settings implements OnInit {
   private settingsService = inject(SettingsService);
+  private notification = inject(NotificationService);
 
-  allMembers: TeamMember[] = [];
-  companyData!: CompanyData;
-  integration!: IntegrationStatus;
+  members = signal<TeamMember[]>([]);
+  companyData = signal<CompanyData | null>(null);
+  integration = signal<IntegrationStatus | null>(null);
 
-  memberFilter = '';
-  menuOpenId: number | null = null;
+  memberFilter = signal('');
+  roleFilter = signal<UserLevel | ''>('');
 
-  showAddMemberModal = false;
-  companySaved = false;
-  loading = false;
+  companySaved = signal(false);
+  loading = signal(false);
 
-  newMember: NewMemberForm = {
-    name: '',
-    role: '',
-    detail: '',
-    level: 'atendimento',
-    icon: '👤',
-  };
+  showCreateModal = signal(false);
+  newMember = signal<Partial<NewMemberForm>>({});
 
-  // TODO: pegar do token JWT (companyId do usuário logado)
+  showEditModal = signal(false);
+  editMember = signal<Partial<NewMemberForm & { active: string }>>({});
+  editMemberId = signal<number | null>(null);
+
+  // TODO: extrair do token JWT
   private companyId = 1;
 
+  memberCreateFields: FormField[] = [
+    {
+      name: 'username',
+      label: 'Usuário (login)',
+      type: 'text',
+      placeholder: 'Ex: dr.joao',
+      required: true,
+    },
+    {
+      name: 'password',
+      label: 'Senha',
+      type: 'password',
+      placeholder: 'Mínimo 6 caracteres',
+      required: true,
+    },
+    {
+      name: 'role',
+      label: 'Nível de Acesso',
+      type: 'select',
+      options: ['medico', 'atendimento', 'admin'],
+    },
+  ];
+
+  memberEditFields: FormField[] = [
+    { name: 'username', label: 'Usuário (login)', type: 'text', placeholder: 'Ex: dr.joao' },
+    {
+      name: 'password',
+      label: 'Nova Senha',
+      type: 'password',
+      placeholder: 'Deixe vazio para manter',
+    },
+    {
+      name: 'role',
+      label: 'Nível de Acesso',
+      type: 'select',
+      options: ['medico', 'atendimento', 'admin'],
+    },
+    { name: 'active', label: 'Status', type: 'select', options: ['Ativo', 'Inativo'] },
+  ];
+
   ngOnInit(): void {
-    this.loadTeamMembers();
+    this.loadMembers();
     this.loadCompany();
     this.loadIntegration();
   }
 
-  private loadTeamMembers(): void {
-    this.settingsService.getTeamMembers().subscribe({
-      next: (members) => (this.allMembers = members),
-      error: (err) => console.error('Erro ao carregar membros', err),
-    });
+  loadMembers(): void {
+    this.settingsService
+      .getUsers({
+        username: this.memberFilter() || undefined,
+        role: this.roleFilter() || undefined,
+      })
+      .subscribe({
+        next: (members) => this.members.set(members),
+        error: (err) => {
+          const msg = err?.error?.message;
+          this.notification.error(
+            Array.isArray(msg) ? msg.join('<br>') : (msg ?? 'Erro ao carregar membros.'),
+          );
+        },
+      });
+  }
+
+  onFilterChange(): void {
+    this.loadMembers();
   }
 
   private loadCompany(): void {
     this.settingsService.getCompany(this.companyId).subscribe({
-      next: (company) => (this.companyData = company),
-      error: (err) => console.error('Erro ao carregar empresa', err),
+      next: (company) => this.companyData.set(company),
+      error: (err) => {
+        const msg = err?.error?.message;
+        this.notification.error(
+          Array.isArray(msg) ? msg.join('<br>') : (msg ?? 'Erro ao carregar dados da empresa.'),
+        );
+      },
     });
   }
 
   private loadIntegration(): void {
     this.settingsService.getIntegration(this.companyId).subscribe({
-      next: (integration) => (this.integration = integration),
-      error: (err) => console.error('Erro ao carregar integração', err),
+      next: (integration) => this.integration.set(integration),
+      error: (err) => {
+        const msg = err?.error?.message;
+        this.notification.error(
+          Array.isArray(msg) ? msg.join('<br>') : (msg ?? 'Erro ao carregar integração.'),
+        );
+      },
     });
-  }
-
-  get members(): TeamMember[] {
-    const q = this.memberFilter.toLowerCase();
-    return q
-      ? this.allMembers.filter(
-          (m) => m.name.toLowerCase().includes(q) || m.role.toLowerCase().includes(q),
-        )
-      : this.allMembers;
   }
 
   levelLabel(level: UserLevel): string {
@@ -89,60 +147,109 @@ export class Settings implements OnInit {
     }[level];
   }
 
-  toggleMenu(id: number): void {
-    this.menuOpenId = this.menuOpenId === id ? null : id;
+  openCreateModal(): void {
+    this.newMember.set({ role: 'atendimento' });
+    this.showCreateModal.set(true);
   }
 
-  removeMember(id: number, level: UserLevel): void {
-    this.settingsService.removeMember(id, level).subscribe({
-      next: () => {
-        this.allMembers = this.allMembers.filter((m) => m.id !== id);
-        this.menuOpenId = null;
-      },
-      error: (err) => console.error('Erro ao remover membro', err),
-    });
-  }
-
-  openAddMemberModal(): void {
-    this.newMember = { name: '', role: '', detail: '', level: 'atendimento', icon: '👤' };
-    this.showAddMemberModal = true;
-  }
-
-  closeAddMemberModal(): void {
-    this.showAddMemberModal = false;
-  }
-
-  submitNewMember(): void {
-    if (!this.newMember.name.trim() || !this.newMember.role.trim()) return;
-
-    this.loading = true;
+  onSaveMember(entity: Partial<NewMemberForm>): void {
+    if (!entity.username?.trim() || !entity.password?.trim()) {
+      this.notification.warning('Usuário e senha são obrigatórios.');
+      return;
+    }
+    this.loading.set(true);
     this.settingsService
       .createMember({
-        ...this.newMember,
         companyId: this.companyId,
-        specialty: this.newMember.role,
+        username: entity.username,
+        password: entity.password,
+        role: entity.role ?? 'atendimento',
       })
       .subscribe({
         next: (member) => {
-          this.allMembers = [...this.allMembers, member];
-          this.loading = false;
-          this.closeAddMemberModal();
+          this.members.update((list) => [...list, member]);
+          this.showCreateModal.set(false);
+          this.loading.set(false);
+          this.notification.success('Membro cadastrado com sucesso.');
         },
         error: (err) => {
-          console.error('Erro ao cadastrar membro', err);
-          this.loading = false;
+          const msg = err?.error?.message;
+          this.notification.error(
+            Array.isArray(msg) ? msg.join('<br>') : (msg ?? 'Erro ao cadastrar membro.'),
+          );
+          this.loading.set(false);
         },
       });
   }
 
-  saveCompany(): void {
-    if (!this.companyData) return;
-    this.settingsService.updateCompany(this.companyId, this.companyData).subscribe({
-      next: () => {
-        this.companySaved = true;
-        setTimeout(() => (this.companySaved = false), 2000);
+  openEditModal(member: TeamMember): void {
+    this.editMemberId.set(member.id);
+    this.editMember.set({
+      username: member.username,
+      role: member.role,
+      active: member.active ? 'Ativo' : 'Inativo',
+    });
+    this.showEditModal.set(true);
+  }
+
+  onUpdateMember(entity: Partial<NewMemberForm & { active: string }>): void {
+    const id = this.editMemberId();
+    if (!id) return;
+
+    const dto: Record<string, unknown> = {};
+    if (entity.username?.trim()) dto['username'] = entity.username.trim();
+    if (entity.password?.trim()) dto['password'] = entity.password.trim();
+    if (entity.role) dto['role'] = entity.role;
+    if (entity.active !== undefined) dto['active'] = entity.active; // backend transforma via @Transform
+
+    this.settingsService.updateMember(id, dto as any).subscribe({
+      next: (updated) => {
+        this.members.update((list) => list.map((m) => (m.id === id ? updated : m)));
+        this.showEditModal.set(false);
+        this.notification.success('Membro atualizado com sucesso.');
       },
-      error: (err) => console.error('Erro ao salvar empresa', err),
+      error: (err) => {
+        const msg = err?.error?.message;
+        this.notification.error(
+          Array.isArray(msg) ? msg.join('<br>') : (msg ?? 'Erro ao atualizar membro.'),
+        );
+      },
+    });
+  }
+
+  async removeMember(id: number): Promise<void> {
+    const confirmed = await alertConfirm('Deseja remover este membro?');
+    if (!confirmed) return;
+
+    this.settingsService.removeMember(id).subscribe({
+      next: () => {
+        this.members.update((list) => list.filter((m) => m.id !== id));
+        this.notification.success('Membro removido com sucesso.');
+      },
+      error: (err) => {
+        const msg = err?.error?.message;
+        this.notification.error(
+          Array.isArray(msg) ? msg.join('<br>') : (msg ?? 'Erro ao remover membro.'),
+        );
+      },
+    });
+  }
+
+  saveCompany(): void {
+    const company = this.companyData();
+    if (!company) return;
+    this.settingsService.updateCompany(this.companyId, company).subscribe({
+      next: () => {
+        this.companySaved.set(true);
+        this.notification.success('Dados da empresa salvos.');
+        setTimeout(() => this.companySaved.set(false), 2000);
+      },
+      error: (err) => {
+        const msg = err?.error?.message;
+        this.notification.error(
+          Array.isArray(msg) ? msg.join('<br>') : (msg ?? 'Erro ao salvar empresa.'),
+        );
+      },
     });
   }
 }

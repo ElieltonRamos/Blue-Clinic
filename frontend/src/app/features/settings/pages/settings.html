@@ -13,66 +13,77 @@
     <div class="rounded-xl border border-(--color-border) bg-bg-sidebar p-5">
       <div class="flex items-center justify-between mb-4">
         <p class="text-[13px] font-semibold text-(--color-text-primary)">Dados da Empresa</p>
-        @if (companySaved) {
+        @if (companySaved()) {
           <span class="text-[11px] text-success flex items-center gap-1">✓ Salvo</span>
         }
       </div>
 
-      <div class="grid grid-cols-2 gap-3">
-        <div class="flex flex-col gap-1">
-          <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)"
-            >Razão Social</label
-          >
-          <input
-            [(ngModel)]="companyData.name"
-            (blur)="saveCompany()"
-            type="text"
-            class="bg-bg-card border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
-          />
+      @if (companyData(); as company) {
+        <div class="grid grid-cols-2 gap-3">
+          <div class="flex flex-col gap-1">
+            <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)"
+              >Razão Social</label
+            >
+            <input
+              [ngModel]="company.name"
+              (ngModelChange)="companyData.update(c => c ? { ...c, name: $event } : c)"
+              (blur)="saveCompany()"
+              type="text"
+              class="bg-bg-card border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
+            />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)"
+              >CNPJ</label
+            >
+            <input
+              [ngModel]="company.cnpj"
+              (ngModelChange)="companyData.update(c => c ? { ...c, cnpj: $event } : c)"
+              (blur)="saveCompany()"
+              type="text"
+              class="bg-bg-card border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
+            />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)"
+              >Telefone</label
+            >
+            <input
+              [ngModel]="company.phone"
+              (ngModelChange)="companyData.update(c => c ? { ...c, phone: $event } : c)"
+              (blur)="saveCompany()"
+              type="text"
+              class="bg-bg-card border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
+            />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)"
+              >E-mail</label
+            >
+            <input
+              [ngModel]="company.email"
+              (ngModelChange)="companyData.update(c => c ? { ...c, email: $event } : c)"
+              (blur)="saveCompany()"
+              type="email"
+              class="bg-bg-card border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
+            />
+          </div>
+          <div class="col-span-2 flex flex-col gap-1">
+            <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)"
+              >Endereço</label
+            >
+            <input
+              [ngModel]="company.address"
+              (ngModelChange)="companyData.update(c => c ? { ...c, address: $event } : c)"
+              (blur)="saveCompany()"
+              type="text"
+              class="bg-bg-card border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
+            />
+          </div>
         </div>
-        <div class="flex flex-col gap-1">
-          <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)">CNPJ</label>
-          <input
-            [(ngModel)]="companyData.cnpj"
-            (blur)="saveCompany()"
-            type="text"
-            class="bg-bg-card border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
-          />
-        </div>
-        <div class="flex flex-col gap-1">
-          <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)"
-            >Telefone</label
-          >
-          <input
-            [(ngModel)]="companyData.phone"
-            (blur)="saveCompany()"
-            type="text"
-            class="bg-bg-card border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
-          />
-        </div>
-        <div class="flex flex-col gap-1">
-          <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)"
-            >E-mail</label
-          >
-          <input
-            [(ngModel)]="companyData.email"
-            (blur)="saveCompany()"
-            type="email"
-            class="bg-bg-card border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
-          />
-        </div>
-        <div class="col-span-2 flex flex-col gap-1">
-          <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)"
-            >Endereço</label
-          >
-          <input
-            [(ngModel)]="companyData.address"
-            (blur)="saveCompany()"
-            type="text"
-            class="bg-bg-card border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
-          />
-        </div>
-      </div>
+      } @else {
+        <p class="text-[12px] text-(--color-text-muted)">Carregando dados da empresa...</p>
+      }
     </div>
 
     <!-- Profissionais e Recepção -->
@@ -82,19 +93,30 @@
           Profissionais e Recepção
         </p>
         <div class="flex items-center gap-2">
+          <select
+            [ngModel]="roleFilter()"
+            (ngModelChange)="roleFilter.set($event); onFilterChange()"
+            class="bg-bg-card border border-(--color-border) rounded-lg px-3 py-1.5 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
+          >
+            <option value="">Todos</option>
+            <option value="medico">Médico</option>
+            <option value="atendimento">Atendimento</option>
+            <option value="admin">Admin</option>
+          </select>
           <div
             class="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-(--color-border) bg-bg-card"
           >
             <span class="text-[12px] text-(--color-text-muted)">🔍</span>
             <input
-              [(ngModel)]="memberFilter"
+              [ngModel]="memberFilter()"
+              (ngModelChange)="memberFilter.set($event); onFilterChange()"
               type="text"
-              placeholder="Buscar por nome..."
+              placeholder="Buscar por usuário..."
               class="bg-transparent text-[12px] text-(--color-text-primary) placeholder:text-(--color-text-muted) outline-none w-36"
             />
           </div>
           <button
-            (click)="openAddMemberModal()"
+            (click)="openCreateModal()"
             class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-(--color-primary) text-(--color-text-inverse) text-[12px] font-medium hover:bg-(--color-primary-hover) transition-colors"
           >
             ＋ Cadastrar
@@ -103,59 +125,47 @@
       </div>
 
       <div class="flex flex-col divide-y divide-(--color-border)">
-        @for (member of members; track member.id) {
+        @for (member of members(); track member.id) {
           <div class="flex items-center gap-4 py-3 relative">
             <div
               class="w-10 h-10 rounded-full bg-(--color-bg-overlay) border border-(--color-border-md) flex items-center justify-center text-lg shrink-0"
             >
-              {{ member.icon }}
+              👤
             </div>
             <div class="flex-1">
-              <p class="text-[13px] font-medium text-(--color-text-primary)">{{ member.name }}</p>
+              <p class="text-[13px] font-medium text-(--color-text-primary)">
+                {{ member.username }}
+              </p>
               <p class="text-[11px] text-(--color-text-muted)">
-                {{ member.role }} • {{ member.detail }}
+                Desde {{ member.createdAt | date: 'dd/MM/yyyy' }}
               </p>
             </div>
             <span
               class="text-[10px] font-semibold px-3 py-1 rounded-full uppercase tracking-wide"
-              [class]="levelClass(member.level)"
+              [class]="levelClass(member.role)"
             >
-              Nível: {{ levelLabel(member.level) }}
+              {{ levelLabel(member.role) }}
             </span>
-            <div class="relative">
+            <div class="flex items-center gap-1">
               <button
-                (click)="toggleMenu(member.id)"
+                (click)="openEditModal(member)"
                 class="w-7 h-7 flex items-center justify-center rounded-lg text-(--color-text-muted) hover:bg-(--color-bg-hover-md) hover:text-(--color-text-primary) transition-colors"
+                title="Editar"
               >
-                ⋮
+                ✏️
               </button>
-              @if (menuOpenId === member.id) {
-                <div
-                  class="absolute right-0 top-8 z-10 w-40 rounded-xl border border-(--color-border-md) bg-bg-card shadow-lg py-1 overflow-hidden"
-                >
-                  <button
-                    class="w-full text-left px-3 py-2 text-[12px] text-(--color-text-primary) hover:bg-(--color-bg-hover-md) transition-colors"
-                  >
-                    ✏️ Editar
-                  </button>
-                  <button
-                    class="w-full text-left px-3 py-2 text-[12px] text-(--color-text-primary) hover:bg-(--color-bg-hover-md) transition-colors"
-                  >
-                    🔑 Redefinir Senha
-                  </button>
-                  <button
-                    (click)="removeMember(member.id)"
-                    class="w-full text-left px-3 py-2 text-[12px] text-(--color-danger) hover:bg-danger-subtle transition-colors"
-                  >
-                    🗑️ Remover
-                  </button>
-                </div>
-              }
+              <button
+                (click)="removeMember(member.id)"
+                class="w-7 h-7 flex items-center justify-center rounded-lg text-(--color-danger) hover:bg-danger-subtle transition-colors"
+                title="Remover"
+              >
+                🗑️
+              </button>
             </div>
           </div>
         }
 
-        @if (members.length === 0) {
+        @if (members().length === 0) {
           <p class="text-center text-[12px] text-(--color-text-muted) py-6">
             Nenhum profissional encontrado.
           </p>
@@ -176,7 +186,9 @@
           <span class="text-[12px] font-medium text-success">Conectado</span>
         </div>
       </div>
-      <p class="text-[11px] text-(--color-text-muted)">{{ integration.syncInfo }}</p>
+      @if (integration(); as integ) {
+        <p class="text-[11px] text-(--color-text-muted)">Instance: {{ integ.instanceId }}</p>
+      }
     </div>
   </div>
 
@@ -188,90 +200,21 @@
   </div>
 </div>
 
-<!-- Modal: Cadastrar Usuário -->
-@if (showAddMemberModal) {
-  <div
-    class="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-    (click)="closeAddMemberModal()"
-  >
-    <div
-      class="bg-bg-card rounded-2xl border border-(--color-border-md) shadow-xl p-6 w-full max-w-md flex flex-col gap-4"
-      (click)="$event.stopPropagation()"
-    >
-      <div class="flex items-center justify-between">
-        <p class="text-[14px] font-semibold text-(--color-text-primary)">Cadastrar Usuário</p>
-        <button
-          (click)="closeAddMemberModal()"
-          class="w-7 h-7 flex items-center justify-center rounded-lg text-(--color-text-muted) hover:bg-(--color-bg-hover-md) transition-colors"
-        >
-          ✕
-        </button>
-      </div>
+<!-- modais no final do template, antes de fechar -->
+<app-modal-edit-entity
+  title="Cadastrar Usuário"
+  [show]="showCreateModal()"
+  [entity]="newMember()"
+  [fields]="memberCreateFields"
+  (close)="showCreateModal.set(false)"
+  (save)="onSaveMember($event)"
+/>
 
-      <div class="flex flex-col gap-3">
-        <div class="flex flex-col gap-1">
-          <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)"
-            >Nome completo *</label
-          >
-          <input
-            [(ngModel)]="newMember.name"
-            type="text"
-            placeholder="Ex: Dr. João Silva"
-            class="bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
-          />
-        </div>
-        <div class="flex flex-col gap-1">
-          <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)"
-            >Cargo / Especialidade *</label
-          >
-          <input
-            [(ngModel)]="newMember.role"
-            type="text"
-            placeholder="Ex: Cardiologista"
-            class="bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
-          />
-        </div>
-        <div class="flex flex-col gap-1">
-          <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)"
-            >Detalhe (CRM / Turno)</label
-          >
-          <input
-            [(ngModel)]="newMember.detail"
-            type="text"
-            placeholder="Ex: CRM 12345-SP"
-            class="bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
-          />
-        </div>
-        <div class="flex flex-col gap-1">
-          <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)"
-            >Nível de Acesso</label
-          >
-          <select
-            [(ngModel)]="newMember.level"
-            class="bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
-          >
-            <option value="medico">Médico</option>
-            <option value="atendimento">Atendimento</option>
-            <option value="admin">Admin</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="flex justify-end gap-2 pt-1">
-        <button
-          (click)="closeAddMemberModal()"
-          class="px-4 py-2 rounded-lg text-[12px] font-medium text-(--color-text-secondary) hover:bg-(--color-bg-hover-md) transition-colors"
-        >
-          Cancelar
-        </button>
-        <button
-          (click)="submitNewMember()"
-          [disabled]="!newMember.name.trim() || !newMember.role.trim()"
-          class="px-4 py-2 rounded-lg text-[12px] font-medium bg-(--color-primary) text-(--color-text-inverse) hover:bg-(--color-primary-hover) transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          Cadastrar
-        </button>
-      </div>
-    </div>
-  </div>
-}
+<app-modal-edit-entity
+  title="Editar Usuário"
+  [show]="showEditModal()"
+  [entity]="editMember()"
+  [fields]="memberEditFields"
+  (close)="showEditModal.set(false)"
+  (save)="onUpdateMember($event)"
+/>

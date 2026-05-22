@@ -1,4 +1,10 @@
-export type Role = 'admin' | 'medico' | 'balconista';
+export type Role = 'admin' | 'medico' | 'atendimento';
+
+enum Role2 {
+  admin,
+  medico,
+  atendimento,
+}
 
 export interface User {
   id: string;

@@ -6,9 +6,17 @@ import { UsersModule } from './features/users/users.module';
 import { AppointmentsModule } from './features/appointments/appointments.module';
 import { PatientModule } from './features/patient/patient.module';
 import { DoctorsModule } from './features/doctors/doctors.module';
+import { CompanyModule } from './features/company/company.module';
 
 @Module({
-  imports: [LicenseSystemModule, UsersModule, AppointmentsModule, PatientModule, DoctorsModule],
+  imports: [
+    LicenseSystemModule,
+    UsersModule,
+    AppointmentsModule,
+    PatientModule,
+    DoctorsModule,
+    CompanyModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })

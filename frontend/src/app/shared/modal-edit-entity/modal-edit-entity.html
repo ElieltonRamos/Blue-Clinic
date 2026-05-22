@@ -134,3 +134,84 @@
     </div>
   </div>
 }
+
+
+<!-- Modal: Cadastrar Usuário
+@if (showAddMemberModal()) {
+  <div
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+    (click)="closeAddMemberModal()"
+  >
+    <div
+      class="bg-bg-card rounded-2xl border border-(--color-border-md) shadow-xl p-6 w-full max-w-md flex flex-col gap-4"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="flex items-center justify-between">
+        <p class="text-[14px] font-semibold text-(--color-text-primary)">Cadastrar Usuário</p>
+        <button
+          (click)="closeAddMemberModal()"
+          class="w-7 h-7 flex items-center justify-center rounded-lg text-(--color-text-muted) hover:bg-(--color-bg-hover-md) transition-colors"
+        >
+          ✕
+        </button>
+      </div>
+
+      <div class="flex flex-col gap-3">
+        <div class="flex flex-col gap-1">
+          <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)"
+            >Usuário (login) *</label
+          >
+          <input
+            [ngModel]="newMember().username"
+            (ngModelChange)="newMember.update(m => ({ ...m, username: $event }))"
+            type="text"
+            placeholder="Ex: dr.joao"
+            class="bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
+          />
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)"
+            >Senha *</label
+          >
+          <input
+            [ngModel]="newMember().password"
+            (ngModelChange)="newMember.update(m => ({ ...m, password: $event }))"
+            type="password"
+            placeholder="Mínimo 6 caracteres"
+            class="bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
+          />
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)"
+            >Nível de Acesso</label
+          >
+          <select
+            [ngModel]="newMember().role"
+            (ngModelChange)="newMember.update(m => ({ ...m, role: $event }))"
+            class="bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
+          >
+            <option value="medico">Médico</option>
+            <option value="atendimento">Atendimento</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-1">
+        <button
+          (click)="closeAddMemberModal()"
+          class="px-4 py-2 rounded-lg text-[12px] font-medium text-(--color-text-secondary) hover:bg-(--color-bg-hover-md) transition-colors"
+        >
+          Cancelar
+        </button>
+        <button
+          (click)="submitNewMember()"
+          [disabled]="loading()"
+          class="px-4 py-2 rounded-lg text-[12px] font-medium bg-(--color-primary) text-(--color-text-inverse) hover:bg-(--color-primary-hover) transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          {{ loading() ? 'Cadastrando...' : 'Cadastrar' }}
+        </button>
+      </div>
+    </div>
+  </div>
+} -->

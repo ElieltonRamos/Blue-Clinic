@@ -1,4 +1,6 @@
-export type UserLevel = 'medico' | 'atendimento' | 'admin';
+import { Role } from "../../dashboard/types/dashboard.types";
+
+export type UserLevel = Role;
 
 export interface CompanyData {
   id: number;
@@ -11,23 +13,26 @@ export interface CompanyData {
 
 export interface TeamMember {
   id: number;
-  name: string;
-  role: string;
-  detail: string;
-  level: UserLevel;
-  icon: string;
+  companyId: number;
+  username: string;
+  role: UserLevel;
+  active: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface CreateMemberRequest {
   companyId: number;
-  name: string;
-  specialty: string; // para médico
-  role?: string; // para atendimento/admin (mapeado para username no backend)
-  detail?: string;
-  level: UserLevel;
-  icon: string;
-  username?: string;
-  password?: string;
+  username: string;
+  password: string;
+  role: UserLevel;
+  active?: boolean;
+}
+
+export interface NewMemberForm {
+  username: string;
+  password: string;
+  role: UserLevel;
 }
 
 export interface IntegrationStatus {
@@ -38,14 +43,4 @@ export interface IntegrationStatus {
   reminderHours: number;
   humanFallback: boolean;
   syncInfo?: string;
-}
-
-export interface NewMemberForm {
-  name: string;
-  role: string;
-  detail: string;
-  level: UserLevel;
-  icon: string;
-  username?: string;
-  password?: string;
 }
