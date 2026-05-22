@@ -67,6 +67,22 @@ export class Settings implements OnInit {
       type: 'select',
       options: ['medico', 'atendimento', 'admin'],
     },
+    {
+      name: 'name',
+      label: 'Nome completo',
+      type: 'text',
+      placeholder: 'Ex: Dr. João Silva',
+      required: true,
+      visibleWhen: (e) => e.role === 'medico',
+    },
+    {
+      name: 'specialty',
+      label: 'Especialidade',
+      type: 'text',
+      placeholder: 'Ex: Cardiologia',
+      required: true,
+      visibleWhen: (e) => e.role === 'medico',
+    },
   ];
 
   memberEditFields: FormField[] = [
@@ -172,6 +188,10 @@ export class Settings implements OnInit {
         username: entity.username,
         password: entity.password,
         role: entity.role ?? 'atendimento',
+        ...(entity.role === 'medico' && {
+          name: entity.name,
+          specialty: entity.specialty,
+        }),
       })
       .subscribe({
         next: (member) => {

@@ -8,6 +8,7 @@ export interface FormField {
   placeholder?: string;
   options?: string[];
   required?: boolean;
+  visibleWhen?: (entity: any) => boolean;
 }
 
 @Component({

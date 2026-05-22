@@ -65,6 +65,11 @@ enum RecurrenceType {
   monthly
 }
 
+enum CommissionType {
+  percentage
+  fixed
+}
+
 model Company {
   id           Int     @id @default(autoincrement())
   name         String
@@ -82,10 +87,55 @@ model Company {
   blockedSlots   BlockedSlot[]
   whatsappConfig WhatsappConfig?
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  appointmentTypes AppointmentType[]
 
   @@map("company")
+}
+
+model DoctorSchedule {
+  id        Int     @id @default(autoincrement())
+  doctorId  Int
+  dayOfWeek Int // 0=Dom, 6=Sáb
+  startTime String
+  endTime   String
+  active    Boolean @default(true)
+
+  doctor Doctor @relation(fields: [doctorId], references: [id])
+
+  @@unique([doctorId, dayOfWeek])
+  @@map("doctor_schedule")
+}
+
+model AppointmentType {
+  id        Int     @id @default(autoincrement())
+  companyId Int
+  name      String
+  duration  Int // minutos
+  active    Boolean @default(true)
+
+  company      Company                     @relation(fields: [companyId], references: [id])
+  commissions  AppointmentTypeCommission[]
+  appointments Appointment[]
+
+  @@map("appointment_type")
+}
+
+model AppointmentTypeCommission {
+  id                Int            @id @default(autoincrement())
+  doctorId          Int
+  appointmentTypeId Int
+  doctorRateType    CommissionType
+  doctorRate        Decimal        @db.Decimal(10, 2)
+  clinicRateType    CommissionType
+  clinicRate        Decimal        @db.Decimal(10, 2)
+
+  doctor          Doctor          @relation(fields: [doctorId], references: [id])
+  appointmentType AppointmentType @relation(fields: [appointmentTypeId], references: [id])
+
+  @@unique([doctorId, appointmentTypeId])
+  @@map("appointment_type_commission")
 }
 
 model User {
@@ -122,8 +172,10 @@ model Doctor {
   appointments Appointment[]
   blockedSlots BlockedSlot[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt                  DateTime                    @default(now())
+  updatedAt                  DateTime                    @updatedAt
+  doctorSchedules            DoctorSchedule[]
+  appointmentTypeCommissions AppointmentTypeCommission[]
 
   @@map("doctor")
 }
@@ -168,21 +220,24 @@ model PatientDocument {
 }
 
 model Appointment {
-  id          Int               @id @default(autoincrement())
-  doctorId    Int
-  patientId   Int
-  specialty   String
-  date        DateTime
-  startTime   String
-  endTime     String
-  status      AppointmentStatus @default(pending)
-  responsible String?
-  notes       String?
+  id                Int               @id @default(autoincrement())
+  doctorId          Int
+  patientId         Int
+  appointmentTypeId Int?
+  specialty         String
+  date              DateTime
+  startTime         String
+  endTime           String
+  status            AppointmentStatus @default(pending)
+  feeOverride       Decimal?          @db.Decimal(10, 2)
+  responsible       String?
+  notes             String?
 
-  doctor       Doctor        @relation(fields: [doctorId], references: [id])
-  patient      Patient       @relation(fields: [patientId], references: [id])
-  consultation Consultation?
-  payments     Payment[]
+  doctor          Doctor           @relation(fields: [doctorId], references: [id])
+  patient         Patient          @relation(fields: [patientId], references: [id])
+  appointmentType AppointmentType? @relation(fields: [appointmentTypeId], references: [id])
+  consultation    Consultation?
+  payments        Payment[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

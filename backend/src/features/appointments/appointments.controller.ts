@@ -27,11 +27,13 @@ import { AppointmentResponseDto } from './dto/appointment-response.dto.js';
 import { PaymentResponseDto } from './dto/payment-response.dto.js';
 import { BlockedSlotResponseDto } from './dto/blocked-slot-response.dto.js';
 import { AutoConfirmationDto } from './dto/auto-confirmation.dto.js';
+import { AvailableSlotsQueryDto, SlotDto } from './dto/available-slots.dto.js';
 import { JwtAuthGuard } from '../../core/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../../core/guards/roles.guard.js';
 import { CurrentUser } from '../../core/decorators/current-user.decorator.js';
+import { Roles } from '../../core/decorators/roles.decorator.js';
 
-@ApiTags('appointments')
+@ApiTags('Agendamentos')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('appointments')
@@ -39,6 +41,7 @@ export class AppointmentsController {
   constructor(private readonly appointmentsService: AppointmentsService) {}
 
   @Get()
+  @Roles('admin', 'atendimento', 'medico')
   @ApiOperation({ summary: 'Listar agendamentos' })
   @ApiQuery({ name: 'month', required: false, example: '2025-06' })
   @ApiQuery({ name: 'doctorId', required: false, type: Number })
@@ -64,6 +67,7 @@ export class AppointmentsController {
   }
 
   @Get('blocked-slots')
+  @Roles('admin', 'atendimento', 'medico')
   @ApiOperation({ summary: 'Listar slots bloqueados' })
   @ApiQuery({ name: 'doctorId', required: false, type: Number })
   @ApiResponse({ status: HttpStatus.OK, type: [BlockedSlotResponseDto] })
@@ -75,6 +79,7 @@ export class AppointmentsController {
   }
 
   @Get('auto-confirmation')
+  @Roles('admin', 'atendimento')
   @ApiOperation({ summary: 'Estatísticas de confirmação automática' })
   @ApiQuery({ name: 'month', required: true, example: '2025-06' })
   @ApiResponse({ status: HttpStatus.OK, type: AutoConfirmationDto })
@@ -85,7 +90,25 @@ export class AppointmentsController {
     return this.appointmentsService.getAutoConfirmation(companyId, month);
   }
 
+  @Get('slots')
+  @Roles('admin', 'atendimento', 'medico')
+  @ApiOperation({
+    summary: 'Listar slots disponíveis por médico, data e tipo de consulta',
+  })
+  @ApiResponse({ status: HttpStatus.OK, type: [SlotDto] })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Tipo de consulta não encontrado',
+  })
+  getAvailableSlots(
+    @CurrentUser('companyId') companyId: number,
+    @Query() query: AvailableSlotsQueryDto,
+  ): Promise<SlotDto[]> {
+    return this.appointmentsService.getAvailableSlots(companyId, query);
+  }
+
   @Get(':id')
+  @Roles('admin', 'atendimento', 'medico')
   @ApiOperation({ summary: 'Buscar agendamento por ID' })
   @ApiParam({ name: 'id', type: Number })
   @ApiResponse({ status: HttpStatus.OK, type: AppointmentResponseDto })
@@ -101,6 +124,7 @@ export class AppointmentsController {
   }
 
   @Post()
+  @Roles('admin', 'atendimento')
   @ApiOperation({ summary: 'Criar agendamento' })
   @ApiResponse({ status: HttpStatus.CREATED, type: AppointmentResponseDto })
   @ApiResponse({
@@ -115,6 +139,7 @@ export class AppointmentsController {
   }
 
   @Patch(':id')
+  @Roles('admin', 'atendimento')
   @ApiOperation({ summary: 'Atualizar agendamento' })
   @ApiParam({ name: 'id', type: Number })
   @ApiResponse({ status: HttpStatus.OK, type: AppointmentResponseDto })
@@ -131,6 +156,7 @@ export class AppointmentsController {
   }
 
   @Post(':id/payments')
+  @Roles('admin', 'atendimento')
   @ApiOperation({ summary: 'Registrar pagamento de agendamento' })
   @ApiParam({ name: 'id', type: Number })
   @ApiResponse({ status: HttpStatus.CREATED, type: PaymentResponseDto })

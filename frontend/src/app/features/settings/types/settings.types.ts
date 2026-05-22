@@ -26,12 +26,16 @@ export interface CreateMemberRequest {
   password: string;
   role: UserLevel;
   active?: boolean;
+  name?: string;
+  specialty?: string;
 }
 
 export interface NewMemberForm {
   username: string;
   password: string;
   role: UserLevel;
+  name?: string;
+  specialty?: string;
 }
 
 export interface IntegrationStatus {
