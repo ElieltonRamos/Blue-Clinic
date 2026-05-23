@@ -9,6 +9,8 @@ import { Reports } from './features/reports/pages/reports';
 import { Settings } from './features/settings/pages/settings';
 import { Financial } from './features/financial/pages/financial';
 import { authGuard } from './core/guards/auth.guard';
+import { Schedule } from './features/schedule/pages/schedule';
+import { AppointmentTypes } from './features/appointment-types/pages/appointment-types';
 
 export const routes: Routes = [
   {
@@ -47,6 +49,14 @@ export const routes: Routes = [
       {
         path: 'financeiro',
         component: Financial,
+      },
+      {
+        path: 'agenda-config',
+        component: Schedule,
+      },
+      {
+        path: 'tipos-consulta',
+        component: AppointmentTypes,
       },
     ],
   },

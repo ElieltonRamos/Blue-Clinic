@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-return */
 import {
   Controller,
   Get,
@@ -34,6 +33,7 @@ import { CommissionResponseDto } from './dto/commission-response.dto.js';
 import { JwtAuthGuard } from '../../core/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../../core/guards/roles.guard.js';
 import { Roles } from '../../core/decorators/roles.decorator.js';
+import { CurrentUser } from '../../core/decorators/current-user.decorator.js';
 
 @ApiTags('Médicos')
 @ApiBearerAuth()
@@ -60,6 +60,18 @@ export class DoctorsController {
   @ApiResponse({ status: 200, type: [DoctorResponseDto] })
   findAll(@Query() filters: DoctorFiltersDto): Promise<DoctorResponseDto[]> {
     return this.doctorsService.findAll(filters);
+  }
+
+  @Get('me')
+  @Roles('medico')
+  @ApiOperation({ summary: 'Buscar médico do usuário logado' })
+  @ApiResponse({ status: 200, type: DoctorResponseDto })
+  @ApiResponse({
+    status: 404,
+    description: 'Médico não encontrado para este usuário',
+  })
+  findMe(@CurrentUser('userId') userId: number): Promise<DoctorResponseDto> {
+    return this.doctorsService.findMe(userId);
   }
 
   @Get(':id')

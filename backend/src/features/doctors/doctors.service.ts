@@ -141,6 +141,16 @@ export class DoctorsService {
     return this.format(await this.findActiveDoctorById(id));
   }
 
+  async findMe(userId: number): Promise<DoctorResponseDto> {
+    const doctor = await this.prisma.client.doctor.findFirst({
+      where: { userId, active: true },
+      include: DOCTOR_INCLUDE,
+    });
+    if (!doctor)
+      throw new NotFoundException('Médico não encontrado para este usuário');
+    return this.format(doctor);
+  }
+
   async update(id: number, dto: UpdateDoctorDto): Promise<DoctorResponseDto> {
     this.validateId(id);
     const existing = await this.findActiveDoctorById(id);

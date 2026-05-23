@@ -31,6 +31,18 @@ export class AppLayout {
   mainNav: NavItem[] = [
     { label: 'Dashboard', title: 'Visão Geral da Clínica', route: '/dashboard', icon: 'grid' },
     { label: 'Agenda', title: 'Agenda', route: '/dashboard/agenda', icon: 'calendar' },
+    {
+      label: 'Config. Agenda',
+      title: 'Configuração de Agenda',
+      route: '/dashboard/agenda-config',
+      icon: 'clock',
+    },
+    {
+      label: 'Tipos Consulta',
+      title: 'Tipos de Consulta',
+      route: '/dashboard/tipos-consulta',
+      icon: 'tag',
+    },
     { label: 'Pacientes', title: 'Pacientes', route: '/dashboard/pacientes', icon: 'users' },
     {
       label: 'Chat/Automação',
