@@ -11,6 +11,8 @@ import {
 } from '../types/calendar.types';
 import { CalendarService } from '../services/calendar.service';
 import { PaymentMethod } from '../../financial/types/financial.types';
+import { CreateAppointmentModal } from '../../../shared/create-appointment-modal/pages/create-appointment-modal';
+import { AppointmentResponse } from '../../../shared/create-appointment-modal/types/create-appointment.types';
 
 export interface CalendarDay {
   date: Date;
@@ -37,7 +39,7 @@ const PAYMENT_METHODS: { method: PaymentMethod; label: string }[] = [
 @Component({
   selector: 'app-agenda',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, CreateAppointmentModal],
   templateUrl: './calendar.html',
 })
 export class Calendar implements OnInit {
@@ -54,6 +56,7 @@ export class Calendar implements OnInit {
   blockedHours: BlockedHour[] = [];
   autoConfirmation: AutoConfirmation = { confirmed: 0, total: 0 };
   selectedDay: CalendarDay | null = null;
+  showCreateModal = false;
 
   contextMenu: ContextMenu | null = null;
   paymentModal: Appointment | null = null;
@@ -135,7 +138,12 @@ export class Calendar implements OnInit {
   }
 
   createAppointment(): void {
-    // TODO
+    this.showCreateModal = true;
+  }
+
+  onAppointmentCreated(appointment: AppointmentResponse): void {
+    this.showCreateModal = false;
+    this.loadMonthData(); // recarrega o calendário
   }
 
   // ── Context menu ──────────────────────────────────────────────

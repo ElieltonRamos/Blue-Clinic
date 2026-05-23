@@ -1,0 +1,466 @@
+<ng-template cdkPortal>
+  <div
+    class="bg-bg-card rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden border border-(--color-border-md) flex flex-col"
+    (click)="onModalClick($event)"
+  >
+    <!-- Header -->
+    <div
+      class="px-6 py-4 flex items-center justify-between border-b border-(--color-border) shrink-0"
+    >
+      <div>
+        <p class="text-[11px] font-bold text-(--color-text-muted) uppercase tracking-widest mb-0.5">
+          Novo Agendamento
+        </p>
+        <h2 class="text-base font-semibold text-(--color-text-primary)">
+          {{ stepLabels[currentStep()] }}
+        </h2>
+      </div>
+      <button
+        (click)="closeModal()"
+        class="w-8 h-8 flex items-center justify-center rounded-lg text-(--color-text-muted) hover:bg-(--color-bg-hover-md) transition-colors"
+      >
+        ✕
+      </button>
+    </div>
+
+    <!-- Steps indicator -->
+    <div class="px-6 py-3 flex items-center gap-1 border-b border-(--color-border) shrink-0">
+      @for (step of steps; track step; let i = $index) {
+        <button
+          (click)="goToStep(step)"
+          class="flex items-center gap-1.5 text-[10px] font-medium transition-colors px-2 py-1 rounded-lg"
+          [class]="
+            i <= stepIndex()
+              ? 'text-(--color-primary-text) bg-(--color-primary-subtle)'
+              : 'text-text-disabled cursor-default'
+          "
+        >
+          <span
+            class="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0"
+            [class]="
+              i < stepIndex()
+                ? 'bg-success text-white'
+                : i === stepIndex()
+                  ? 'bg-(--color-primary) text-white'
+                  : 'bg-(--color-bg-hover-md) text-text-disabled'
+            "
+          >
+            @if (i < stepIndex()) {
+              ✓
+            } @else {
+              {{ i + 1 }}
+            }
+          </span>
+          <span class="hidden sm:inline">{{ stepLabels[step] }}</span>
+        </button>
+        @if (i < steps.length - 1) {
+          <span class="text-(--color-border-md) text-xs mx-0.5">›</span>
+        }
+      }
+    </div>
+
+    <!-- Body -->
+    <div class="flex-1 overflow-y-auto p-6">
+      <!-- ── Step: Doctor ── -->
+      @if (currentStep() === 'doctor') {
+        <div class="space-y-3">
+          <input
+            type="text"
+            [(ngModel)]="doctorSearchQuery"
+            (ngModelChange)="onDoctorSearchChange()"
+            placeholder="Buscar por nome ou especialidade..."
+            class="w-full bg-(--color-bg-overlay) border border-(--color-border) rounded-xl px-3 py-2.5 text-sm text-(--color-input-text) placeholder:text-(--color-input-placeholder) outline-none focus:border-(--color-primary) transition-colors"
+          />
+
+          @if (loadingDoctors) {
+            <div class="flex justify-center py-8">
+              <div
+                class="w-6 h-6 border-2 border-(--color-primary) border-t-transparent rounded-full animate-spin"
+              ></div>
+            </div>
+          } @else {
+            <div class="space-y-2">
+              @for (doctor of doctors; track doctor.id) {
+                <button
+                  (click)="selectDoctor(doctor)"
+                  class="w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left"
+                  [class]="
+                    selectedDoctor?.id === doctor.id
+                      ? 'border-(--color-primary)/60 bg-(--color-primary-subtle)'
+                      : 'border-(--color-border) bg-(--color-bg-overlay) hover:border-(--color-border-md) hover:bg-(--color-bg-hover-md)'
+                  "
+                >
+                  <div
+                    class="w-9 h-9 rounded-full bg-(--color-primary-subtle) flex items-center justify-center text-sm font-bold text-(--color-primary-text) shrink-0"
+                  >
+                    {{ doctor.name.charAt(0).toUpperCase() }}
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-(--color-text-primary) truncate">
+                      {{ doctor.name }}
+                    </p>
+                    <p class="text-[11px] text-(--color-text-muted)">{{ doctor.specialty }}</p>
+                  </div>
+                  <div class="flex gap-1 flex-wrap justify-end">
+                    @for (s of doctor.schedules; track s.id) {
+                      @if (s.active) {
+                        <span
+                          class="text-[9px] bg-(--color-bg-hover-md) text-(--color-text-secondary) px-1.5 py-0.5 rounded font-medium"
+                        >
+                          {{ dayLabel(s.dayOfWeek) }}
+                        </span>
+                      }
+                    }
+                  </div>
+                  @if (selectedDoctor?.id === doctor.id) {
+                    <span class="text-(--color-primary-text) text-sm shrink-0">✓</span>
+                  }
+                </button>
+              }
+              @if (doctors.length === 0 && !loadingDoctors) {
+                <p class="text-center text-sm text-(--color-text-muted) py-6">
+                  Nenhum médico encontrado
+                </p>
+              }
+            </div>
+          }
+        </div>
+      }
+
+      <!-- ── Step: Type ── -->
+      @if (currentStep() === 'type') {
+        <div class="space-y-2">
+          @if (loadingTypes) {
+            <div class="flex justify-center py-8">
+              <div
+                class="w-6 h-6 border-2 border-(--color-primary) border-t-transparent rounded-full animate-spin"
+              ></div>
+            </div>
+          } @else {
+            @for (type of appointmentTypes; track type.id) {
+              <button
+                (click)="selectType(type)"
+                class="w-full flex items-center justify-between p-3 rounded-xl border transition-all text-left"
+                [class]="
+                  selectedType?.id === type.id
+                    ? 'border-(--color-primary)/60 bg-(--color-primary-subtle)'
+                    : 'border-(--color-border) bg-(--color-bg-overlay) hover:border-(--color-border-md) hover:bg-(--color-bg-hover-md)'
+                "
+              >
+                <div>
+                  <p class="text-sm font-medium text-(--color-text-primary)">{{ type.name }}</p>
+                  <p class="text-[11px] text-(--color-text-muted)">
+                    Duração: {{ type.duration }} min
+                  </p>
+                </div>
+                @if (selectedType?.id === type.id) {
+                  <span class="text-(--color-primary-text)">✓</span>
+                }
+              </button>
+            }
+            @if (appointmentTypes.length === 0) {
+              <p class="text-center text-sm text-(--color-text-muted) py-6">
+                Nenhum tipo de consulta cadastrado
+              </p>
+            }
+          }
+        </div>
+      }
+
+      <!-- ── Step: Date ── -->
+      @if (currentStep() === 'date') {
+        <div class="space-y-4">
+          <div>
+            <label
+              class="block text-[10px] font-semibold text-(--color-text-muted) uppercase tracking-widest mb-2"
+            >
+              Selecione a data
+            </label>
+            <input
+              type="date"
+              [(ngModel)]="selectedDate"
+              [min]="minDate"
+              class="w-full bg-(--color-bg-overlay) border border-(--color-border) rounded-xl px-3 py-2.5 text-sm text-(--color-input-text) outline-none focus:border-(--color-primary) transition-colors"
+            />
+          </div>
+
+          @if (selectedDate && !isValidDay()) {
+            <div
+              class="flex items-center gap-2 p-3 rounded-xl bg-danger-subtle border border-(--color-danger)/30"
+            >
+              <span class="text-(--color-danger) text-sm">⚠</span>
+              <p class="text-[12px] text-(--color-danger)">{{ invalidDayMessage }}</p>
+            </div>
+          }
+
+          @if (selectedDate && isValidDay()) {
+            <div
+              class="flex items-center gap-2 p-3 rounded-xl bg-success-subtle border border-success/30"
+            >
+              <span class="text-sm">✓</span>
+              <p class="text-[12px] text-success capitalize">{{ formattedDate }}</p>
+            </div>
+          }
+
+          @if (selectedDoctor) {
+            <div>
+              <p
+                class="text-[10px] font-semibold text-(--color-text-muted) uppercase tracking-widest mb-2"
+              >
+                Dias disponíveis
+              </p>
+              <div class="flex gap-2 flex-wrap">
+                @for (s of selectedDoctor.schedules; track s.id) {
+                  @if (s.active) {
+                    <span
+                      class="text-[11px] bg-(--color-primary-subtle) text-(--color-primary-text) px-2.5 py-1 rounded-lg font-medium"
+                    >
+                      {{ dayLabel(s.dayOfWeek) }} · {{ s.startTime }}–{{ s.endTime }}
+                    </span>
+                  }
+                }
+              </div>
+            </div>
+          }
+        </div>
+      }
+
+      <!-- ── Step: Slot ── -->
+      @if (currentStep() === 'slot') {
+        <div class="space-y-3">
+          @if (loadingSlots) {
+            <div class="flex justify-center py-8">
+              <div
+                class="w-6 h-6 border-2 border-(--color-primary) border-t-transparent rounded-full animate-spin"
+              ></div>
+            </div>
+          } @else if (slots.length === 0) {
+            <p class="text-center text-sm text-(--color-text-muted) py-6">
+              Nenhum horário disponível para este dia
+            </p>
+          } @else {
+            <div class="flex items-center justify-between mb-1">
+              <p
+                class="text-[10px] font-semibold text-(--color-text-muted) uppercase tracking-widest"
+              >
+                {{ availableSlots.length }} horários livres · {{ unavailableSlots.length }} ocupados
+              </p>
+            </div>
+            <div class="grid grid-cols-4 gap-2">
+              @for (slot of slots; track slot.startTime) {
+                <button
+                  (click)="selectSlot(slot)"
+                  [disabled]="slot.status !== 'available'"
+                  class="flex flex-col items-center p-2 rounded-xl border text-center transition-all"
+                  [class]="
+                    isSelectedSlot(slot)
+                      ? 'border-(--color-primary) bg-(--color-primary-subtle) text-(--color-primary-text)'
+                      : slotStatusClass(slot)
+                  "
+                  [title]="slot.reason ?? ''"
+                >
+                  <span class="text-[12px] font-semibold">{{ slot.startTime }}</span>
+                  <span class="text-[9px] mt-0.5 opacity-70">{{ slot.endTime }}</span>
+                  @if (slot.status !== 'available') {
+                    <span class="text-[9px] mt-1 truncate w-full">
+                      {{ slot.status === 'booked' ? '🔒' : '🚫' }}
+                    </span>
+                  }
+                </button>
+              }
+            </div>
+          }
+        </div>
+      }
+
+      <!-- ── Step: Patient ── -->
+      @if (currentStep() === 'patient') {
+        <div class="space-y-3">
+          <input
+            type="text"
+            [(ngModel)]="patientSearchQuery"
+            (ngModelChange)="onPatientSearchChange()"
+            placeholder="Buscar paciente por nome, CPF ou telefone..."
+            class="w-full bg-(--color-bg-overlay) border border-(--color-border) rounded-xl px-3 py-2.5 text-sm text-(--color-input-text) placeholder:text-(--color-input-placeholder) outline-none focus:border-(--color-primary) transition-colors"
+          />
+
+          @if (loadingPatients) {
+            <div class="flex justify-center py-4">
+              <div
+                class="w-5 h-5 border-2 border-(--color-primary) border-t-transparent rounded-full animate-spin"
+              ></div>
+            </div>
+          }
+
+          @if (patients.length > 0) {
+            <div class="space-y-1.5">
+              @for (patient of patients; track patient.id) {
+                <button
+                  (click)="selectPatient(patient)"
+                  class="w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left"
+                  [class]="
+                    selectedPatient?.id === patient.id
+                      ? 'border-(--color-primary)/60 bg-(--color-primary-subtle)'
+                      : 'border-(--color-border) bg-(--color-bg-overlay) hover:border-(--color-border-md)'
+                  "
+                >
+                  <div
+                    class="w-8 h-8 rounded-full bg-(--color-bg-hover-md) flex items-center justify-center text-xs font-bold text-(--color-text-secondary) shrink-0"
+                  >
+                    {{ patient.name.charAt(0).toUpperCase() }}
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-(--color-text-primary) truncate">
+                      {{ patient.name }}
+                    </p>
+                    <p class="text-[11px] text-(--color-text-muted)">
+                      {{ patient.phone ?? patient.cpf ?? '—' }}
+                    </p>
+                  </div>
+                  @if (selectedPatient?.id === patient.id) {
+                    <span class="text-(--color-primary-text)">✓</span>
+                  }
+                </button>
+              }
+            </div>
+          }
+
+          @if (selectedPatient && patients.length === 0) {
+            <div
+              class="flex items-center gap-3 p-3 rounded-xl border border-success/40 bg-success-subtle"
+            >
+              <div
+                class="w-8 h-8 rounded-full bg-success/20 flex items-center justify-center text-xs font-bold text-success shrink-0"
+              >
+                {{ selectedPatient.name.charAt(0).toUpperCase() }}
+              </div>
+              <div>
+                <p class="text-sm font-medium text-(--color-text-primary)">
+                  {{ selectedPatient.name }}
+                </p>
+                <p class="text-[11px] text-success">Selecionado</p>
+              </div>
+            </div>
+          }
+
+          @if (
+            patientSearchQuery.length >= 2 &&
+            patients.length === 0 &&
+            !loadingPatients &&
+            !selectedPatient
+          ) {
+            <p class="text-center text-sm text-(--color-text-muted) py-4">
+              Nenhum paciente encontrado
+            </p>
+          }
+
+          @if (patientSearchQuery.length < 2 && !selectedPatient) {
+            <p class="text-center text-[11px] text-(--color-text-muted) py-4">
+              Digite ao menos 2 caracteres para buscar
+            </p>
+          }
+        </div>
+      }
+
+      <!-- ── Step: Confirm ── -->
+      @if (currentStep() === 'confirm') {
+        <div class="space-y-3">
+          <!-- Resumo -->
+          <div class="rounded-xl border border-(--color-border) overflow-hidden">
+            @for (
+              row of [
+                { label: 'Médico', value: selectedDoctor?.name },
+                { label: 'Especialidade', value: selectedDoctor?.specialty },
+                {
+                  label: 'Tipo',
+                  value: selectedType?.name + ' (' + selectedType?.duration + ' min)',
+                },
+                { label: 'Data', value: formattedDate },
+                {
+                  label: 'Horário',
+                  value: selectedSlot?.startTime + ' – ' + selectedSlot?.endTime,
+                },
+                { label: 'Paciente', value: selectedPatient?.name },
+              ];
+              track row.label
+            ) {
+              <div
+                class="flex items-center justify-between px-4 py-2.5 border-b border-(--color-border) last:border-b-0"
+              >
+                <span class="text-[11px] text-(--color-text-muted)">{{ row.label }}</span>
+                <span class="text-[12px] font-medium text-(--color-text-primary)">{{
+                  row.value
+                }}</span>
+              </div>
+            }
+          </div>
+
+          <!-- Campos opcionais -->
+          <div>
+            <label
+              class="block text-[10px] font-semibold text-(--color-text-muted) uppercase tracking-widest mb-1.5"
+            >
+              Responsável (opcional)
+            </label>
+            <input
+              type="text"
+              [(ngModel)]="responsible"
+              placeholder="Nome do responsável"
+              class="w-full bg-(--color-bg-overlay) border border-(--color-border) rounded-xl px-3 py-2 text-sm text-(--color-input-text) placeholder:text-(--color-input-placeholder) outline-none focus:border-(--color-primary) transition-colors"
+            />
+          </div>
+
+          <div>
+            <label
+              class="block text-[10px] font-semibold text-(--color-text-muted) uppercase tracking-widest mb-1.5"
+            >
+              Observações (opcional)
+            </label>
+            <textarea
+              [(ngModel)]="notes"
+              placeholder="Informações adicionais..."
+              rows="3"
+              class="w-full bg-(--color-bg-overlay) border border-(--color-border) rounded-xl px-3 py-2 text-sm text-(--color-input-text) placeholder:text-(--color-input-placeholder) outline-none focus:border-(--color-primary) transition-colors resize-none"
+            ></textarea>
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- Footer -->
+    <div
+      class="px-6 py-4 flex items-center justify-between border-t border-(--color-border) shrink-0"
+    >
+      <button
+        (click)="goBack()"
+        [class.invisible]="stepIndex() === 0"
+        class="px-4 py-2 rounded-lg text-[12px] font-medium text-(--color-text-secondary) hover:bg-(--color-bg-hover-md) transition-colors"
+      >
+        ← Voltar
+      </button>
+
+      @if (currentStep() !== 'confirm') {
+        <button
+          (click)="goNext()"
+          [disabled]="!canGoNext"
+          class="px-5 py-2 rounded-lg text-[12px] font-medium bg-(--color-btn-primary-bg) text-(--color-btn-primary-text) hover:opacity-90 transition-opacity disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          Próximo →
+        </button>
+      } @else {
+        <button
+          (click)="confirm()"
+          [disabled]="isSaving"
+          class="px-5 py-2 rounded-lg text-[12px] font-medium bg-success text-white hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+        >
+          @if (isSaving) {
+            <span
+              class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"
+            ></span>
+          }
+          {{ isSaving ? 'Salvando...' : '✓ Confirmar Agendamento' }}
+        </button>
+      }
+    </div>
+  </div>
+</ng-template>

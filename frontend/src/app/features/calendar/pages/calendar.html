@@ -336,3 +336,10 @@
     </div>
   </div>
 }
+
+<!-- calendar.html -->
+<app-create-appointment-modal
+  [isOpen]="showCreateModal"
+  (close)="showCreateModal = false"
+  (appointmentCreated)="onAppointmentCreated($event)"
+/>

@@ -191,3 +191,7 @@ img {
     linear-gradient(90deg, var(--color-grid) 1px, transparent 1px);
   background-size: var(--grid-size) var(--grid-size);
 }
+
+.modal-backdrop-dark {
+  background-color: rgba(0, 0, 0, 0.75);
+}
