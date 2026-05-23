@@ -1,6 +1,7 @@
 import { ChangeDetectorRef, Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { HttpErrorResponse } from '@angular/common/http';
 import { ScheduleService } from '../services/schedule.service';
 import {
   AppointmentTypeSummary,
@@ -117,9 +118,9 @@ export class Schedule implements OnInit {
         this.loadingDoctors.set(false);
         this.cdr.detectChanges();
       },
-      error: () => {
+      error: (err: HttpErrorResponse) => {
         this.loadingDoctors.set(false);
-        this.notification.error('Erro ao carregar médicos');
+        this.notification.error(this.getErrorMessage(err, 'Erro ao carregar médicos'));
       },
     });
   }
@@ -135,9 +136,9 @@ export class Schedule implements OnInit {
         this.loading.set(false);
         this.cdr.detectChanges();
       },
-      error: () => {
+      error: (err: HttpErrorResponse) => {
         this.loading.set(false);
-        this.notification.error('Erro ao carregar dados do médico');
+        this.notification.error(this.getErrorMessage(err, 'Erro ao carregar dados do médico'));
       },
     });
   }
@@ -156,9 +157,9 @@ export class Schedule implements OnInit {
         this.loading.set(false);
         this.cdr.detectChanges();
       },
-      error: () => {
+      error: (err: HttpErrorResponse) => {
         this.loading.set(false);
-        this.notification.error('Erro ao carregar médico');
+        this.notification.error(this.getErrorMessage(err, 'Erro ao carregar médico'));
       },
     });
   }
@@ -231,9 +232,9 @@ export class Schedule implements OnInit {
           );
           this.cdr.detectChanges();
         },
-        error: () => {
+        error: (err: HttpErrorResponse) => {
           form.saving = false;
-          this.notification.error('Erro ao atualizar dia');
+          this.notification.error(this.getErrorMessage(err, 'Erro ao atualizar dia'));
           this.cdr.detectChanges();
         },
       });
@@ -261,9 +262,9 @@ export class Schedule implements OnInit {
             this.notification.success('Horário atualizado');
             this.cdr.detectChanges();
           },
-          error: () => {
+          error: (err: HttpErrorResponse) => {
             form.saving = false;
-            this.notification.error('Erro ao atualizar horário');
+            this.notification.error(this.getErrorMessage(err, 'Erro ao atualizar horário'));
             this.cdr.detectChanges();
           },
         });
@@ -284,9 +285,9 @@ export class Schedule implements OnInit {
             this.notification.success(`${this.dayLabels[form.dayOfWeek]} configurado`);
             this.cdr.detectChanges();
           },
-          error: () => {
+          error: (err: HttpErrorResponse) => {
             form.saving = false;
-            this.notification.error('Erro ao criar horário');
+            this.notification.error(this.getErrorMessage(err, 'Erro ao criar horário'));
             this.cdr.detectChanges();
           },
         });
@@ -307,9 +308,9 @@ export class Schedule implements OnInit {
         this.notification.success('Horário removido');
         this.cdr.detectChanges();
       },
-      error: () => {
+      error: (err: HttpErrorResponse) => {
         form.saving = false;
-        this.notification.error('Erro ao remover horário');
+        this.notification.error(this.getErrorMessage(err, 'Erro ao remover horário'));
         this.cdr.detectChanges();
       },
     });
@@ -356,9 +357,9 @@ export class Schedule implements OnInit {
           this.notification.success('Comissão criada');
           this.cdr.detectChanges();
         },
-        error: () => {
+        error: (err: HttpErrorResponse) => {
           this.savingNewCommission = false;
-          this.notification.error('Erro ao criar comissão');
+          this.notification.error(this.getErrorMessage(err, 'Erro ao criar comissão'));
           this.cdr.detectChanges();
         },
       });
@@ -384,9 +385,9 @@ export class Schedule implements OnInit {
           this.notification.success('Comissão atualizada');
           this.cdr.detectChanges();
         },
-        error: () => {
+        error: (err: HttpErrorResponse) => {
           row.saving = false;
-          this.notification.error('Erro ao atualizar comissão');
+          this.notification.error(this.getErrorMessage(err, 'Erro ao atualizar comissão'));
           this.cdr.detectChanges();
         },
       });
@@ -401,9 +402,9 @@ export class Schedule implements OnInit {
         this.notification.success('Comissão removida');
         this.cdr.detectChanges();
       },
-      error: () => {
+      error: (err: HttpErrorResponse) => {
         row.saving = false;
-        this.notification.error('Erro ao remover comissão');
+        this.notification.error(this.getErrorMessage(err, 'Erro ao remover comissão'));
         this.cdr.detectChanges();
       },
     });
@@ -447,6 +448,14 @@ export class Schedule implements OnInit {
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
+
+  private getErrorMessage(err: HttpErrorResponse, defaultMsg: string): string {
+    const nestMessage = err?.error?.message;
+    if (nestMessage) {
+      return Array.isArray(nestMessage) ? nestMessage.join(', ') : nestMessage;
+    }
+    return defaultMsg;
+  }
 
   rateLabel(value: number, type: CommissionRateType): string {
     return type === 'percentage' ? `${value}%` : `R$ ${value.toFixed(2)}`;

@@ -8,6 +8,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { HttpErrorResponse } from '@angular/common/http';
 import { PatientsService } from '../services/patients.service';
 import {
   Patient,
@@ -93,7 +94,10 @@ export class Patients implements OnInit {
         this.totalCount.set(total);
         this.loading.set(false);
       },
-      error: () => this.loading.set(false),
+      error: (err: HttpErrorResponse) => {
+        this.loading.set(false);
+        this.notification.error(this.getErrorMessage(err, 'Erro ao carregar pacientes'));
+      },
     });
   }
 
@@ -110,6 +114,9 @@ export class Patients implements OnInit {
   selectPatient(id: number): void {
     this.patientsService.getPatientDetail(id).subscribe({
       next: (detail) => this.selectedDetail.set(detail),
+      error: (err: HttpErrorResponse) => {
+        this.notification.error(this.getErrorMessage(err, 'Erro ao carregar detalhes do paciente'));
+      },
     });
   }
 
@@ -129,11 +136,8 @@ export class Patients implements OnInit {
         this.notification.success('Paciente atualizado com sucesso.');
         this.loadPatients();
       },
-      error: (err) => {
-        const msg = err?.error?.message;
-        this.notification.error(
-          Array.isArray(msg) ? msg.join('<br>') : (msg ?? 'Erro ao atualizar paciente.'),
-        );
+      error: (err: HttpErrorResponse) => {
+        this.notification.error(this.getErrorMessage(err, 'Erro ao atualizar paciente.'));
       },
     });
   }
@@ -158,11 +162,8 @@ export class Patients implements OnInit {
         this.notification.success('Paciente registrado com sucesso.');
         this.loadPatients();
       },
-      error: (err) => {
-        const msg = err?.error?.message;
-        this.notification.error(
-          Array.isArray(msg) ? msg.join('<br>') : (msg ?? 'Erro ao registrar paciente.'),
-        );
+      error: (err: HttpErrorResponse) => {
+        this.notification.error(this.getErrorMessage(err, 'Erro ao registrar paciente.'));
       },
     });
   }
@@ -219,11 +220,8 @@ export class Patients implements OnInit {
         this.selectedDetail.update((d) => (d ? { ...d, documents: [...d.documents, doc] } : d));
         this.notification.success('Documento enviado com sucesso.');
       },
-      error: (err) => {
-        const msg = err?.error?.message;
-        this.notification.error(
-          Array.isArray(msg) ? msg.join('<br>') : (msg ?? 'Erro ao enviar documento.'),
-        );
+      error: (err: HttpErrorResponse) => {
+        this.notification.error(this.getErrorMessage(err, 'Erro ao enviar documento.'));
       },
     });
 
@@ -232,5 +230,13 @@ export class Patients implements OnInit {
 
   getDocumentUrl(url: string): string {
     return `${environment.apiUrl}${url}`;
+  }
+
+  private getErrorMessage(err: HttpErrorResponse, defaultMsg: string): string {
+    const nestMessage = err?.error?.message;
+    if (nestMessage) {
+      return Array.isArray(nestMessage) ? nestMessage.join('<br>') : nestMessage;
+    }
+    return defaultMsg;
   }
 }

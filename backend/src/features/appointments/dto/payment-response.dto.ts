@@ -1,26 +1,78 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { PaymentMethod } from '../../../../generated/prisma/client.js';
 
 export class PaymentEntryDto {
-  @ApiProperty() id: number;
-  @ApiProperty({ enum: PaymentMethod }) method: PaymentMethod;
-  @ApiProperty() amount: number;
-  @ApiProperty() change: number;
+  @ApiProperty({ example: 1, description: 'ID do lançamento do pagamento' })
+  id: number;
+
+  @ApiProperty({
+    enum: PaymentMethod,
+    description: 'Forma de pagamento utilizada',
+    example: 'PIX',
+  })
+  method: PaymentMethod;
+
+  @ApiProperty({
+    example: 150.0,
+    description: 'Valor recebido nesta forma de pagamento',
+  })
+  amount: number;
+
+  @ApiProperty({ example: 0.0, description: 'Valor de troco devolvido' })
+  change: number;
 }
 
 export class PaymentResponseDto {
-  @ApiProperty() id: number;
-  @ApiProperty() appointmentId: number;
-  @ApiProperty() date: Date;
-  @ApiProperty() patient: string | null;
-  @ApiProperty() doctor: string | null;
-  @ApiProperty() value: number;
-  @ApiProperty() doctorEarnings: number;
-  @ApiProperty() clinicEarnings: number;
-  @ApiProperty({ type: () => [PaymentEntryDto] }) entries: PaymentEntryDto[];
+  @ApiProperty({ example: 12, description: 'ID do pagamento' })
+  id: number;
+
+  @ApiProperty({ example: 45, description: 'ID do agendamento vinculado' })
+  appointmentId: number;
+
+  @ApiProperty({
+    example: '2026-05-23T13:49:00.000Z',
+    description: 'Data e hora do pagamento',
+  })
+  date: Date;
+
+  @ApiPropertyOptional({
+    example: 'Carlos Henrique',
+    description: 'Nome do paciente',
+    nullable: true,
+  })
+  patient: string | null;
+
+  @ApiPropertyOptional({
+    example: 'Dra. Ana Costa',
+    description: 'Nome do médico',
+    nullable: true,
+  })
+  doctor: string | null;
+
+  @ApiProperty({ example: 150.0, description: 'Valor total bruto cobrado' })
+  value: number;
+
+  @ApiProperty({
+    example: 60.0,
+    description: 'Repasse destinado ao médico (gorjetas são omitidas do lucro)',
+  })
+  doctorEarnings: number;
+
+  @ApiProperty({
+    example: 90.0,
+    description: 'Faturamento retido pela clínica',
+  })
+  clinicEarnings: number;
+
+  @ApiProperty({
+    type: () => [PaymentEntryDto],
+    description:
+      'Detalhamento das formas de pagamento que compõem o valor total',
+  })
+  entries: PaymentEntryDto[];
 
   constructor(p: any) {
     this.id = p.id;

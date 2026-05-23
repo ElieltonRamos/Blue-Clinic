@@ -4,13 +4,35 @@
 import { ApiProperty } from '@nestjs/swagger';
 
 export class AppointmentTypeResponseDto {
-  @ApiProperty() id: number;
-  @ApiProperty() companyId: number;
-  @ApiProperty() name: string;
-  @ApiProperty() duration: number;
-  @ApiProperty() active: boolean;
-  @ApiProperty() createdAt: Date;
-  @ApiProperty() updatedAt: Date;
+  @ApiProperty({ example: 1, description: 'ID do tipo de consulta' })
+  id: number;
+
+  @ApiProperty({ example: 1, description: 'ID da clínica/empresa' })
+  companyId: number;
+
+  @ApiProperty({
+    example: 'Consulta de Rotina',
+    description: 'Nome do tipo de consulta',
+  })
+  name: string;
+
+  @ApiProperty({ example: 30, description: 'Duração em minutos' })
+  duration: number;
+
+  @ApiProperty({ example: true, description: 'Indica se está ativo' })
+  active: boolean;
+
+  @ApiProperty({
+    example: '2026-05-23T10:00:00.000Z',
+    description: 'Data de criação',
+  })
+  createdAt: Date;
+
+  @ApiProperty({
+    example: '2026-05-23T10:00:00.000Z',
+    description: 'Data da última atualização',
+  })
+  updatedAt: Date;
 
   constructor(t: any) {
     this.id = t.id;

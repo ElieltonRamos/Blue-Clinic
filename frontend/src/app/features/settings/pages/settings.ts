@@ -1,6 +1,7 @@
 import { Component, inject, OnInit, ChangeDetectionStrategy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { HttpErrorResponse } from '@angular/common/http';
 import { SettingsService } from '../services/settings.service';
 import { version } from '../../../../../package.json';
 import {
@@ -116,11 +117,8 @@ export class Settings implements OnInit {
       })
       .subscribe({
         next: (members) => this.members.set(members),
-        error: (err) => {
-          const msg = err?.error?.message;
-          this.notification.error(
-            Array.isArray(msg) ? msg.join('<br>') : (msg ?? 'Erro ao carregar membros.'),
-          );
+        error: (err: HttpErrorResponse) => {
+          this.notification.error(this.getErrorMessage(err, 'Erro ao carregar membros.'));
         },
       });
   }
@@ -135,11 +133,8 @@ export class Settings implements OnInit {
         this.companyData.set(company);
         this.originalCompany = { ...company };
       },
-      error: (err) => {
-        const msg = err?.error?.message;
-        this.notification.error(
-          Array.isArray(msg) ? msg.join('<br>') : (msg ?? 'Erro ao carregar dados da empresa.'),
-        );
+      error: (err: HttpErrorResponse) => {
+        this.notification.error(this.getErrorMessage(err, 'Erro ao carregar dados da empresa.'));
       },
     });
   }
@@ -147,14 +142,11 @@ export class Settings implements OnInit {
   private loadIntegration(): void {
     this.settingsService.getIntegration().subscribe({
       next: (integration) => this.integration.set(integration),
-      error: (err) => {
+      error: (err: HttpErrorResponse) => {
         if (err?.status === 404) {
           this.integration.set(null);
         } else {
-          const msg = err?.error?.message;
-          this.notification.error(
-            Array.isArray(msg) ? msg.join('<br>') : (msg ?? 'Erro ao carregar integração.'),
-          );
+          this.notification.error(this.getErrorMessage(err, 'Erro ao carregar integração.'));
         }
       },
     });
@@ -200,11 +192,8 @@ export class Settings implements OnInit {
           this.loading.set(false);
           this.notification.success('Membro cadastrado com sucesso.');
         },
-        error: (err) => {
-          const msg = err?.error?.message;
-          this.notification.error(
-            Array.isArray(msg) ? msg.join('<br>') : (msg ?? 'Erro ao cadastrar membro.'),
-          );
+        error: (err: HttpErrorResponse) => {
+          this.notification.error(this.getErrorMessage(err, 'Erro ao cadastrar membro.'));
           this.loading.set(false);
         },
       });
@@ -236,11 +225,8 @@ export class Settings implements OnInit {
         this.showEditModal.set(false);
         this.notification.success('Membro atualizado com sucesso.');
       },
-      error: (err) => {
-        const msg = err?.error?.message;
-        this.notification.error(
-          Array.isArray(msg) ? msg.join('<br>') : (msg ?? 'Erro ao atualizar membro.'),
-        );
+      error: (err: HttpErrorResponse) => {
+        this.notification.error(this.getErrorMessage(err, 'Erro ao atualizar membro.'));
       },
     });
   }
@@ -254,11 +240,8 @@ export class Settings implements OnInit {
         this.members.update((list) => list.filter((m) => m.id !== id));
         this.notification.success('Membro removido com sucesso.');
       },
-      error: (err) => {
-        const msg = err?.error?.message;
-        this.notification.error(
-          Array.isArray(msg) ? msg.join('<br>') : (msg ?? 'Erro ao remover membro.'),
-        );
+      error: (err: HttpErrorResponse) => {
+        this.notification.error(this.getErrorMessage(err, 'Erro ao remover membro.'));
       },
     });
   }
@@ -285,12 +268,17 @@ export class Settings implements OnInit {
         this.notification.success('Dados da empresa salvos.');
         setTimeout(() => this.companySaved.set(false), 2000);
       },
-      error: (err) => {
-        const msg = err?.error?.message;
-        this.notification.error(
-          Array.isArray(msg) ? msg.join('<br>') : (msg ?? 'Erro ao salvar empresa.'),
-        );
+      error: (err: HttpErrorResponse) => {
+        this.notification.error(this.getErrorMessage(err, 'Erro ao salvar empresa.'));
       },
     });
+  }
+
+  private getErrorMessage(err: HttpErrorResponse, defaultMsg: string): string {
+    const nestMessage = err?.error?.message;
+    if (nestMessage) {
+      return Array.isArray(nestMessage) ? nestMessage.join('<br>') : nestMessage;
+    }
+    return defaultMsg;
   }
 }

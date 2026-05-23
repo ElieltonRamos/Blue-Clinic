@@ -1,6 +1,7 @@
 import { Component, inject, OnInit, signal, computed, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { HttpErrorResponse } from '@angular/common/http';
 import {
   Appointment,
   AppointmentStatus,
@@ -197,8 +198,8 @@ export class Calendar implements OnInit {
         this.updateAppointmentStatus(apt.id, 'paid');
         this.closePaymentModal();
       },
-      error: () => {
-        this.error = 'Erro ao registrar pagamento';
+      error: (err: HttpErrorResponse) => {
+        this.error = this.getErrorMessage(err, 'Erro ao registrar pagamento');
       },
     });
   }
@@ -257,7 +258,7 @@ export class Calendar implements OnInit {
     return map[status] ?? status;
   }
 
-  // ── Private ───────────────────────────────────────────────────
+  // ── Private / Helpers ─────────────────────────────────────────
 
   private loadDoctors(): void {
     this.service.getDoctors().subscribe({
@@ -265,8 +266,8 @@ export class Calendar implements OnInit {
         this.doctors = doctors;
         doctors.forEach((d) => this.doctorMap.set(d.id, d.name));
       },
-      error: () => {
-        this.error = 'Erro ao carregar médicos';
+      error: (err: HttpErrorResponse) => {
+        this.error = this.getErrorMessage(err, 'Erro ao carregar médicos');
       },
     });
   }
@@ -281,8 +282,8 @@ export class Calendar implements OnInit {
         this.allAppointments = appointments;
         this.loading = false;
       },
-      error: () => {
-        this.error = 'Erro ao carregar agendamentos';
+      error: (err: HttpErrorResponse) => {
+        this.error = this.getErrorMessage(err, 'Erro ao carregar agendamentos');
         this.loading = false;
       },
     });
@@ -329,5 +330,13 @@ export class Calendar implements OnInit {
       a.getMonth() === b.getMonth() &&
       a.getDate() === b.getDate()
     );
+  }
+
+  private getErrorMessage(err: HttpErrorResponse, defaultMsg: string): string {
+    const nestMessage = err?.error?.message;
+    if (nestMessage) {
+      return Array.isArray(nestMessage) ? nestMessage.join(', ') : nestMessage;
+    }
+    return defaultMsg;
   }
 }

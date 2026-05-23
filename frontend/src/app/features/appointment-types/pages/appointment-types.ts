@@ -1,6 +1,7 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { HttpErrorResponse } from '@angular/common/http';
 import { NotificationService } from '../../../shared/toastr/notification.service';
 import { AppointmentTypeService } from '../services/appointment-type.service';
 import { AppointmentType } from '../types/appointment-type.types';
@@ -45,9 +46,9 @@ export class AppointmentTypes implements OnInit {
         this.rows = types.map((t) => this.toRow(t));
         this.loading.set(false);
       },
-      error: () => {
+      error: (err: HttpErrorResponse) => {
         this.loading.set(false);
-        this.notification.error('Erro ao carregar tipos de consulta');
+        this.notification.error(this.getErrorMessage(err, 'Erro ao carregar tipos de consulta'));
       },
     });
   }
@@ -83,9 +84,9 @@ export class AppointmentTypes implements OnInit {
           this.savingNew = false;
           this.notification.success('Tipo de consulta criado');
         },
-        error: () => {
+        error: (err: HttpErrorResponse) => {
           this.savingNew = false;
-          this.notification.error('Erro ao criar tipo de consulta');
+          this.notification.error(this.getErrorMessage(err, 'Erro ao criar tipo de consulta'));
         },
       });
   }
@@ -111,9 +112,9 @@ export class AppointmentTypes implements OnInit {
           row.saving = false;
           this.notification.success('Tipo atualizado');
         },
-        error: () => {
+        error: (err: HttpErrorResponse) => {
           row.saving = false;
-          this.notification.error('Erro ao atualizar tipo');
+          this.notification.error(this.getErrorMessage(err, 'Erro ao atualizar tipo'));
         },
       });
   }
@@ -125,9 +126,9 @@ export class AppointmentTypes implements OnInit {
         this.rows = this.rows.filter((r) => r !== row);
         this.notification.success('Tipo removido');
       },
-      error: () => {
+      error: (err: HttpErrorResponse) => {
         row.saving = false;
-        this.notification.error('Erro ao remover tipo');
+        this.notification.error(this.getErrorMessage(err, 'Erro ao remover tipo'));
       },
     });
   }
@@ -142,5 +143,13 @@ export class AppointmentTypes implements OnInit {
       return false;
     }
     return true;
+  }
+
+  private getErrorMessage(err: HttpErrorResponse, defaultMsg: string): string {
+    const nestMessage = err?.error?.message;
+    if (nestMessage) {
+      return Array.isArray(nestMessage) ? nestMessage.join(', ') : nestMessage;
+    }
+    return defaultMsg;
   }
 }

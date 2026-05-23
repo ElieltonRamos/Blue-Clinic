@@ -269,9 +269,10 @@ export class CreateAppointmentModal implements AfterViewInit, OnDestroy, OnChang
           this.loadingSlots = false;
           this.cdr.detectChanges();
         },
-        error: () => {
+        error: (err) => {
           this.loadingSlots = false;
-          this.notification.error('Erro ao carregar horários');
+          const msg = err?.error?.message || 'Erro ao carregar horários';
+          this.notification.error(msg);
           this.cdr.detectChanges();
         },
       });

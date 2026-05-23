@@ -1,11 +1,13 @@
 // available-slots.dto.ts
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import { IsInt, IsPositive, IsString, Matches } from 'class-validator';
 
 export class AvailableSlotsQueryDto {
   @ApiProperty({ description: 'ID do médico' })
   @IsInt({ message: 'ID do médico deve ser um número inteiro' })
   @IsPositive({ message: 'ID do médico deve ser maior que zero' })
+  @Type(() => Number)
   doctorId: number;
 
   @ApiProperty({ description: 'Data (YYYY-MM-DD)', example: '2025-06-10' })
@@ -18,6 +20,7 @@ export class AvailableSlotsQueryDto {
   @ApiProperty({ description: 'ID do tipo de consulta' })
   @IsInt({ message: 'ID do tipo de consulta deve ser um número inteiro' })
   @IsPositive({ message: 'ID do tipo de consulta deve ser maior que zero' })
+  @Type(() => Number)
   appointmentTypeId: number;
 }
 
