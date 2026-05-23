@@ -1,7 +1,6 @@
 <div class="flex h-full gap-6">
   <!-- Calendário -->
   <section class="flex-1 min-w-0 flex flex-col">
-    <!-- Nav mês -->
     <div class="flex items-center justify-between mb-4">
       <button
         (click)="prevMonth()"
@@ -18,7 +17,6 @@
       </button>
     </div>
 
-    <!-- Grid -->
     <div class="grid grid-cols-7 gap-1">
       @for (d of weekDays; track d) {
         <div
@@ -37,9 +35,8 @@
           <span
             class="block text-xs font-medium mb-1"
             [class]="day.isToday ? 'text-(--color-primary-text)' : 'text-(--color-text-secondary)'"
+            >{{ day.dayNumber }}</span
           >
-            {{ day.dayNumber }}
-          </span>
 
           @for (apt of day.appointments.slice(0, 2); track apt.id) {
             <div
@@ -68,42 +65,13 @@
 
   <!-- Painel direito -->
   <aside class="w-60 flex flex-col gap-4 shrink-0">
-    <!-- Form novo agendamento -->
-    <div class="bg-bg-sidebar rounded-xl border border-(--color-border) p-4">
-      <p class="text-[10px] font-bold text-(--color-primary-text) uppercase tracking-widest mb-3">
-        Novo agendamento
-      </p>
-      <div class="space-y-3">
-        <div>
-          <label class="block text-[10px] text-(--color-text-secondary) mb-1">Paciente</label>
-          <input
-            type="text"
-            placeholder="Nome do paciente"
-            class="w-full bg-bg-base rounded-lg px-2 py-1.5 text-sm text-(--color-input-text) placeholder:text-(--color-input-placeholder) border-none outline-none focus:ring-1 focus:ring-(--color-focus-ring)/40"
-          />
-        </div>
-        <div>
-          <label class="block text-[10px] text-(--color-text-secondary) mb-1">Data</label>
-          <input
-            type="date"
-            class="w-full bg-bg-base rounded-lg px-2 py-1.5 text-sm text-(--color-input-text) border-none outline-none focus:ring-1 focus:ring-(--color-focus-ring)/40"
-          />
-        </div>
-        <div>
-          <label class="block text-[10px] text-(--color-text-secondary) mb-1">Hora</label>
-          <input
-            type="time"
-            class="w-full bg-bg-base rounded-lg px-2 py-1.5 text-sm text-(--color-input-text) border-none outline-none focus:ring-1 focus:ring-(--color-focus-ring)/40"
-          />
-        </div>
-        <button
-          (click)="createAppointment()"
-          class="w-full bg-(--color-btn-primary-bg) text-(--color-btn-primary-text) rounded-lg py-2 text-sm font-bold hover:opacity-90 transition-opacity active:scale-[0.98]"
-        >
-          Criar agendamento
-        </button>
-      </div>
-    </div>
+    <!-- Botão novo agendamento -->
+    <button
+      (click)="openCreateModal()"
+      class="w-full bg-(--color-btn-primary-bg) text-(--color-btn-primary-text) rounded-xl py-2.5 text-sm font-bold hover:opacity-90 transition-opacity active:scale-[0.98]"
+    >
+      + Novo agendamento
+    </button>
 
     <!-- Bloqueios -->
     <div class="bg-bg-sidebar rounded-xl border border-(--color-border) p-4">
@@ -145,7 +113,7 @@
   </aside>
 </div>
 
-<!-- ── Context menu (checkin) ───────────────────────────────────────────── -->
+<!-- Context menu -->
 @if (contextMenu) {
   <div
     class="fixed z-40 w-44 rounded-xl border border-(--color-border-md) bg-bg-card shadow-lg py-1 overflow-hidden"
@@ -176,7 +144,7 @@
   </div>
 }
 
-<!-- ── Modal de pagamento ───────────────────────────────────────────────── -->
+<!-- Modal pagamento -->
 @if (paymentModal) {
   <div
     class="fixed inset-0 z-50 flex items-center justify-center"
@@ -187,7 +155,6 @@
       class="bg-bg-card rounded-2xl border border-(--color-border-md) shadow-xl w-full max-w-sm p-6 flex flex-col gap-4"
       (click)="$event.stopPropagation()"
     >
-      <!-- Header -->
       <div class="flex items-start justify-between">
         <div>
           <p class="text-[14px] font-semibold text-(--color-text-primary)">Receber Pagamento</p>
@@ -201,7 +168,6 @@
         </button>
       </div>
 
-      <!-- Info consulta -->
       <div
         class="rounded-xl bg-(--color-bg-overlay) border border-(--color-border) px-3 py-2.5 flex items-center justify-between"
       >
@@ -225,12 +191,10 @@
         </div>
       </div>
 
-      <!-- Métodos de pagamento -->
       <div class="flex flex-col gap-2">
         <p class="text-[10px] uppercase tracking-wider text-(--color-text-muted) font-semibold">
           Formas de pagamento
         </p>
-
         @for (entry of paymentEntries; track entry.method) {
           <div class="flex items-center gap-3">
             <input
@@ -254,7 +218,6 @@
         }
       </div>
 
-      <!-- Total -->
       <div
         class="flex items-center justify-between rounded-xl bg-(--color-primary-subtle) border border-(--color-primary)/20 px-4 py-2.5"
       >
@@ -264,7 +227,6 @@
         </p>
       </div>
 
-      <!-- Ações -->
       <div class="flex justify-end gap-2">
         <button
           (click)="closePaymentModal()"
@@ -284,8 +246,8 @@
   </div>
 }
 
-<!-- ── Modal do dia (existente) ─────────────────────────────────────────── -->
-@if (selectedDay) {
+<!-- Modal do dia -->
+@if (selectedDay()) {
   <div
     class="fixed inset-0 z-50 flex items-center justify-center"
     style="background-color: var(--color-backdrop)"
@@ -296,7 +258,7 @@
       (click)="$event.stopPropagation()"
     >
       <div class="flex items-center justify-between mb-4">
-        <p class="text-sm font-semibold text-(--color-text-primary)">{{ selectedDay.label }}</p>
+        <p class="text-sm font-semibold text-(--color-text-primary)">{{ selectedDay()!.label }}</p>
         <button
           (click)="closeModal()"
           class="text-(--color-text-muted) hover:text-(--color-text-primary) transition-colors"
@@ -306,7 +268,7 @@
       </div>
 
       <div class="space-y-0">
-        @for (apt of selectedDay.appointments; track apt.id) {
+        @for (apt of selectedDay()!.appointments; track apt.id) {
           <div
             class="flex items-center gap-3 py-2.5 border-b border-(--color-border) last:border-b-0"
             [class.cursor-pointer]="apt.status === 'checkin'"
@@ -337,7 +299,6 @@
   </div>
 }
 
-<!-- calendar.html -->
 <app-create-appointment-modal
   [isOpen]="showCreateModal"
   (close)="showCreateModal = false"

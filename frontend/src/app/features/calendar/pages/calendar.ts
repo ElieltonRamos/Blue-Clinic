@@ -50,13 +50,13 @@ export class Calendar implements OnInit {
   readonly availablePaymentMethods = PAYMENT_METHODS;
 
   private currentDate = signal(new Date());
-  private allAppointments: Appointment[] = [];
+  private allAppointments = signal<Appointment[]>([]);
   private doctorMap = new Map<number, string>();
 
   doctors: Doctor[] = [];
   blockedHours: BlockedHour[] = [];
   autoConfirmation: AutoConfirmation = { confirmed: 0, total: 0 };
-  selectedDay: CalendarDay | null = null;
+  selectedDay = signal<CalendarDay | null>(null);
   showCreateModal = false;
 
   contextMenu: ContextMenu | null = null;
@@ -131,20 +131,20 @@ export class Calendar implements OnInit {
   }
 
   openModal(day: CalendarDay): void {
-    this.selectedDay = day;
+    this.selectedDay.set(day);
   }
 
   closeModal(): void {
-    this.selectedDay = null;
+    this.selectedDay.set(null);
   }
 
-  createAppointment(): void {
+  openCreateModal(): void {
     this.showCreateModal = true;
   }
 
   onAppointmentCreated(appointment: AppointmentResponse): void {
     this.showCreateModal = false;
-    this.loadMonthData(); // recarrega o calendário
+    this.loadMonthData();
   }
 
   // ── Context menu ──────────────────────────────────────────────
@@ -279,7 +279,7 @@ export class Calendar implements OnInit {
 
     this.service.getAppointments(month).subscribe({
       next: (appointments) => {
-        this.allAppointments = appointments;
+        this.allAppointments.set(appointments);
         this.loading = false;
       },
       error: (err: HttpErrorResponse) => {
@@ -294,15 +294,14 @@ export class Calendar implements OnInit {
   }
 
   private updateAppointmentStatus(id: number, status: AppointmentStatus): void {
-    this.allAppointments = this.allAppointments.map((a) => (a.id === id ? { ...a, status } : a));
+    this.allAppointments.update((list) => list.map((a) => (a.id === id ? { ...a, status } : a)));
 
-    if (this.selectedDay) {
-      this.selectedDay = {
-        ...this.selectedDay,
-        appointments: this.selectedDay.appointments.map((a) =>
-          a.id === id ? { ...a, status } : a,
-        ),
-      };
+    const day = this.selectedDay();
+    if (day) {
+      this.selectedDay.set({
+        ...day,
+        appointments: day.appointments.map((a) => (a.id === id ? { ...a, status } : a)),
+      });
     }
   }
 
@@ -318,9 +317,9 @@ export class Calendar implements OnInit {
   }
 
   private appointmentsForDate(date: Date): Appointment[] {
-    return this.allAppointments.filter((a) => {
-      const d = new Date(a.date);
-      return this.isSameDay(d, date);
+    return this.allAppointments().filter((a) => {
+      const [year, month, day] = (a.date as string).split('-').map(Number);
+      return date.getFullYear() === year && date.getMonth() + 1 === month && date.getDate() === day;
     });
   }
 

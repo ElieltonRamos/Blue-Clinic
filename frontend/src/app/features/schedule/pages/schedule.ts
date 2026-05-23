@@ -193,7 +193,6 @@ export class Schedule implements OnInit {
   }
 
   private syncCommissionRows(commissions: DoctorCommission[]): void {
-    console.log('commissions', commissions);
     this.commissionRows = commissions.map((c) => ({
       commission: c,
       editing: false,

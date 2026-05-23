@@ -12,6 +12,8 @@ import { AppointmentResponseDto } from './dto/appointment-response.dto.js';
 import { CreatePaymentDto } from './dto/create-payment.dto.js';
 import { PaymentResponseDto } from './dto/payment-response.dto.js';
 import { BlockedSlotResponseDto } from './dto/blocked-slot-response.dto.js';
+import { CreateBlockedSlotDto } from './dto/create-blocked-slot.dto.js';
+import { UpdateBlockedSlotDto } from './dto/update-blocked-slot.dto.js';
 import { AutoConfirmationDto } from './dto/auto-confirmation.dto.js';
 import {
   AvailableSlotsQueryDto,
@@ -34,13 +36,12 @@ export class AppointmentsService {
     };
 
     if (filters.month) {
-      // espera 'YYYY-MM'
       const [year, month] = filters.month.split('-').map(Number);
       if (!year || !month)
         throw new BadRequestException('Formato de mês inválido. Use YYYY-MM');
       where.date = {
-        gte: new Date(year, month - 1, 1),
-        lt: new Date(year, month, 1),
+        gte: new Date(Date.UTC(year, month - 1, 1)),
+        lt: new Date(Date.UTC(year, month, 1)),
       };
     }
 
@@ -99,7 +100,7 @@ export class AppointmentsService {
         doctorId: dto.doctorId,
         patientId: dto.patientId,
         specialty: dto.specialty ?? doctor.specialty,
-        date: new Date(dto.date),
+        date: this.parseDateUTC(dto.date),
         startTime: dto.startTime,
         endTime: dto.endTime,
         status: 'pending',
@@ -126,7 +127,7 @@ export class AppointmentsService {
     if (dto.status) data.status = dto.status as AppointmentStatus;
     if (dto.startTime) data.startTime = dto.startTime;
     if (dto.endTime) data.endTime = dto.endTime;
-    if (dto.date) data.date = new Date(dto.date);
+    if (dto.date) data.date = this.parseDateUTC(dto.date);
     if (dto.notes !== undefined) data.notes = dto.notes;
     if (dto.responsible !== undefined) data.responsible = dto.responsible;
 
@@ -143,6 +144,7 @@ export class AppointmentsService {
   }
 
   // ── Payments ───────────────────────────────────────────────────────────────
+
   async createPayment(
     appointmentId: number,
     companyId: number,
@@ -169,7 +171,6 @@ export class AppointmentsService {
     if (total <= 0)
       throw new BadRequestException('Valor total deve ser maior que zero');
 
-    // ── Cálculo de comissão ──────────────────────────────────────
     let doctorEarnings = 0;
     let clinicEarnings = 0;
 
@@ -243,15 +244,120 @@ export class AppointmentsService {
     const slots = await this.prisma.client.blockedSlot.findMany({
       where: {
         companyId,
-        ...(doctorId ? { doctorId } : {}),
+        ...(doctorId !== undefined ? { doctorId } : {}),
       },
       include: {
         doctor: { select: { id: true, name: true } },
       },
-      orderBy: { startTime: 'asc' },
+      orderBy: { startDate: 'asc' },
     });
 
     return slots.map((s) => new BlockedSlotResponseDto(s));
+  }
+
+  async createBlockedSlot(
+    companyId: number,
+    dto: CreateBlockedSlotDto,
+  ): Promise<BlockedSlotResponseDto> {
+    if (dto.doctorId) {
+      const doctor = await this.prisma.client.doctor.findFirst({
+        where: { id: dto.doctorId, companyId, active: true },
+      });
+      if (!doctor) throw new NotFoundException('Médico não encontrado');
+    }
+
+    if (
+      dto.endDate &&
+      dto.startDate &&
+      this.parseDateUTC(dto.endDate) < this.parseDateUTC(dto.startDate)
+    ) {
+      throw new BadRequestException(
+        'endDate não pode ser anterior a startDate',
+      );
+    }
+
+    const slot = await this.prisma.client.blockedSlot.create({
+      data: {
+        companyId,
+        doctorId: dto.doctorId ?? null,
+        startDate: this.parseDateUTC(dto.startDate),
+        endDate: dto.endDate ? this.parseDateUTC(dto.endDate) : null,
+        startTime: dto.startTime,
+        endTime: dto.endTime,
+        label: dto.label,
+        type: dto.type,
+        recurrence: dto.recurrence ?? 'none',
+        color: dto.color ?? null,
+      },
+      include: {
+        doctor: { select: { id: true, name: true } },
+      },
+    });
+
+    return new BlockedSlotResponseDto(slot);
+  }
+
+  async updateBlockedSlot(
+    id: number,
+    companyId: number,
+    dto: UpdateBlockedSlotDto,
+  ): Promise<BlockedSlotResponseDto> {
+    const existing = await this.prisma.client.blockedSlot.findFirst({
+      where: { id, companyId },
+    });
+    if (!existing) throw new NotFoundException('Bloqueio não encontrado');
+
+    if (dto.doctorId) {
+      const doctor = await this.prisma.client.doctor.findFirst({
+        where: { id: dto.doctorId, companyId, active: true },
+      });
+      if (!doctor) throw new NotFoundException('Médico não encontrado');
+    }
+
+    const startDate = dto.startDate
+      ? this.parseDateUTC(dto.startDate)
+      : undefined;
+    const endDate =
+      dto.endDate === null
+        ? null
+        : dto.endDate
+          ? this.parseDateUTC(dto.endDate)
+          : undefined;
+
+    if (startDate && endDate && endDate < startDate) {
+      throw new BadRequestException(
+        'endDate não pode ser anterior a startDate',
+      );
+    }
+
+    const slot = await this.prisma.client.blockedSlot.update({
+      where: { id },
+      data: {
+        ...(dto.doctorId !== undefined && { doctorId: dto.doctorId }),
+        ...(startDate !== undefined && { startDate }),
+        ...(endDate !== undefined && { endDate }),
+        ...(dto.startTime !== undefined && { startTime: dto.startTime }),
+        ...(dto.endTime !== undefined && { endTime: dto.endTime }),
+        ...(dto.label !== undefined && { label: dto.label }),
+        ...(dto.type !== undefined && { type: dto.type }),
+        ...(dto.recurrence !== undefined && { recurrence: dto.recurrence }),
+        ...(dto.color !== undefined && { color: dto.color }),
+      },
+      include: {
+        doctor: { select: { id: true, name: true } },
+      },
+    });
+
+    return new BlockedSlotResponseDto(slot);
+  }
+
+  async deleteBlockedSlot(id: number, companyId: number): Promise<void> {
+    const existing = await this.prisma.client.blockedSlot.findFirst({
+      where: { id, companyId },
+    });
+    if (!existing) throw new NotFoundException('Bloqueio não encontrado');
+
+    await this.prisma.client.blockedSlot.delete({ where: { id } });
   }
 
   // ── Auto-confirmation stats ────────────────────────────────────────────────
@@ -265,8 +371,8 @@ export class AppointmentsService {
       throw new BadRequestException('Formato de mês inválido. Use YYYY-MM');
 
     const dateFilter = {
-      gte: new Date(year, m - 1, 1),
-      lt: new Date(year, m, 1),
+      gte: new Date(Date.UTC(year, m - 1, 1)),
+      lt: new Date(Date.UTC(year, m, 1)),
     };
 
     const [confirmed, total] = await Promise.all([
@@ -287,8 +393,10 @@ export class AppointmentsService {
   ): Promise<SlotDto[]> {
     const { doctorId, date, appointmentTypeId } = query;
 
-    const targetDate = new Date(date);
-    const dayOfWeek = targetDate.getDay();
+    const [year, month, day] = date.split('-').map(Number);
+    const dayOfWeek = new Date(year, month - 1, day).getDay();
+    const dayStart = new Date(Date.UTC(year, month - 1, day));
+    const dayEnd = new Date(Date.UTC(year, month - 1, day + 1));
 
     // 1. Schedule do médico para o dia
     const schedule = await this.prisma.client.doctorSchedule.findUnique({
@@ -296,7 +404,7 @@ export class AppointmentsService {
     });
 
     if (!schedule || !schedule.active) {
-      return []; // médico não atende nesse dia
+      return [];
     }
 
     // 2. Duração do tipo de consulta
@@ -306,7 +414,7 @@ export class AppointmentsService {
     if (!appointmentType)
       throw new NotFoundException('Tipo de consulta não encontrado');
 
-    const duration = appointmentType.duration; // minutos
+    const duration = appointmentType.duration;
 
     // 3. Gera todos os slots possíveis
     const slots = this.generateSlots(
@@ -316,10 +424,6 @@ export class AppointmentsService {
     );
 
     // 4. Agendamentos existentes no dia (exceto cancelled)
-    const dayStart = new Date(date);
-    const dayEnd = new Date(date);
-    dayEnd.setDate(dayEnd.getDate() + 1);
-
     const appointments = await this.prisma.client.appointment.findMany({
       where: {
         doctorId,
@@ -329,41 +433,38 @@ export class AppointmentsService {
       include: { patient: { select: { name: true } } },
     });
 
-    // 5. Bloqueios do médico para o dia
+    // 5. Bloqueios efetivos para o dia
+    // Busca bloqueios do médico específico ou globais (doctorId null)
+    // Filtra por recorrência e range de datas
     const blockedSlots = await this.prisma.client.blockedSlot.findMany({
       where: {
-        doctorId,
-        OR: [
-          // bloqueio pontual no dia
-          { date: { gte: dayStart, lt: dayEnd }, recurrence: 'none' },
-          // bloqueio semanal no mesmo dayOfWeek
-          { recurrence: 'weekly', date: null },
-          // bloqueio diário
-          { recurrence: 'daily' },
+        companyId,
+        AND: [
+          { OR: [{ doctorId }, { doctorId: null }] },
+          { startDate: { lte: dayEnd } },
+          { OR: [{ endDate: null }, { endDate: { gte: dayStart } }] },
         ],
       },
     });
 
-    // filtra weekly pelo dayOfWeek correto (Prisma não filtra isso nativamente)
+    // Para weekly, filtra pelo dayOfWeek da startDate
     const effectiveBlocks = blockedSlots.filter((b) => {
       if (b.recurrence === 'none' || b.recurrence === 'daily') return true;
       if (b.recurrence === 'weekly') {
-        // usa a data de criação como referência do dia da semana
-        return b.date ? new Date(b.date).getDay() === dayOfWeek : false;
+        return new Date(b.startDate).getUTCDay() === dayOfWeek;
       }
       return false;
     });
 
-    // 6. Mapeia cada slot gerado para seu status
+    // 6. Mapeia status de cada slot
     return slots.map((slot) => {
       const slotStart = this.timeToMinutes(slot.startTime);
       const slotEnd = this.timeToMinutes(slot.endTime);
 
-      // verifica conflito com agendamento
       const bookedBy = appointments.find((a) => {
         const aStart = this.timeToMinutes(a.startTime);
         const aEnd = this.timeToMinutes(a.endTime);
-        return slotStart < aEnd && slotEnd > aStart; // sobreposição de intervalo
+        return slotStart < aEnd && slotEnd > aStart;
       });
 
       if (bookedBy) {
@@ -374,7 +475,6 @@ export class AppointmentsService {
         };
       }
 
-      // verifica conflito com bloqueio
       const blockedBy = effectiveBlocks.find((b) => {
         const bStart = this.timeToMinutes(b.startTime);
         const bEnd = this.timeToMinutes(b.endTime);
@@ -394,6 +494,11 @@ export class AppointmentsService {
   }
 
   // ── Helpers ────────────────────────────────────────────────────────────────
+
+  private parseDateUTC(date: string): Date {
+    const [y, m, d] = date.split('-').map(Number);
+    return new Date(Date.UTC(y, m - 1, d));
+  }
 
   private generateSlots(
     startTime: string,

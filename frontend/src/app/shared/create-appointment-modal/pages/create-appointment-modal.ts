@@ -256,6 +256,7 @@ export class CreateAppointmentModal implements AfterViewInit, OnDestroy, OnChang
   }
 
   private loadSlots(): void {
+     console.log('loadSlots chamado', this.selectedDoctor?.id, this.selectedDate, this.selectedType?.id);
     if (!this.selectedDoctor || !this.selectedDate || !this.selectedType) return;
     this.loadingSlots = true;
     this.slots = [];
@@ -265,6 +266,7 @@ export class CreateAppointmentModal implements AfterViewInit, OnDestroy, OnChang
       .getSlots(this.selectedDoctor.id, this.selectedDate, this.selectedType.id)
       .subscribe({
         next: (slots) => {
+            console.log('slots recebidos:', JSON.stringify(slots));
           this.slots = slots;
           this.loadingSlots = false;
           this.cdr.detectChanges();

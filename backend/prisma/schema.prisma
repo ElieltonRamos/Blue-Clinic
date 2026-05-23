@@ -264,7 +264,8 @@ model BlockedSlot {
   id         Int             @id @default(autoincrement())
   companyId  Int
   doctorId   Int?
-  date       DateTime?
+  startDate  DateTime
+  endDate    DateTime?
   startTime  String
   endTime    String
   label      String
