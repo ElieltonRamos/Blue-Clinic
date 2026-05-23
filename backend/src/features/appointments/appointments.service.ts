@@ -143,7 +143,6 @@ export class AppointmentsService {
   }
 
   // ── Payments ───────────────────────────────────────────────────────────────
-
   async createPayment(
     appointmentId: number,
     companyId: number,
@@ -159,18 +158,46 @@ export class AppointmentsService {
     });
 
     if (!appointment) throw new NotFoundException('Agendamento não encontrado');
-    if (appointment.status === 'paid') {
+    if (appointment.status === 'paid')
       throw new BadRequestException('Agendamento já foi pago');
-    }
-    if (appointment.status !== 'checkin') {
+    if (appointment.status !== 'checkin')
       throw new BadRequestException(
         'Agendamento precisa estar em check-in para receber pagamento',
       );
-    }
 
     const total = dto.entries.reduce((sum, e) => sum + Number(e.amount), 0);
     if (total <= 0)
       throw new BadRequestException('Valor total deve ser maior que zero');
+
+    // ── Cálculo de comissão ──────────────────────────────────────
+    let doctorEarnings = 0;
+    let clinicEarnings = 0;
+
+    if (appointment.appointmentTypeId) {
+      const commission =
+        await this.prisma.client.appointmentTypeCommission.findUnique({
+          where: {
+            doctorId_appointmentTypeId: {
+              doctorId: appointment.doctorId,
+              appointmentTypeId: appointment.appointmentTypeId,
+            },
+          },
+        });
+
+      if (commission) {
+        const base = Number(appointment.feeOverride ?? total);
+
+        doctorEarnings =
+          commission.doctorRateType === 'percentage'
+            ? (base * Number(commission.doctorRate)) / 100
+            : Number(commission.doctorRate);
+
+        clinicEarnings =
+          commission.clinicRateType === 'percentage'
+            ? (base * Number(commission.clinicRate)) / 100
+            : Number(commission.clinicRate);
+      }
+    }
 
     const payment = await this.prisma.client.$transaction(
       async (tx: Prisma.TransactionClient) => {
@@ -182,6 +209,8 @@ export class AppointmentsService {
             doctor: appointment.doctor.name,
             registeredById,
             value: total,
+            doctorEarnings,
+            clinicEarnings,
             entries: {
               create: dto.entries.map((e) => ({
                 method: e.method,
