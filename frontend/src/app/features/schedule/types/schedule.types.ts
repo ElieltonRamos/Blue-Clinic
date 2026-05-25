@@ -1,4 +1,6 @@
 export type DayOfWeek = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+export type BlockedSlotType = 'break' | 'external';
+export type RecurrenceType = 'none' | 'daily' | 'weekly' | 'monthly';
 
 export const DAY_LABELS: Record<DayOfWeek, string> = {
   0: 'Domingo',
@@ -100,4 +102,35 @@ export interface CommissionForm {
   doctorRate: number;
   clinicRateType: CommissionRateType;
   clinicRate: number;
+}
+
+export interface BlockedSlot {
+  id: number;
+  doctorId: number | null;
+  doctorName: string | null;
+  label: string;
+  startTime: string;
+  endTime: string;
+  type: BlockedSlotType;
+  recurrence: RecurrenceType;
+  color: string | null;
+  date: string | null; // startDate no response (YYYY-MM-DD)
+  startDate?: string;
+  endDate?: string | null;
+}
+
+export interface CreateBlockedSlotRequest {
+  doctorId?: number;
+  startDate: string;
+  endDate?: string;
+  startTime: string;
+  endTime: string;
+  label: string;
+  type: BlockedSlotType;
+  recurrence?: RecurrenceType;
+  color?: string;
+}
+
+export interface UpdateBlockedSlotRequest extends Partial<CreateBlockedSlotRequest> {
+  endDate?: string;
 }

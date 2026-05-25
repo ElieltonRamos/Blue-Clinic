@@ -240,11 +240,16 @@ export class AppointmentsService {
   async findBlockedSlots(
     companyId: number,
     doctorId?: number,
+    globalOnly?: boolean,
   ): Promise<BlockedSlotResponseDto[]> {
     const slots = await this.prisma.client.blockedSlot.findMany({
       where: {
         companyId,
-        ...(doctorId !== undefined ? { doctorId } : {}),
+        ...(globalOnly
+          ? { doctorId: null }
+          : doctorId !== undefined
+            ? { doctorId }
+            : {}),
       },
       include: {
         doctor: { select: { id: true, name: true } },

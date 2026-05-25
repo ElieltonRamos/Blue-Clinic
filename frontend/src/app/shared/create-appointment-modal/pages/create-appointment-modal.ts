@@ -46,6 +46,7 @@ export class CreateAppointmentModal implements AfterViewInit, OnDestroy, OnChang
   private readonly doctorSearch$ = new Subject<string>();
   private readonly patientSearch$ = new Subject<string>();
 
+  @Input() prefillPatientId: number | null = null;
   @Input() isOpen = false;
   @Output() close = new EventEmitter<void>();
   @Output() appointmentCreated = new EventEmitter<AppointmentResponse>();
@@ -158,6 +159,9 @@ export class CreateAppointmentModal implements AfterViewInit, OnDestroy, OnChang
       if (this.isOpen && this.portal) {
         this.openModal();
         this.reset();
+        if (this.prefillPatientId) {
+          this.loadPatientById(this.prefillPatientId);
+        }
         this.loadDoctors();
         this.loadTypes();
       } else if (!this.isOpen) {
@@ -192,6 +196,18 @@ export class CreateAppointmentModal implements AfterViewInit, OnDestroy, OnChang
       this.overlayRef.dispose();
       this.overlayRef = null;
     }
+  }
+
+  private loadPatientById(id: number): void {
+    this.service.getPatientById(id).subscribe({
+      next: (patient) => {
+        this.selectedPatient = patient;
+        this.patientSearchQuery = patient.name;
+        this.currentStep.set('doctor');
+        this.cdr.detectChanges();
+      },
+      error: () => this.notification.error('Erro ao carregar paciente'),
+    });
   }
 
   closeModal(): void {
@@ -256,7 +272,12 @@ export class CreateAppointmentModal implements AfterViewInit, OnDestroy, OnChang
   }
 
   private loadSlots(): void {
-     console.log('loadSlots chamado', this.selectedDoctor?.id, this.selectedDate, this.selectedType?.id);
+    console.log(
+      'loadSlots chamado',
+      this.selectedDoctor?.id,
+      this.selectedDate,
+      this.selectedType?.id,
+    );
     if (!this.selectedDoctor || !this.selectedDate || !this.selectedType) return;
     this.loadingSlots = true;
     this.slots = [];
@@ -266,7 +287,7 @@ export class CreateAppointmentModal implements AfterViewInit, OnDestroy, OnChang
       .getSlots(this.selectedDoctor.id, this.selectedDate, this.selectedType.id)
       .subscribe({
         next: (slots) => {
-            console.log('slots recebidos:', JSON.stringify(slots));
+          console.log('slots recebidos:', JSON.stringify(slots));
           this.slots = slots;
           this.loadingSlots = false;
           this.cdr.detectChanges();
@@ -413,6 +434,7 @@ export class CreateAppointmentModal implements AfterViewInit, OnDestroy, OnChang
     this.patientSearchQuery = '';
     this.notes = '';
     this.responsible = '';
+    this.prefillPatientId = null;
     this.isSaving = false;
   }
 

@@ -22,6 +22,9 @@ export class AppointmentResponseDto {
   })
   patientName: string;
 
+  @ApiProperty({ example: '5', description: 'ID do paciente' })
+  patientId: string;
+
   @ApiProperty({
     example: 'Cardiologia',
     description: 'Especialidade do atendimento',
@@ -62,6 +65,7 @@ export class AppointmentResponseDto {
     this.id = String(data.id);
     this.doctorId = String(data.doctorId);
     this.patientName = data.patient?.name; // Adicionado optional chaining por segurança
+    this.patientId = String(data.patient?.id);
     this.specialty = data.specialty;
     this.date = data.date.toISOString().split('T')[0];
     this.startTime = data.startTime;

@@ -1,13 +1,13 @@
 import { PaymentMethod } from '../../financial/types/financial.types';
 
 export type AppointmentStatus =
-  | 'confirmed'
   | 'pending'
-  | 'checkin'
-  | 'blocked'
-  | 'external'
+  | 'confirmed'
   | 'paid'
-  | 'cancelled';
+  | 'finished'
+  | 'cancelled'
+  | 'blocked'
+  | 'external';
 
 export interface Doctor {
   id: number;
@@ -18,6 +18,7 @@ export interface Doctor {
 
 export interface Appointment {
   id: number;
+  patientId: number;
   doctorId: number;
   patientName: string;
   specialty: string;
@@ -33,7 +34,8 @@ export interface BlockedSlot {
   id: number;
   companyId: number;
   doctorId: number | null;
-  date?: string;
+  startDate: string; // era date?
+  endDate?: string | null;
   startTime: string;
   endTime: string;
   label: string;

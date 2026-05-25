@@ -4,12 +4,15 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../core/services/environment';
 import {
   AppointmentTypeSummary,
+  BlockedSlot,
+  CreateBlockedSlotRequest,
   CreateCommissionRequest,
   CreateScheduleRequest,
   DoctorCommission,
   DoctorProfile,
   DoctorSchedule,
   DoctorSummary,
+  UpdateBlockedSlotRequest,
   UpdateCommissionRequest,
   UpdateScheduleRequest,
 } from '../types/schedule.types';
@@ -83,5 +86,24 @@ export class ScheduleService {
     return this.http.delete<{ message: string }>(
       `${this.apiUrl}/doctors/${doctorId}/commissions/${commissionId}`,
     );
+  }
+
+  // ── Blocked Slots ─────────────────────────────────────────────────────────
+
+  getBlockedSlots(doctorId?: number): Observable<BlockedSlot[]> {
+    const params = doctorId !== undefined ? `?doctorId=${doctorId}` : `?global=true`;
+    return this.http.get<BlockedSlot[]>(`${this.apiUrl}/appointments/blocked-slots${params}`);
+  }
+
+  createBlockedSlot(dto: CreateBlockedSlotRequest): Observable<BlockedSlot> {
+    return this.http.post<BlockedSlot>(`${this.apiUrl}/appointments/blocked-slots`, dto);
+  }
+
+  updateBlockedSlot(id: number, dto: UpdateBlockedSlotRequest): Observable<BlockedSlot> {
+    return this.http.put<BlockedSlot>(`${this.apiUrl}/appointments/blocked-slots/${id}`, dto);
+  }
+
+  removeBlockedSlot(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/appointments/blocked-slots/${id}`);
   }
 }

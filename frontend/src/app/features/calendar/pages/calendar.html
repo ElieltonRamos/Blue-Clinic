@@ -41,9 +41,6 @@
           @for (apt of day.appointments.slice(0, 2); track apt.id) {
             <div
               class="flex items-center gap-1 text-[11px] text-(--color-text-muted) truncate mb-0.5"
-              (click)="
-                apt.status === 'checkin' && openContextMenu($event, apt); $event.stopPropagation()
-              "
             >
               <span
                 class="w-1.5 h-1.5 rounded-full shrink-0"
@@ -112,37 +109,6 @@
     </div>
   </aside>
 </div>
-
-<!-- Context menu -->
-@if (contextMenu) {
-  <div
-    class="fixed z-40 w-44 rounded-xl border border-(--color-border-md) bg-bg-card shadow-lg py-1 overflow-hidden"
-    [style.left.px]="contextMenu.x"
-    [style.top.px]="contextMenu.y"
-    (click)="$event.stopPropagation()"
-  >
-    <div class="px-3 py-2 border-b border-(--color-border)">
-      <p class="text-[11px] font-semibold text-(--color-text-primary) truncate">
-        {{ contextMenu.appointment.patientName }}
-      </p>
-      <p class="text-[10px] text-(--color-text-muted)">
-        {{ contextMenu.appointment.startTime }} • Check-in
-      </p>
-    </div>
-    <button
-      (click)="openPaymentModal(contextMenu.appointment)"
-      class="w-full text-left px-3 py-2 text-[12px] text-success hover:bg-success-subtle transition-colors flex items-center gap-2"
-    >
-      💳 Receber pagamento
-    </button>
-    <button
-      (click)="closeContextMenu()"
-      class="w-full text-left px-3 py-2 text-[12px] text-(--color-text-muted) hover:bg-(--color-bg-hover-md) transition-colors"
-    >
-      ✕ Fechar
-    </button>
-  </div>
-}
 
 <!-- Modal pagamento -->
 @if (paymentModal) {
@@ -271,8 +237,6 @@
         @for (apt of selectedDay()!.appointments; track apt.id) {
           <div
             class="flex items-center gap-3 py-2.5 border-b border-(--color-border) last:border-b-0"
-            [class.cursor-pointer]="apt.status === 'checkin'"
-            (click)="apt.status === 'checkin' && openContextMenu($event, apt)"
           >
             <span class="text-xs font-medium text-(--color-text-muted) w-12 shrink-0">{{
               apt.startTime
@@ -289,9 +253,56 @@
             >
               {{ statusLabel(apt.status) }}
             </span>
-            @if (apt.status === 'checkin') {
-              <span class="text-[10px] text-success font-medium shrink-0">💳</span>
-            }
+            <div class="flex items-center gap-1 shrink-0">
+              @if (apt.status === 'pending') {
+                <button
+                  (click)="confirmAppointment(apt); $event.stopPropagation()"
+                  class="text-[10px] px-2 py-1 rounded-lg bg-(--color-primary-subtle) text-(--color-primary-text) hover:opacity-80 transition-opacity"
+                >
+                  Confirmar
+                </button>
+                <button
+                  (click)="cancelAppointment(apt); $event.stopPropagation()"
+                  class="text-[10px] px-2 py-1 rounded-lg bg-danger-subtle text-(--color-danger) hover:opacity-80 transition-opacity"
+                >
+                  Cancelar
+                </button>
+              }
+              @if (apt.status === 'confirmed') {
+                <button
+                  (click)="openPaymentModal(apt); $event.stopPropagation()"
+                  class="text-[10px] px-2 py-1 rounded-lg bg-success-subtle text-success hover:opacity-80 transition-opacity"
+                >
+                  Pagar
+                </button>
+                <button
+                  (click)="rescheduleAppointment(apt); $event.stopPropagation()"
+                  class="text-[10px] px-2 py-1 rounded-lg bg-warning-subtle text-warning hover:opacity-80 transition-opacity"
+                >
+                  Remarcar
+                </button>
+                <button
+                  (click)="cancelAppointment(apt); $event.stopPropagation()"
+                  class="text-[10px] px-2 py-1 rounded-lg bg-danger-subtle text-(--color-danger) hover:opacity-80 transition-opacity"
+                >
+                  Cancelar
+                </button>
+              }
+              @if (apt.status === 'paid') {
+                <button
+                  (click)="finishAppointment(apt); $event.stopPropagation()"
+                  class="text-[10px] px-2 py-1 rounded-lg bg-(--color-primary-subtle) text-(--color-primary-text) hover:opacity-80 transition-opacity"
+                >
+                  Finalizar
+                </button>
+                <button
+                  (click)="cancelAppointment(apt); $event.stopPropagation()"
+                  class="text-[10px] px-2 py-1 rounded-lg bg-danger-subtle text-(--color-danger) hover:opacity-80 transition-opacity"
+                >
+                  Cancelar
+                </button>
+              }
+            </div>
           </div>
         }
       </div>
@@ -301,6 +312,7 @@
 
 <app-create-appointment-modal
   [isOpen]="showCreateModal"
-  (close)="showCreateModal = false"
+  [prefillPatientId]="pendingReschedulePatientId"
+  (close)="showCreateModal = false; pendingReschedulePatientId = null"
   (appointmentCreated)="onAppointmentCreated($event)"
 />

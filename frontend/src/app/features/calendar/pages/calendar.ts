@@ -24,12 +24,6 @@ export interface CalendarDay {
   appointments: Appointment[];
 }
 
-export interface ContextMenu {
-  appointment: Appointment;
-  x: number;
-  y: number;
-}
-
 const PAYMENT_METHODS: { method: PaymentMethod; label: string }[] = [
   { method: 'pix', label: 'PIX' },
   { method: 'dinheiro', label: 'Dinheiro' },
@@ -59,9 +53,9 @@ export class Calendar implements OnInit {
   selectedDay = signal<CalendarDay | null>(null);
   showCreateModal = false;
 
-  contextMenu: ContextMenu | null = null;
   paymentModal: Appointment | null = null;
   paymentEntries: { method: PaymentMethod; value: number; enabled: boolean }[] = [];
+  pendingReschedulePatientId: number | null = null;
 
   loading = false;
   error: string | null = null;
@@ -111,17 +105,38 @@ export class Calendar implements OnInit {
   ngOnInit(): void {
     this.loadDoctors();
     this.loadMonthData();
-  }
-
-  @HostListener('document:click')
-  onDocumentClick(): void {
-    this.contextMenu = null;
+    this.loadBlockedSlots();
   }
 
   prevMonth(): void {
     const d = this.currentDate();
     this.currentDate.set(new Date(d.getFullYear(), d.getMonth() - 1, 1));
     this.loadMonthData();
+  }
+
+  private loadBlockedSlots(): void {
+    this.service.getBlockedSlots().subscribe({
+      next: (slots) => {
+        this.blockedHours = slots.map((s) => ({
+          label: s.label,
+          recurrence: this.recurrenceLabel(s.recurrence),
+          color: s.type === 'break' ? 'primary' : 'error',
+        }));
+      },
+      error: (err: HttpErrorResponse) => {
+        this.error = this.getErrorMessage(err, 'Erro ao carregar bloqueios');
+      },
+    });
+  }
+
+  private recurrenceLabel(recurrence: string): string {
+    const map: Record<string, string> = {
+      none: 'Sem recorrência',
+      daily: 'Diário',
+      weekly: 'Semanal',
+      monthly: 'Mensal',
+    };
+    return map[recurrence] ?? recurrence;
   }
 
   nextMonth(): void {
@@ -147,23 +162,9 @@ export class Calendar implements OnInit {
     this.loadMonthData();
   }
 
-  // ── Context menu ──────────────────────────────────────────────
-
-  openContextMenu(event: MouseEvent, apt: Appointment): void {
-    event.preventDefault();
-    event.stopPropagation();
-    if (apt.status !== 'checkin') return;
-    this.contextMenu = { appointment: apt, x: event.clientX, y: event.clientY };
-  }
-
-  closeContextMenu(): void {
-    this.contextMenu = null;
-  }
-
   // ── Payment modal ─────────────────────────────────────────────
 
   openPaymentModal(apt: Appointment): void {
-    this.contextMenu = null;
     this.paymentModal = apt;
     this.paymentEntries = PAYMENT_METHODS.map((m) => ({
       method: m.method,
@@ -221,39 +222,39 @@ export class Calendar implements OnInit {
 
   statusDotClass(status: AppointmentStatus): string {
     const map: Record<AppointmentStatus, string> = {
-      confirmed: 'bg-(--color-primary-text)',
       pending: 'bg-(--color-info)',
-      checkin: 'bg-(--color-success)',
+      confirmed: 'bg-(--color-primary-text)',
+      paid: 'bg-(--color-success)',
+      finished: 'bg-(--color-primary-text)',
+      cancelled: 'bg-(--color-dot-neutral)',
       blocked: 'bg-(--color-danger)',
       external: 'bg-(--color-dot-neutral)',
-      paid: 'bg-(--color-warning)',
-      cancelled: 'bg-(--color-dot-neutral)',
     };
     return map[status] ?? 'bg-(--color-dot-neutral)';
   }
 
   statusBadgeClass(status: AppointmentStatus): string {
     const map: Record<AppointmentStatus, string> = {
-      confirmed: 'bg-(--color-primary-subtle) text-(--color-primary-text)',
       pending: 'bg-(--color-info-subtle) text-(--color-info)',
-      checkin: 'bg-(--color-success-subtle) text-(--color-success)',
+      confirmed: 'bg-(--color-primary-subtle) text-(--color-primary-text)',
+      paid: 'bg-(--color-success-subtle) text-(--color-success)',
+      finished: 'bg-(--color-bg-hover-md) text-(--color-text-secondary)',
+      cancelled: 'bg-(--color-bg-hover-md) text-(--color-text-muted)',
       blocked: 'bg-(--color-danger-subtle) text-(--color-danger)',
       external: 'bg-(--color-bg-hover-md) text-(--color-text-secondary)',
-      paid: 'bg-(--color-warning-subtle) text-(--color-warning)',
-      cancelled: 'bg-(--color-bg-hover-md) text-(--color-text-muted)',
     };
     return map[status] ?? 'bg-(--color-bg-hover-md) text-(--color-text-secondary)';
   }
 
   statusLabel(status: AppointmentStatus): string {
     const map: Record<AppointmentStatus, string> = {
-      confirmed: 'Confirmado',
       pending: 'Pendente',
-      checkin: 'Check-in',
+      confirmed: 'Confirmado',
+      paid: 'Pago',
+      finished: 'Finalizado',
+      cancelled: 'Cancelado',
       blocked: 'Bloqueado',
       external: 'Externo',
-      paid: 'Pago',
-      cancelled: 'Cancelado',
     };
     return map[status] ?? status;
   }
@@ -337,5 +338,37 @@ export class Calendar implements OnInit {
       return Array.isArray(nestMessage) ? nestMessage.join(', ') : nestMessage;
     }
     return defaultMsg;
+  }
+
+  confirmAppointment(apt: Appointment): void {
+    this.service.updateStatus(apt.id, 'confirmed').subscribe({
+      next: () => this.updateAppointmentStatus(apt.id, 'confirmed'),
+      error: (err) => (this.error = this.getErrorMessage(err, 'Erro ao confirmar')),
+    });
+  }
+
+  finishAppointment(apt: Appointment): void {
+    this.service.updateStatus(apt.id, 'finished').subscribe({
+      next: () => this.updateAppointmentStatus(apt.id, 'finished'),
+      error: (err) => (this.error = this.getErrorMessage(err, 'Erro ao finalizar')),
+    });
+  }
+
+  cancelAppointment(apt: Appointment): void {
+    this.service.updateStatus(apt.id, 'cancelled').subscribe({
+      next: () => this.updateAppointmentStatus(apt.id, 'cancelled'),
+      error: (err) => (this.error = this.getErrorMessage(err, 'Erro ao cancelar')),
+    });
+  }
+
+  rescheduleAppointment(apt: Appointment): void {
+    this.service.updateStatus(apt.id, 'cancelled').subscribe({
+      next: () => {
+        this.updateAppointmentStatus(apt.id, 'cancelled');
+        this.pendingReschedulePatientId = apt.patientId; // passa pro modal
+        this.showCreateModal = true;
+      },
+      error: (err) => (this.error = this.getErrorMessage(err, 'Erro ao remarcar')),
+    });
   }
 }

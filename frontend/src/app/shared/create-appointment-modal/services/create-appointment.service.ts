@@ -44,4 +44,8 @@ export class CreateAppointmentService {
   createAppointment(dto: CreateAppointmentRequest): Observable<AppointmentResponse> {
     return this.http.post<AppointmentResponse>(`${this.apiUrl}/appointments`, dto);
   }
+
+  getPatientById(id: number) {
+    return this.http.get<PatientSummary>(`${this.apiUrl}/patients/${id}`);
+  }
 }

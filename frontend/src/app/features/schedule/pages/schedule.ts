@@ -5,8 +5,11 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { ScheduleService } from '../services/schedule.service';
 import {
   AppointmentTypeSummary,
+  BlockedSlot,
+  BlockedSlotType,
   CommissionForm,
   CommissionRateType,
+  CreateBlockedSlotRequest,
   DAY_LABELS,
   DAY_SHORT,
   DayOfWeek,
@@ -14,11 +17,13 @@ import {
   DoctorProfile,
   DoctorSchedule,
   DoctorSummary,
+  RecurrenceType,
+  UpdateBlockedSlotRequest,
 } from '../types/schedule.types';
 import { NotificationService } from '../../../shared/toastr/notification.service';
 import { AuthService } from '../../../core/services/auth.service';
 
-type ActiveTab = 'horarios' | 'comissoes';
+type ActiveTab = 'horarios' | 'comissoes' | 'bloqueios';
 
 interface ScheduleForm {
   dayOfWeek: DayOfWeek;
@@ -35,6 +40,24 @@ interface CommissionRow {
   editing: boolean;
   saving: boolean;
   form: CommissionForm;
+}
+
+interface BlockedSlotRow {
+  slot: BlockedSlot;
+  editing: boolean;
+  saving: boolean;
+  form: BlockedSlotFormState;
+}
+
+interface BlockedSlotFormState {
+  startDate: string;
+  endDate: string;
+  startTime: string;
+  endTime: string;
+  label: string;
+  type: BlockedSlotType;
+  recurrence: RecurrenceType;
+  color: string;
 }
 
 const DEFAULT_COMMISSION_FORM = (): CommissionForm => ({
@@ -63,6 +86,7 @@ export class Schedule implements OnInit {
   readonly tabs: { key: ActiveTab; label: string }[] = [
     { key: 'horarios', label: 'Horários de Atendimento' },
     { key: 'comissoes', label: 'Comissões' },
+    { key: 'bloqueios', label: 'Bloqueios' },
   ];
   readonly rateTypes: { value: CommissionRateType; label: string }[] = [
     { value: 'percentage', label: '%' },
@@ -79,6 +103,27 @@ export class Schedule implements OnInit {
   selectedDoctorId: number | null = null;
 
   appointmentTypes: AppointmentTypeSummary[] = [];
+  blockedSlotRows: BlockedSlotRow[] = [];
+  showNewBlockedSlotForm = false;
+  savingNewBlockedSlot = false;
+  loadingBlockedSlots = signal(false);
+  newBlockedSlotForm: BlockedSlotFormState = this.defaultBlockedSlotForm();
+  globalBlockedSlotRows: BlockedSlotRow[] = [];
+  showNewGlobalBlockedSlotForm = false;
+  savingNewGlobalBlockedSlot = false;
+  loadingGlobalBlockedSlots = signal(false);
+  newGlobalBlockedSlotForm: BlockedSlotFormState = this.defaultBlockedSlotForm();
+
+  readonly blockedSlotTypes: { value: BlockedSlotType; label: string }[] = [
+    { value: 'break', label: 'Intervalo' },
+    { value: 'external', label: 'Externo' },
+  ];
+  readonly recurrenceTypes: { value: RecurrenceType; label: string }[] = [
+    { value: 'none', label: 'Sem recorrência' },
+    { value: 'daily', label: 'Diário' },
+    { value: 'weekly', label: 'Semanal' },
+    { value: 'monthly', label: 'Mensal' },
+  ];
 
   readonly isAdmin: boolean = (() => {
     const token = localStorage.getItem('token') ?? '';
@@ -103,6 +148,7 @@ export class Schedule implements OnInit {
 
     if (this.isAdmin) {
       this.loadDoctors();
+      this.loadGlobalBlockedSlots();
     } else {
       this.loadMe();
     }
@@ -133,6 +179,7 @@ export class Schedule implements OnInit {
         this.selectedDoctorId = doctor.id;
         this.syncForms(doctor.schedules);
         this.syncCommissionRows(doctor.commissions);
+        this.loadBlockedSlots();
         this.loading.set(false);
         this.cdr.detectChanges();
       },
@@ -152,6 +199,7 @@ export class Schedule implements OnInit {
         this.selectedDoctor = doctor;
         this.syncForms(doctor.schedules);
         this.syncCommissionRows(doctor.commissions);
+        this.loadBlockedSlots();
         this.showNewCommissionForm = false;
         this.newCommissionForm = DEFAULT_COMMISSION_FORM();
         this.loading.set(false);
@@ -466,5 +514,304 @@ export class Schedule implements OnInit {
 
   trackByCommission(_: number, row: CommissionRow): number {
     return row.commission.id;
+  }
+
+  private defaultBlockedSlotForm(): BlockedSlotFormState {
+    const today = new Date().toISOString().split('T')[0];
+    return {
+      startDate: today,
+      endDate: '',
+      startTime: '12:00',
+      endTime: '13:00',
+      label: '',
+      type: 'break',
+      recurrence: 'none',
+      color: '',
+    };
+  }
+
+  private syncBlockedSlotRows(slots: BlockedSlot[]): void {
+    this.blockedSlotRows = slots.map((s) => ({
+      slot: s,
+      editing: false,
+      saving: false,
+      form: {
+        startDate: s.date ?? s.startDate ?? '',
+        endDate: s.endDate ?? '',
+        startTime: s.startTime,
+        endTime: s.endTime,
+        label: s.label,
+        type: s.type,
+        recurrence: s.recurrence,
+        color: s.color ?? '',
+      },
+    }));
+  }
+
+  private loadBlockedSlots(): void {
+    if (!this.selectedDoctor) return;
+    this.loadingBlockedSlots.set(true);
+    this.service.getBlockedSlots(this.selectedDoctor.id).subscribe({
+      next: (slots) => {
+        this.syncBlockedSlotRows(slots);
+        this.loadingBlockedSlots.set(false);
+        this.cdr.detectChanges();
+      },
+      error: (err: HttpErrorResponse) => {
+        this.loadingBlockedSlots.set(false);
+        this.notification.error(this.getErrorMessage(err, 'Erro ao carregar bloqueios'));
+      },
+    });
+  }
+
+  saveNewBlockedSlot(): void {
+    if (!this.validateBlockedSlotForm(this.newBlockedSlotForm)) return;
+    this.savingNewBlockedSlot = true;
+    const dto: CreateBlockedSlotRequest = {
+      doctorId: this.selectedDoctor?.id,
+      startDate: this.newBlockedSlotForm.startDate,
+      endDate: this.newBlockedSlotForm.endDate || undefined,
+      startTime: this.newBlockedSlotForm.startTime,
+      endTime: this.newBlockedSlotForm.endTime,
+      label: this.newBlockedSlotForm.label,
+      type: this.newBlockedSlotForm.type,
+      recurrence: this.newBlockedSlotForm.recurrence,
+      color: this.newBlockedSlotForm.color || undefined,
+    };
+    this.service.createBlockedSlot(dto).subscribe({
+      next: (created) => {
+        this.blockedSlotRows.push({
+          slot: created,
+          editing: false,
+          saving: false,
+          form: { ...this.newBlockedSlotForm },
+        });
+        this.newBlockedSlotForm = this.defaultBlockedSlotForm();
+        this.showNewBlockedSlotForm = false;
+        this.savingNewBlockedSlot = false;
+        this.notification.success('Bloqueio criado');
+        this.cdr.detectChanges();
+      },
+      error: (err: HttpErrorResponse) => {
+        this.savingNewBlockedSlot = false;
+        this.notification.error(this.getErrorMessage(err, 'Erro ao criar bloqueio'));
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  saveBlockedSlot(row: BlockedSlotRow): void {
+    if (!this.validateBlockedSlotForm(row.form)) return;
+    row.saving = true;
+    const dto: UpdateBlockedSlotRequest = {
+      startDate: row.form.startDate,
+      endDate: row.form.endDate,
+      startTime: row.form.startTime,
+      endTime: row.form.endTime,
+      label: row.form.label,
+      type: row.form.type,
+      recurrence: row.form.recurrence,
+      color: row.form.color || undefined,
+    };
+    this.service.updateBlockedSlot(row.slot.id, dto).subscribe({
+      next: (updated) => {
+        row.slot = updated;
+        row.editing = false;
+        row.saving = false;
+        this.notification.success('Bloqueio atualizado');
+        this.cdr.detectChanges();
+      },
+      error: (err: HttpErrorResponse) => {
+        row.saving = false;
+        this.notification.error(this.getErrorMessage(err, 'Erro ao atualizar bloqueio'));
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  removeBlockedSlot(row: BlockedSlotRow): void {
+    row.saving = true;
+    this.service.removeBlockedSlot(row.slot.id).subscribe({
+      next: () => {
+        this.blockedSlotRows = this.blockedSlotRows.filter((r) => r !== row);
+        this.notification.success('Bloqueio removido');
+        this.cdr.detectChanges();
+      },
+      error: (err: HttpErrorResponse) => {
+        row.saving = false;
+        this.notification.error(this.getErrorMessage(err, 'Erro ao remover bloqueio'));
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  cancelEditBlockedSlot(row: BlockedSlotRow): void {
+    row.form = {
+      startDate: row.slot.date ?? row.slot.startDate ?? '',
+      endDate: row.slot.endDate ?? '',
+      startTime: row.slot.startTime,
+      endTime: row.slot.endTime,
+      label: row.slot.label,
+      type: row.slot.type,
+      recurrence: row.slot.recurrence,
+      color: row.slot.color ?? '',
+    };
+    row.editing = false;
+  }
+
+  private validateBlockedSlotForm(form: BlockedSlotFormState): boolean {
+    if (!form.label.trim()) {
+      this.notification.error('Informe a descrição do bloqueio');
+      return false;
+    }
+    if (!form.startDate) {
+      this.notification.error('Informe a data de início');
+      return false;
+    }
+    if (!form.startTime || !form.endTime) {
+      this.notification.error('Informe os horários');
+      return false;
+    }
+    if (form.startTime >= form.endTime) {
+      this.notification.error('Horário de início deve ser menor que o de término');
+      return false;
+    }
+    if (form.endDate && form.endDate < form.startDate) {
+      this.notification.error('Data de término não pode ser anterior à de início');
+      return false;
+    }
+    return true;
+  }
+
+  recurrenceLabel(r: RecurrenceType): string {
+    return this.recurrenceTypes.find((t) => t.value === r)?.label ?? r;
+  }
+
+  blockedSlotTypeLabel(t: BlockedSlotType): string {
+    return this.blockedSlotTypes.find((x) => x.value === t)?.label ?? t;
+  }
+
+  private loadGlobalBlockedSlots(): void {
+    this.loadingGlobalBlockedSlots.set(true);
+    this.service.getBlockedSlots().subscribe({
+      next: (slots) => {
+        this.globalBlockedSlotRows = slots.map((s) => ({
+          slot: s,
+          editing: false,
+          saving: false,
+          form: {
+            startDate: s.date ?? s.startDate ?? '',
+            endDate: s.endDate ?? '',
+            startTime: s.startTime,
+            endTime: s.endTime,
+            label: s.label,
+            type: s.type,
+            recurrence: s.recurrence,
+            color: s.color ?? '',
+          },
+        }));
+        this.loadingGlobalBlockedSlots.set(false);
+        this.cdr.detectChanges();
+      },
+      error: (err: HttpErrorResponse) => {
+        this.loadingGlobalBlockedSlots.set(false);
+        this.notification.error(this.getErrorMessage(err, 'Erro ao carregar bloqueios globais'));
+      },
+    });
+  }
+
+  saveNewGlobalBlockedSlot(): void {
+    if (!this.validateBlockedSlotForm(this.newGlobalBlockedSlotForm)) return;
+    this.savingNewGlobalBlockedSlot = true;
+    const dto: CreateBlockedSlotRequest = {
+      startDate: this.newGlobalBlockedSlotForm.startDate,
+      endDate: this.newGlobalBlockedSlotForm.endDate || undefined,
+      startTime: this.newGlobalBlockedSlotForm.startTime,
+      endTime: this.newGlobalBlockedSlotForm.endTime,
+      label: this.newGlobalBlockedSlotForm.label,
+      type: this.newGlobalBlockedSlotForm.type,
+      recurrence: this.newGlobalBlockedSlotForm.recurrence,
+      color: this.newGlobalBlockedSlotForm.color || undefined,
+      // doctorId omitido → global
+    };
+    this.service.createBlockedSlot(dto).subscribe({
+      next: (created) => {
+        this.globalBlockedSlotRows.push({
+          slot: created,
+          editing: false,
+          saving: false,
+          form: { ...this.newGlobalBlockedSlotForm },
+        });
+        this.newGlobalBlockedSlotForm = this.defaultBlockedSlotForm();
+        this.showNewGlobalBlockedSlotForm = false;
+        this.savingNewGlobalBlockedSlot = false;
+        this.notification.success('Bloqueio global criado');
+        this.cdr.detectChanges();
+      },
+      error: (err: HttpErrorResponse) => {
+        this.savingNewGlobalBlockedSlot = false;
+        this.notification.error(this.getErrorMessage(err, 'Erro ao criar bloqueio global'));
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  saveGlobalBlockedSlot(row: BlockedSlotRow): void {
+    if (!this.validateBlockedSlotForm(row.form)) return;
+    row.saving = true;
+    const dto: UpdateBlockedSlotRequest = {
+      startDate: row.form.startDate,
+      endDate: row.form.endDate,
+      startTime: row.form.startTime,
+      endTime: row.form.endTime,
+      label: row.form.label,
+      type: row.form.type,
+      recurrence: row.form.recurrence,
+      color: row.form.color || undefined,
+    };
+    this.service.updateBlockedSlot(row.slot.id, dto).subscribe({
+      next: (updated) => {
+        row.slot = updated;
+        row.editing = false;
+        row.saving = false;
+        this.notification.success('Bloqueio global atualizado');
+        this.cdr.detectChanges();
+      },
+      error: (err: HttpErrorResponse) => {
+        row.saving = false;
+        this.notification.error(this.getErrorMessage(err, 'Erro ao atualizar bloqueio global'));
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  removeGlobalBlockedSlot(row: BlockedSlotRow): void {
+    row.saving = true;
+    this.service.removeBlockedSlot(row.slot.id).subscribe({
+      next: () => {
+        this.globalBlockedSlotRows = this.globalBlockedSlotRows.filter((r) => r !== row);
+        this.notification.success('Bloqueio global removido');
+        this.cdr.detectChanges();
+      },
+      error: (err: HttpErrorResponse) => {
+        row.saving = false;
+        this.notification.error(this.getErrorMessage(err, 'Erro ao remover bloqueio global'));
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  cancelEditGlobalBlockedSlot(row: BlockedSlotRow): void {
+    row.form = {
+      startDate: row.slot.date ?? row.slot.startDate ?? '',
+      endDate: row.slot.endDate ?? '',
+      startTime: row.slot.startTime,
+      endTime: row.slot.endTime,
+      label: row.slot.label,
+      type: row.slot.type,
+      recurrence: row.slot.recurrence,
+      color: row.slot.color ?? '',
+    };
+    row.editing = false;
   }
 }

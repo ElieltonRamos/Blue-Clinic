@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../core/services/environment';
 import {
   Appointment,
+  AppointmentStatus,
   AutoConfirmation,
   BlockedSlot,
   CreatePaymentRequest,
@@ -52,5 +53,11 @@ export class CalendarService {
       `${this.apiUrl}/appointments/${appointmentId}/payments`,
       body,
     );
+  }
+
+  updateStatus(appointmentId: number, status: AppointmentStatus) {
+    return this.http.patch<Appointment>(`${this.apiUrl}/appointments/${appointmentId}/status`, {
+      status,
+    });
   }
 }

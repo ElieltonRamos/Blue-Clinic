@@ -54,12 +54,319 @@
 
   <div class="flex-1 min-w-0 flex flex-col">
     @if (!selectedDoctor && !loading()) {
-      <div class="flex-1 flex items-center justify-center">
-        <div class="text-center">
-          <p class="text-4xl mb-3">📅</p>
+      <div class="flex-1 flex flex-col gap-6">
+        <div class="flex items-center gap-2">
+          <p class="text-4xl">📅</p>
           <p class="text-sm text-(--color-text-muted)">
-            {{ isAdmin ? 'Selecione um médico para configurar a agenda' : 'Carregando...' }}
+            Selecione um médico para configurar a agenda
           </p>
+        </div>
+
+        <div>
+          <p class="text-[11px] font-bold text-(--color-text-muted) uppercase tracking-widest mb-3">
+            Bloqueios Globais
+          </p>
+
+          @if (loadingGlobalBlockedSlots()) {
+            <div class="flex justify-center py-6">
+              <div
+                class="w-5 h-5 border-2 border-(--color-primary) border-t-transparent rounded-full animate-spin"
+              ></div>
+            </div>
+          } @else {
+            <div class="space-y-2">
+              @for (row of globalBlockedSlotRows; track row.slot.id) {
+                <div class="rounded-xl border border-(--color-border) bg-bg-card px-4 py-3">
+                  @if (!row.editing && !row.saving) {
+                    <div class="flex items-center gap-3">
+                      @if (row.slot.color) {
+                        <span
+                          class="w-2.5 h-2.5 rounded-full shrink-0"
+                          [style.background]="row.slot.color"
+                        ></span>
+                      }
+                      <div class="flex-1 min-w-0">
+                        <p class="text-[12px] font-medium text-(--color-text-primary)">
+                          {{ row.slot.label }}
+                        </p>
+                        <p class="text-[10px] text-(--color-text-muted)">
+                          {{ row.slot.date ?? row.slot.startDate }}
+                          @if (row.slot.endDate) {
+                            → {{ row.slot.endDate }}
+                          }
+                          · {{ row.slot.startTime }}–{{ row.slot.endTime }} ·
+                          {{ recurrenceLabel(row.slot.recurrence) }} ·
+                          {{ blockedSlotTypeLabel(row.slot.type) }}
+                        </p>
+                      </div>
+                      <div class="flex items-center gap-1 ml-auto shrink-0">
+                        <button
+                          (click)="row.editing = true"
+                          class="px-2.5 py-1 rounded-lg text-[11px] text-(--color-text-muted) hover:bg-(--color-bg-hover-md) transition-colors"
+                        >
+                          ✏️
+                        </button>
+                        <button
+                          (click)="removeGlobalBlockedSlot(row)"
+                          class="px-2.5 py-1 rounded-lg text-[11px] text-(--color-danger) hover:bg-danger-subtle transition-colors"
+                        >
+                          🗑
+                        </button>
+                      </div>
+                    </div>
+                  }
+                  @if (row.editing && !row.saving) {
+                    <div class="space-y-3">
+                      <div class="grid grid-cols-2 gap-3">
+                        <div>
+                          <label class="block text-[10px] text-(--color-text-muted) mb-1"
+                            >Descrição</label
+                          >
+                          <input
+                            type="text"
+                            [(ngModel)]="row.form.label"
+                            class="w-full bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-2.5 py-1.5 text-[12px] text-(--color-input-text) outline-none focus:border-(--color-primary)"
+                          />
+                        </div>
+                        <div>
+                          <label class="block text-[10px] text-(--color-text-muted) mb-1"
+                            >Tipo</label
+                          >
+                          <select
+                            [(ngModel)]="row.form.type"
+                            class="w-full bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-2 py-1.5 text-[12px] text-(--color-input-text) outline-none focus:border-(--color-primary)"
+                          >
+                            @for (t of blockedSlotTypes; track t.value) {
+                              <option [value]="t.value">{{ t.label }}</option>
+                            }
+                          </select>
+                        </div>
+                        <div>
+                          <label class="block text-[10px] text-(--color-text-muted) mb-1"
+                            >Data início</label
+                          >
+                          <input
+                            type="date"
+                            [(ngModel)]="row.form.startDate"
+                            class="w-full bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-2 py-1.5 text-[12px] text-(--color-input-text) outline-none focus:border-(--color-primary)"
+                          />
+                        </div>
+                        <div>
+                          <label class="block text-[10px] text-(--color-text-muted) mb-1"
+                            >Data fim <span class="text-[9px]">(opcional)</span></label
+                          >
+                          <input
+                            type="date"
+                            [(ngModel)]="row.form.endDate"
+                            class="w-full bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-2 py-1.5 text-[12px] text-(--color-input-text) outline-none focus:border-(--color-primary)"
+                          />
+                        </div>
+                        <div>
+                          <label class="block text-[10px] text-(--color-text-muted) mb-1"
+                            >Hora início</label
+                          >
+                          <input
+                            type="time"
+                            [(ngModel)]="row.form.startTime"
+                            class="w-full bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-2 py-1.5 text-[12px] text-(--color-input-text) outline-none focus:border-(--color-primary)"
+                          />
+                        </div>
+                        <div>
+                          <label class="block text-[10px] text-(--color-text-muted) mb-1"
+                            >Hora fim</label
+                          >
+                          <input
+                            type="time"
+                            [(ngModel)]="row.form.endTime"
+                            class="w-full bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-2 py-1.5 text-[12px] text-(--color-input-text) outline-none focus:border-(--color-primary)"
+                          />
+                        </div>
+                        <div>
+                          <label class="block text-[10px] text-(--color-text-muted) mb-1"
+                            >Recorrência</label
+                          >
+                          <select
+                            [(ngModel)]="row.form.recurrence"
+                            class="w-full bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-2 py-1.5 text-[12px] text-(--color-input-text) outline-none focus:border-(--color-primary)"
+                          >
+                            @for (r of recurrenceTypes; track r.value) {
+                              <option [value]="r.value">{{ r.label }}</option>
+                            }
+                          </select>
+                        </div>
+                        <div>
+                          <label class="block text-[10px] text-(--color-text-muted) mb-1"
+                            >Cor <span class="text-[9px]">(opcional)</span></label
+                          >
+                          <input
+                            type="color"
+                            [(ngModel)]="row.form.color"
+                            class="w-full h-8 bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-1 py-0.5 outline-none focus:border-(--color-primary)"
+                          />
+                        </div>
+                      </div>
+                      <div class="flex justify-end gap-2">
+                        <button
+                          (click)="cancelEditGlobalBlockedSlot(row)"
+                          class="px-3 py-1.5 rounded-lg text-[11px] text-(--color-text-muted) hover:bg-(--color-bg-hover-md) transition-colors"
+                        >
+                          Cancelar
+                        </button>
+                        <button
+                          (click)="saveGlobalBlockedSlot(row)"
+                          class="px-3 py-1.5 rounded-lg text-[11px] font-medium bg-(--color-primary) text-white hover:opacity-90 transition-opacity"
+                        >
+                          Salvar
+                        </button>
+                      </div>
+                    </div>
+                  }
+                  @if (row.saving) {
+                    <div class="flex items-center gap-2 py-1">
+                      <div
+                        class="w-4 h-4 border-2 border-(--color-primary) border-t-transparent rounded-full animate-spin"
+                      ></div>
+                      <span class="text-[11px] text-(--color-text-muted)">Salvando...</span>
+                    </div>
+                  }
+                </div>
+              }
+
+              @if (showNewGlobalBlockedSlotForm) {
+                <div
+                  class="rounded-xl border border-(--color-primary)/40 bg-(--color-primary-subtle) px-4 py-3 space-y-3"
+                >
+                  <p class="text-[11px] font-semibold text-(--color-primary-text)">
+                    Novo Bloqueio Global
+                  </p>
+                  <div class="grid grid-cols-2 gap-3">
+                    <div>
+                      <label class="block text-[10px] text-(--color-text-muted) mb-1"
+                        >Descrição</label
+                      >
+                      <input
+                        type="text"
+                        [(ngModel)]="newGlobalBlockedSlotForm.label"
+                        class="w-full bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-2.5 py-1.5 text-[12px] text-(--color-input-text) outline-none focus:border-(--color-primary)"
+                      />
+                    </div>
+                    <div>
+                      <label class="block text-[10px] text-(--color-text-muted) mb-1">Tipo</label>
+                      <select
+                        [(ngModel)]="newGlobalBlockedSlotForm.type"
+                        class="w-full bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-2 py-1.5 text-[12px] text-(--color-input-text) outline-none focus:border-(--color-primary)"
+                      >
+                        @for (t of blockedSlotTypes; track t.value) {
+                          <option [value]="t.value">{{ t.label }}</option>
+                        }
+                      </select>
+                    </div>
+                    <div>
+                      <label class="block text-[10px] text-(--color-text-muted) mb-1"
+                        >Data início</label
+                      >
+                      <input
+                        type="date"
+                        [(ngModel)]="newGlobalBlockedSlotForm.startDate"
+                        class="w-full bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-2 py-1.5 text-[12px] text-(--color-input-text) outline-none focus:border-(--color-primary)"
+                      />
+                    </div>
+                    <div>
+                      <label class="block text-[10px] text-(--color-text-muted) mb-1"
+                        >Data fim <span class="text-[9px]">(opcional)</span></label
+                      >
+                      <input
+                        type="date"
+                        [(ngModel)]="newGlobalBlockedSlotForm.endDate"
+                        class="w-full bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-2 py-1.5 text-[12px] text-(--color-input-text) outline-none focus:border-(--color-primary)"
+                      />
+                    </div>
+                    <div>
+                      <label class="block text-[10px] text-(--color-text-muted) mb-1"
+                        >Hora início</label
+                      >
+                      <input
+                        type="time"
+                        [(ngModel)]="newGlobalBlockedSlotForm.startTime"
+                        class="w-full bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-2 py-1.5 text-[12px] text-(--color-input-text) outline-none focus:border-(--color-primary)"
+                      />
+                    </div>
+                    <div>
+                      <label class="block text-[10px] text-(--color-text-muted) mb-1"
+                        >Hora fim</label
+                      >
+                      <input
+                        type="time"
+                        [(ngModel)]="newGlobalBlockedSlotForm.endTime"
+                        class="w-full bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-2 py-1.5 text-[12px] text-(--color-input-text) outline-none focus:border-(--color-primary)"
+                      />
+                    </div>
+                    <div>
+                      <label class="block text-[10px] text-(--color-text-muted) mb-1"
+                        >Recorrência</label
+                      >
+                      <select
+                        [(ngModel)]="newGlobalBlockedSlotForm.recurrence"
+                        class="w-full bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-2 py-1.5 text-[12px] text-(--color-input-text) outline-none focus:border-(--color-primary)"
+                      >
+                        @for (r of recurrenceTypes; track r.value) {
+                          <option [value]="r.value">{{ r.label }}</option>
+                        }
+                      </select>
+                    </div>
+                    <div>
+                      <label class="block text-[10px] text-(--color-text-muted) mb-1"
+                        >Cor <span class="text-[9px]">(opcional)</span></label
+                      >
+                      <input
+                        type="color"
+                        [(ngModel)]="newGlobalBlockedSlotForm.color"
+                        class="w-full h-8 bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-1 py-0.5 outline-none focus:border-(--color-primary)"
+                      />
+                    </div>
+                  </div>
+                  <div class="flex justify-end gap-2">
+                    <button
+                      (click)="showNewGlobalBlockedSlotForm = false"
+                      class="px-3 py-1.5 rounded-lg text-[11px] text-(--color-text-muted) hover:bg-(--color-bg-hover-md) transition-colors"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      (click)="saveNewGlobalBlockedSlot()"
+                      [disabled]="savingNewGlobalBlockedSlot"
+                      class="px-3 py-1.5 rounded-lg text-[11px] font-medium bg-(--color-primary) text-white hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-1"
+                    >
+                      @if (savingNewGlobalBlockedSlot) {
+                        <span
+                          class="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"
+                        ></span>
+                      }
+                      Salvar
+                    </button>
+                  </div>
+                </div>
+              }
+
+              @if (!showNewGlobalBlockedSlotForm) {
+                <button
+                  (click)="showNewGlobalBlockedSlotForm = true"
+                  class="w-full py-2.5 rounded-xl border border-dashed border-(--color-border-md) text-[12px] text-(--color-text-muted) hover:border-(--color-primary)/40 hover:text-(--color-primary-text) hover:bg-(--color-primary-subtle) transition-all"
+                >
+                  + Adicionar Bloqueio Global
+                </button>
+              }
+
+              @if (globalBlockedSlotRows.length === 0 && !showNewGlobalBlockedSlotForm) {
+                <div class="flex flex-col items-center justify-center py-8 text-center">
+                  <p class="text-3xl mb-2">🌐</p>
+                  <p class="text-sm text-(--color-text-muted)">
+                    Nenhum bloqueio global configurado
+                  </p>
+                </div>
+              }
+            </div>
+          }
         </div>
       </div>
     }
@@ -462,6 +769,302 @@
               <p class="text-3xl mb-2">💰</p>
               <p class="text-sm text-(--color-text-muted)">Nenhuma comissão configurada</p>
             </div>
+          }
+        </div>
+      }
+      @if (activeTab() === 'bloqueios') {
+        <div class="space-y-2">
+          @if (loadingBlockedSlots()) {
+            <div class="flex justify-center py-6">
+              <div
+                class="w-5 h-5 border-2 border-(--color-primary) border-t-transparent rounded-full animate-spin"
+              ></div>
+            </div>
+          } @else {
+            @for (row of blockedSlotRows; track row.slot.id) {
+              <div class="rounded-xl border border-(--color-border) bg-bg-card px-4 py-3">
+                @if (!row.editing && !row.saving) {
+                  <div class="flex items-center gap-3">
+                    @if (row.slot.color) {
+                      <span
+                        class="w-2.5 h-2.5 rounded-full shrink-0"
+                        [style.background]="row.slot.color"
+                      ></span>
+                    }
+                    <div class="flex-1 min-w-0">
+                      <p class="text-[12px] font-medium text-(--color-text-primary)">
+                        {{ row.slot.label }}
+                      </p>
+                      <p class="text-[10px] text-(--color-text-muted)">
+                        {{ row.slot.date ?? row.slot.startDate }}
+                        @if (row.slot.endDate) {
+                          → {{ row.slot.endDate }}
+                        }
+                        · {{ row.slot.startTime }}–{{ row.slot.endTime }} ·
+                        {{ recurrenceLabel(row.slot.recurrence) }} ·
+                        {{ blockedSlotTypeLabel(row.slot.type) }}
+                      </p>
+                    </div>
+                    <div class="flex items-center gap-1 ml-auto shrink-0">
+                      <button
+                        (click)="row.editing = true"
+                        class="px-2.5 py-1 rounded-lg text-[11px] text-(--color-text-muted) hover:bg-(--color-bg-hover-md) transition-colors"
+                      >
+                        ✏️
+                      </button>
+                      <button
+                        (click)="removeBlockedSlot(row)"
+                        class="px-2.5 py-1 rounded-lg text-[11px] text-(--color-danger) hover:bg-danger-subtle transition-colors"
+                      >
+                        🗑
+                      </button>
+                    </div>
+                  </div>
+                }
+
+                @if (row.editing && !row.saving) {
+                  <div class="space-y-3">
+                    <div class="grid grid-cols-2 gap-3">
+                      <div>
+                        <label class="block text-[10px] text-(--color-text-muted) mb-1"
+                          >Descrição</label
+                        >
+                        <input
+                          type="text"
+                          [(ngModel)]="row.form.label"
+                          class="w-full bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-2.5 py-1.5 text-[12px] text-(--color-input-text) outline-none focus:border-(--color-primary)"
+                        />
+                      </div>
+                      <div>
+                        <label class="block text-[10px] text-(--color-text-muted) mb-1">Tipo</label>
+                        <select
+                          [(ngModel)]="row.form.type"
+                          class="w-full bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-2 py-1.5 text-[12px] text-(--color-input-text) outline-none focus:border-(--color-primary)"
+                        >
+                          @for (t of blockedSlotTypes; track t.value) {
+                            <option [value]="t.value">{{ t.label }}</option>
+                          }
+                        </select>
+                      </div>
+                      <div>
+                        <label class="block text-[10px] text-(--color-text-muted) mb-1"
+                          >Data início</label
+                        >
+                        <input
+                          type="date"
+                          [(ngModel)]="row.form.startDate"
+                          class="w-full bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-2 py-1.5 text-[12px] text-(--color-input-text) outline-none focus:border-(--color-primary)"
+                        />
+                      </div>
+                      <div>
+                        <label class="block text-[10px] text-(--color-text-muted) mb-1"
+                          >Data fim <span class="text-[9px]">(opcional)</span></label
+                        >
+                        <input
+                          type="date"
+                          [(ngModel)]="row.form.endDate"
+                          class="w-full bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-2 py-1.5 text-[12px] text-(--color-input-text) outline-none focus:border-(--color-primary)"
+                        />
+                      </div>
+                      <div>
+                        <label class="block text-[10px] text-(--color-text-muted) mb-1"
+                          >Hora início</label
+                        >
+                        <input
+                          type="time"
+                          [(ngModel)]="row.form.startTime"
+                          class="w-full bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-2 py-1.5 text-[12px] text-(--color-input-text) outline-none focus:border-(--color-primary)"
+                        />
+                      </div>
+                      <div>
+                        <label class="block text-[10px] text-(--color-text-muted) mb-1"
+                          >Hora fim</label
+                        >
+                        <input
+                          type="time"
+                          [(ngModel)]="row.form.endTime"
+                          class="w-full bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-2 py-1.5 text-[12px] text-(--color-input-text) outline-none focus:border-(--color-primary)"
+                        />
+                      </div>
+                      <div>
+                        <label class="block text-[10px] text-(--color-text-muted) mb-1"
+                          >Recorrência</label
+                        >
+                        <select
+                          [(ngModel)]="row.form.recurrence"
+                          class="w-full bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-2 py-1.5 text-[12px] text-(--color-input-text) outline-none focus:border-(--color-primary)"
+                        >
+                          @for (r of recurrenceTypes; track r.value) {
+                            <option [value]="r.value">{{ r.label }}</option>
+                          }
+                        </select>
+                      </div>
+                      <div>
+                        <label class="block text-[10px] text-(--color-text-muted) mb-1"
+                          >Cor <span class="text-[9px]">(opcional)</span></label
+                        >
+                        <input
+                          type="color"
+                          [(ngModel)]="row.form.color"
+                          class="w-full h-8 bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-1 py-0.5 outline-none focus:border-(--color-primary)"
+                        />
+                      </div>
+                    </div>
+                    <div class="flex justify-end gap-2">
+                      <button
+                        (click)="cancelEditBlockedSlot(row)"
+                        class="px-3 py-1.5 rounded-lg text-[11px] text-(--color-text-muted) hover:bg-(--color-bg-hover-md) transition-colors"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        (click)="saveBlockedSlot(row)"
+                        class="px-3 py-1.5 rounded-lg text-[11px] font-medium bg-(--color-primary) text-white hover:opacity-90 transition-opacity"
+                      >
+                        Salvar
+                      </button>
+                    </div>
+                  </div>
+                }
+
+                @if (row.saving) {
+                  <div class="flex items-center gap-2 py-1">
+                    <div
+                      class="w-4 h-4 border-2 border-(--color-primary) border-t-transparent rounded-full animate-spin"
+                    ></div>
+                    <span class="text-[11px] text-(--color-text-muted)">Salvando...</span>
+                  </div>
+                }
+              </div>
+            }
+
+            @if (showNewBlockedSlotForm) {
+              <div
+                class="rounded-xl border border-(--color-primary)/40 bg-(--color-primary-subtle) px-4 py-3 space-y-3"
+              >
+                <p class="text-[11px] font-semibold text-(--color-primary-text)">Novo Bloqueio</p>
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-[10px] text-(--color-text-muted) mb-1"
+                      >Descrição</label
+                    >
+                    <input
+                      type="text"
+                      [(ngModel)]="newBlockedSlotForm.label"
+                      class="w-full bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-2.5 py-1.5 text-[12px] text-(--color-input-text) outline-none focus:border-(--color-primary)"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-[10px] text-(--color-text-muted) mb-1">Tipo</label>
+                    <select
+                      [(ngModel)]="newBlockedSlotForm.type"
+                      class="w-full bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-2 py-1.5 text-[12px] text-(--color-input-text) outline-none focus:border-(--color-primary)"
+                    >
+                      @for (t of blockedSlotTypes; track t.value) {
+                        <option [value]="t.value">{{ t.label }}</option>
+                      }
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-[10px] text-(--color-text-muted) mb-1"
+                      >Data início</label
+                    >
+                    <input
+                      type="date"
+                      [(ngModel)]="newBlockedSlotForm.startDate"
+                      class="w-full bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-2 py-1.5 text-[12px] text-(--color-input-text) outline-none focus:border-(--color-primary)"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-[10px] text-(--color-text-muted) mb-1"
+                      >Data fim <span class="text-[9px]">(opcional)</span></label
+                    >
+                    <input
+                      type="date"
+                      [(ngModel)]="newBlockedSlotForm.endDate"
+                      class="w-full bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-2 py-1.5 text-[12px] text-(--color-input-text) outline-none focus:border-(--color-primary)"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-[10px] text-(--color-text-muted) mb-1"
+                      >Hora início</label
+                    >
+                    <input
+                      type="time"
+                      [(ngModel)]="newBlockedSlotForm.startTime"
+                      class="w-full bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-2 py-1.5 text-[12px] text-(--color-input-text) outline-none focus:border-(--color-primary)"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-[10px] text-(--color-text-muted) mb-1">Hora fim</label>
+                    <input
+                      type="time"
+                      [(ngModel)]="newBlockedSlotForm.endTime"
+                      class="w-full bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-2 py-1.5 text-[12px] text-(--color-input-text) outline-none focus:border-(--color-primary)"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-[10px] text-(--color-text-muted) mb-1"
+                      >Recorrência</label
+                    >
+                    <select
+                      [(ngModel)]="newBlockedSlotForm.recurrence"
+                      class="w-full bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-2 py-1.5 text-[12px] text-(--color-input-text) outline-none focus:border-(--color-primary)"
+                    >
+                      @for (r of recurrenceTypes; track r.value) {
+                        <option [value]="r.value">{{ r.label }}</option>
+                      }
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-[10px] text-(--color-text-muted) mb-1"
+                      >Cor <span class="text-[9px]">(opcional)</span></label
+                    >
+                    <input
+                      type="color"
+                      [(ngModel)]="newBlockedSlotForm.color"
+                      class="w-full h-8 bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-1 py-0.5 outline-none focus:border-(--color-primary)"
+                    />
+                  </div>
+                </div>
+                <div class="flex justify-end gap-2">
+                  <button
+                    (click)="showNewBlockedSlotForm = false"
+                    class="px-3 py-1.5 rounded-lg text-[11px] text-(--color-text-muted) hover:bg-(--color-bg-hover-md) transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    (click)="saveNewBlockedSlot()"
+                    [disabled]="savingNewBlockedSlot"
+                    class="px-3 py-1.5 rounded-lg text-[11px] font-medium bg-(--color-primary) text-white hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-1"
+                  >
+                    @if (savingNewBlockedSlot) {
+                      <span
+                        class="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"
+                      ></span>
+                    }
+                    Salvar
+                  </button>
+                </div>
+              </div>
+            }
+
+            @if (!showNewBlockedSlotForm) {
+              <button
+                (click)="showNewBlockedSlotForm = true"
+                class="w-full py-2.5 rounded-xl border border-dashed border-(--color-border-md) text-[12px] text-(--color-text-muted) hover:border-(--color-primary)/40 hover:text-(--color-primary-text) hover:bg-(--color-primary-subtle) transition-all"
+              >
+                + Adicionar Bloqueio
+              </button>
+            }
+
+            @if (blockedSlotRows.length === 0 && !showNewBlockedSlotForm) {
+              <div class="flex flex-col items-center justify-center py-8 text-center">
+                <p class="text-3xl mb-2">🚫</p>
+                <p class="text-sm text-(--color-text-muted)">Nenhum bloqueio configurado</p>
+              </div>
+            }
           }
         </div>
       }

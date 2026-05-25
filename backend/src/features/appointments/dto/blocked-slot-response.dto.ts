@@ -45,13 +45,18 @@ export class BlockedSlotResponseDto {
   })
   color: string | null;
 
+  @ApiProperty({
+    example: '2026-06-01',
+    description: 'Data de início do bloqueio (YYYY-MM-DD)',
+  })
+  startDate: string;
+
   @ApiPropertyOptional({
-    example: '2026-05-23',
-    description:
-      'Data específica do bloqueio no formato YYYY-MM-DD (null se for recorrente)',
+    example: '2026-06-30',
+    description: 'Data de término do bloqueio (YYYY-MM-DD)',
     nullable: true,
   })
-  date: string | null;
+  endDate: string | null;
 
   constructor(data: any) {
     this.id = data.id;
@@ -63,8 +68,9 @@ export class BlockedSlotResponseDto {
     this.type = data.type;
     this.recurrence = data.recurrence;
     this.color = data.color;
-    this.date = data.date
-      ? (data.date as Date).toISOString().split('T')[0]
+    this.startDate = (data.startDate as Date).toISOString().split('T')[0];
+    this.endDate = data.endDate
+      ? (data.endDate as Date).toISOString().split('T')[0]
       : null;
   }
 }

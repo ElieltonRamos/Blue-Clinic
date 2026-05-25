@@ -9,6 +9,9 @@ import {
   UseGuards,
   HttpStatus,
   ParseIntPipe,
+  Put,
+  Delete,
+  HttpCode,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -32,6 +35,8 @@ import { JwtAuthGuard } from '../../core/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../../core/guards/roles.guard.js';
 import { CurrentUser } from '../../core/decorators/current-user.decorator.js';
 import { Roles } from '../../core/decorators/roles.decorator.js';
+import { UpdateBlockedSlotDto } from './dto/update-blocked-slot.dto.js';
+import { CreateBlockedSlotDto } from './dto/create-blocked-slot.dto.js';
 
 @ApiTags('Agendamentos')
 @ApiBearerAuth()
@@ -74,8 +79,62 @@ export class AppointmentsController {
   findBlockedSlots(
     @CurrentUser('companyId') companyId: number,
     @Query('doctorId') doctorId?: number,
+    @Query('global') global?: string,
   ) {
-    return this.appointmentsService.findBlockedSlots(companyId, doctorId);
+    return this.appointmentsService.findBlockedSlots(
+      companyId,
+      doctorId,
+      global === 'true',
+    );
+  }
+
+  @Post('blocked-slots')
+  @Roles('admin', 'atendimento')
+  @ApiOperation({ summary: 'Criar slot bloqueado' })
+  @ApiResponse({ status: HttpStatus.CREATED, type: BlockedSlotResponseDto })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Médico não encontrado',
+  })
+  createBlockedSlot(
+    @CurrentUser('companyId') companyId: number,
+    @Body() dto: CreateBlockedSlotDto,
+  ) {
+    return this.appointmentsService.createBlockedSlot(companyId, dto);
+  }
+
+  @Put('blocked-slots/:id')
+  @Roles('admin', 'atendimento')
+  @ApiOperation({ summary: 'Atualizar slot bloqueado' })
+  @ApiParam({ name: 'id', type: Number })
+  @ApiResponse({ status: HttpStatus.OK, type: BlockedSlotResponseDto })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Bloqueio não encontrado',
+  })
+  updateBlockedSlot(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser('companyId') companyId: number,
+    @Body() dto: UpdateBlockedSlotDto,
+  ) {
+    return this.appointmentsService.updateBlockedSlot(id, companyId, dto);
+  }
+
+  @Delete('blocked-slots/:id')
+  @Roles('admin', 'atendimento')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Remover slot bloqueado' })
+  @ApiParam({ name: 'id', type: Number })
+  @ApiResponse({ status: HttpStatus.NO_CONTENT })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Bloqueio não encontrado',
+  })
+  deleteBlockedSlot(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser('companyId') companyId: number,
+  ) {
+    return this.appointmentsService.deleteBlockedSlot(id, companyId);
   }
 
   @Get('auto-confirmation')
