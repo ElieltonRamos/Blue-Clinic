@@ -66,6 +66,7 @@ const DEFAULT_COMMISSION_FORM = (): CommissionForm => ({
   doctorRate: 0,
   clinicRateType: 'percentage',
   clinicRate: 0,
+  price: 0,
 });
 
 @Component({
@@ -251,6 +252,7 @@ export class Schedule implements OnInit {
         doctorRate: c.doctorRate,
         clinicRateType: c.clinicRateType,
         clinicRate: c.clinicRate,
+        price: c.price,
       },
     }));
   }
@@ -389,6 +391,7 @@ export class Schedule implements OnInit {
         doctorRate: this.newCommissionForm.doctorRate,
         clinicRateType: this.newCommissionForm.clinicRateType,
         clinicRate: this.newCommissionForm.clinicRate,
+        price: this.newCommissionForm.price,
       })
       .subscribe({
         next: (created) => {
@@ -423,6 +426,7 @@ export class Schedule implements OnInit {
         doctorRate: row.form.doctorRate,
         clinicRateType: row.form.clinicRateType,
         clinicRate: row.form.clinicRate,
+        price: row.form.price,
       })
       .subscribe({
         next: (updated) => {
@@ -464,6 +468,7 @@ export class Schedule implements OnInit {
       doctorRate: row.commission.doctorRate,
       clinicRateType: row.commission.clinicRateType,
       clinicRate: row.commission.clinicRate,
+      price: row.commission.price,
     };
     row.editing = false;
   }
@@ -489,6 +494,10 @@ export class Schedule implements OnInit {
     }
     if (form.doctorRate < 0 || form.clinicRate < 0) {
       this.notification.error('Taxas devem ser maiores ou iguais a zero');
+      return false;
+    }
+    if (form.price <= 0) {
+      this.notification.error('Preço deve ser maior que zero');
       return false;
     }
     return true;

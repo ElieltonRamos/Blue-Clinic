@@ -14,12 +14,18 @@ export interface DoctorScheduleSummary {
   active: boolean;
 }
 
+export interface DoctorCommissionSummary {
+  appointmentTypeId: number;
+  price: number;
+}
+
 export interface DoctorSummary {
   id: number;
   name: string;
   specialty: string;
   avatarUrl?: string | null;
   schedules: DoctorScheduleSummary[];
+  commissions: DoctorCommissionSummary[];
 }
 
 export interface PatientSummary {
@@ -43,9 +49,9 @@ export interface CreateAppointmentRequest {
   patientId: number;
   appointmentTypeId: number;
   specialty?: string;
-  date: string;           // YYYY-MM-DD
-  startTime: string;      // HH:mm
-  endTime: string;        // HH:mm
+  date: string; // YYYY-MM-DD
+  startTime: string; // HH:mm
+  endTime: string; // HH:mm
   responsible?: string;
   notes?: string;
 }

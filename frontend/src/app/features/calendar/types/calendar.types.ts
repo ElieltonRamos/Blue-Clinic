@@ -7,6 +7,7 @@ export type AppointmentStatus =
   | 'finished'
   | 'cancelled'
   | 'blocked'
+  | 'rescheduled'
   | 'external';
 
 export interface Doctor {
@@ -28,6 +29,8 @@ export interface Appointment {
   status: AppointmentStatus;
   responsible?: string;
   notes?: string;
+  cancellationReason?: string;
+  price?: number;
 }
 
 export interface BlockedSlot {

@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal, computed, HostListener } from '@angular/core';
+import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -52,6 +52,10 @@ export class Calendar implements OnInit {
   autoConfirmation: AutoConfirmation = { confirmed: 0, total: 0 };
   selectedDay = signal<CalendarDay | null>(null);
   showCreateModal = false;
+  cancelReasonText = '';
+  rescheduleReasonText = '';
+  pendingCancelId: number | null = null;
+  pendingRescheduleId: number | null = null;
 
   paymentModal: Appointment | null = null;
   paymentEntries: { method: PaymentMethod; value: number; enabled: boolean }[] = [];
@@ -112,6 +116,23 @@ export class Calendar implements OnInit {
     const d = this.currentDate();
     this.currentDate.set(new Date(d.getFullYear(), d.getMonth() - 1, 1));
     this.loadMonthData();
+  }
+
+  requestCancel(apt: Appointment): void {
+    this.pendingCancelId = apt.id;
+    this.pendingRescheduleId = null;
+    this.cancelReasonText = '';
+  }
+
+  requestReschedule(apt: Appointment): void {
+    this.pendingRescheduleId = apt.id;
+    this.pendingCancelId = null;
+    this.rescheduleReasonText = '';
+  }
+
+  dismissInline(): void {
+    this.pendingCancelId = null;
+    this.pendingRescheduleId = null;
   }
 
   private loadBlockedSlots(): void {
@@ -228,6 +249,7 @@ export class Calendar implements OnInit {
       finished: 'bg-(--color-primary-text)',
       cancelled: 'bg-(--color-dot-neutral)',
       blocked: 'bg-(--color-danger)',
+      rescheduled: 'bg-(--color-warning)',
       external: 'bg-(--color-dot-neutral)',
     };
     return map[status] ?? 'bg-(--color-dot-neutral)';
@@ -241,6 +263,7 @@ export class Calendar implements OnInit {
       finished: 'bg-(--color-bg-hover-md) text-(--color-text-secondary)',
       cancelled: 'bg-(--color-bg-hover-md) text-(--color-text-muted)',
       blocked: 'bg-(--color-danger-subtle) text-(--color-danger)',
+      rescheduled: 'bg-warning-subtle text-warning',
       external: 'bg-(--color-bg-hover-md) text-(--color-text-secondary)',
     };
     return map[status] ?? 'bg-(--color-bg-hover-md) text-(--color-text-secondary)';
@@ -255,6 +278,7 @@ export class Calendar implements OnInit {
       cancelled: 'Cancelado',
       blocked: 'Bloqueado',
       external: 'Externo',
+      rescheduled: 'Remarcado',
     };
     return map[status] ?? status;
   }
@@ -355,17 +379,21 @@ export class Calendar implements OnInit {
   }
 
   cancelAppointment(apt: Appointment): void {
-    this.service.updateStatus(apt.id, 'cancelled').subscribe({
-      next: () => this.updateAppointmentStatus(apt.id, 'cancelled'),
+    this.service.updateStatus(apt.id, 'cancelled', this.cancelReasonText).subscribe({
+      next: () => {
+        this.updateAppointmentStatus(apt.id, 'cancelled');
+        this.dismissInline();
+      },
       error: (err) => (this.error = this.getErrorMessage(err, 'Erro ao cancelar')),
     });
   }
 
   rescheduleAppointment(apt: Appointment): void {
-    this.service.updateStatus(apt.id, 'cancelled').subscribe({
+    this.service.updateStatus(apt.id, 'rescheduled', this.rescheduleReasonText).subscribe({
       next: () => {
-        this.updateAppointmentStatus(apt.id, 'cancelled');
-        this.pendingReschedulePatientId = apt.patientId; // passa pro modal
+        this.updateAppointmentStatus(apt.id, 'rescheduled');
+        this.dismissInline();
+        this.pendingReschedulePatientId = apt.patientId;
         this.showCreateModal = true;
       },
       error: (err) => (this.error = this.getErrorMessage(err, 'Erro ao remarcar')),

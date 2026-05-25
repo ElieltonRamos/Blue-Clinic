@@ -4,22 +4,13 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class AppointmentResponseDto {
-  @ApiProperty({
-    example: '1',
-    description: 'ID do agendamento',
-  })
+  @ApiProperty({ example: '1', description: 'ID do agendamento' })
   id: string;
 
-  @ApiProperty({
-    example: '10',
-    description: 'ID do médico',
-  })
+  @ApiProperty({ example: '10', description: 'ID do médico' })
   doctorId: string;
 
-  @ApiProperty({
-    example: 'João da Silva',
-    description: 'Nome do paciente',
-  })
+  @ApiProperty({ example: 'João da Silva', description: 'Nome do paciente' })
   patientName: string;
 
   @ApiProperty({ example: '5', description: 'ID do paciente' })
@@ -37,34 +28,31 @@ export class AppointmentResponseDto {
   })
   date: string;
 
-  @ApiProperty({
-    example: '08:00',
-    description: 'Horário de início',
-  })
+  @ApiProperty({ example: '08:00', description: 'Horário de início' })
   startTime: string;
 
-  @ApiProperty({
-    example: '08:30',
-    description: 'Horário de término',
-  })
+  @ApiProperty({ example: '08:30', description: 'Horário de término' })
   endTime: string;
 
-  @ApiProperty({
-    example: 'CONFIRMADO',
-    description: 'Status do agendamento',
-  })
+  @ApiProperty({ example: 'confirmed', description: 'Status do agendamento' })
   status: string;
 
   @ApiPropertyOptional({
     example: 'Maria Oliveira',
-    description: 'Nome do responsável pelo paciente (se houver)',
+    description: 'Nome do responsável pelo paciente',
   })
   responsible?: string;
+
+  @ApiPropertyOptional({
+    example: 'Paciente não compareceu',
+    description: 'Motivo do cancelamento ou remarcação',
+  })
+  cancellationReason?: string;
 
   constructor(data: any) {
     this.id = String(data.id);
     this.doctorId = String(data.doctorId);
-    this.patientName = data.patient?.name; // Adicionado optional chaining por segurança
+    this.patientName = data.patient?.name;
     this.patientId = String(data.patient?.id);
     this.specialty = data.specialty;
     this.date = data.date.toISOString().split('T')[0];
@@ -72,5 +60,6 @@ export class AppointmentResponseDto {
     this.endTime = data.endTime;
     this.status = data.status;
     this.responsible = data.responsible ?? undefined;
+    this.cancellationReason = data.cancellationReason ?? undefined;
   }
 }

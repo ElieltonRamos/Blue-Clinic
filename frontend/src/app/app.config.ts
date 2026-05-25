@@ -1,4 +1,4 @@
-import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
+import { ApplicationConfig, provideBrowserGlobalErrorListeners, LOCALE_ID } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { provideToastr } from 'ngx-toastr';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
@@ -16,5 +16,6 @@ export const appConfig: ApplicationConfig = {
       preventDuplicates: true,
     }),
     provideHttpClient(withInterceptors([authInterceptor])),
+    { provide: LOCALE_ID, useValue: 'pt-BR' },
   ],
 };

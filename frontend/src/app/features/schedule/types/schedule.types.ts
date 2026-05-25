@@ -44,6 +44,7 @@ export interface DoctorCommission {
   doctorRate: number;
   clinicRateType: 'percentage' | 'fixed';
   clinicRate: number;
+  price: number;
   appointmentType: AppointmentTypeSummary;
 }
 
@@ -87,6 +88,7 @@ export interface CreateCommissionRequest {
   doctorRate: number;
   clinicRateType: CommissionRateType;
   clinicRate: number;
+  price: number;
 }
 
 export interface UpdateCommissionRequest {
@@ -94,6 +96,7 @@ export interface UpdateCommissionRequest {
   doctorRate?: number;
   clinicRateType?: CommissionRateType;
   clinicRate?: number;
+  price?: number;
 }
 
 export interface CommissionForm {
@@ -102,6 +105,7 @@ export interface CommissionForm {
   doctorRate: number;
   clinicRateType: CommissionRateType;
   clinicRate: number;
+  price: number;
 }
 
 export interface BlockedSlot {

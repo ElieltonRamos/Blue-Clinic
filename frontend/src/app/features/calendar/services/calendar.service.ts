@@ -55,9 +55,13 @@ export class CalendarService {
     );
   }
 
-  updateStatus(appointmentId: number, status: AppointmentStatus) {
-    return this.http.patch<Appointment>(`${this.apiUrl}/appointments/${appointmentId}/status`, {
-      status,
-    });
+  updateStatus(appointmentId: number, status: AppointmentStatus, cancellationReason?: string) {
+    const body: Record<string, unknown> = { status };
+    if (cancellationReason?.trim()) body['cancellationReason'] = cancellationReason.trim();
+
+    return this.http.patch<Appointment>(
+      `${this.apiUrl}/appointments/${appointmentId}/status`,
+      body,
+    );
   }
 }

@@ -1,6 +1,6 @@
 <ng-template cdkPortal>
   <div
-    class="bg-bg-card rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden border border-(--color-border-md) flex flex-col"
+    class="bg-bg-card rounded-2xl shadow-2xl w-full max-w-3xl max-h-[95vh] overflow-hidden border border-(--color-border-md) flex flex-col"
     (click)="onModalClick($event)"
   >
     <!-- Header -->
@@ -374,6 +374,10 @@
                 {
                   label: 'Tipo',
                   value: selectedType?.name + ' (' + selectedType?.duration + ' min)',
+                },
+                {
+                  label: 'Preço',
+                  value: selectedPrice != null ? 'R$ ' + selectedPrice.toFixed(2) : '—',
                 },
                 { label: 'Data', value: formattedDate },
                 {

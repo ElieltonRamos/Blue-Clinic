@@ -22,6 +22,7 @@ enum AppointmentStatus {
   external
   paid
   cancelled
+  rescheduled
 }
 
 enum PaymentMethod {
@@ -126,6 +127,7 @@ model AppointmentTypeCommission {
   id                Int            @id @default(autoincrement())
   doctorId          Int
   appointmentTypeId Int
+  price             Decimal        @db.Decimal(10, 2)  // adicionar
   doctorRateType    CommissionType
   doctorRate        Decimal        @db.Decimal(10, 2)
   clinicRateType    CommissionType
@@ -220,18 +222,19 @@ model PatientDocument {
 }
 
 model Appointment {
-  id                Int               @id @default(autoincrement())
-  doctorId          Int
-  patientId         Int
-  appointmentTypeId Int?
-  specialty         String
-  date              DateTime
-  startTime         String
-  endTime           String
-  status            AppointmentStatus @default(pending)
-  feeOverride       Decimal?          @db.Decimal(10, 2)
-  responsible       String?
-  notes             String?
+  id                 Int               @id @default(autoincrement())
+  doctorId           Int
+  patientId          Int
+  appointmentTypeId  Int?
+  specialty          String
+  date               DateTime
+  startTime          String
+  endTime            String
+  status             AppointmentStatus @default(pending)
+  feeOverride        Decimal?          @db.Decimal(10, 2)
+  responsible        String?
+  notes              String?
+  cancellationReason String?           @db.Text
 
   doctor          Doctor           @relation(fields: [doctorId], references: [id])
   patient         Patient          @relation(fields: [patientId], references: [id])

@@ -36,4 +36,10 @@ export class CreateCommissionDto {
   @Min(0, { message: 'Taxa da clínica não pode ser negativa' })
   @Type(() => Number)
   clinicRate: number;
+
+  @ApiProperty({ description: 'Valor cobrado do paciente', example: 300.0 })
+  @IsNumber({}, { message: 'Valor deve ser um número' })
+  @IsPositive({ message: 'Valor deve ser maior que zero' })
+  @Type(() => Number)
+  price: number;
 }

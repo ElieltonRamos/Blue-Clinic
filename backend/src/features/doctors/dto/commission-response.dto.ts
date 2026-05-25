@@ -5,7 +5,7 @@ import {
   CommissionType,
 } from '../../../../generated/prisma/client.js';
 
-type CommissionWithType = AppointmentTypeCommission & {
+type CommissionWithRelations = AppointmentTypeCommission & {
   appointmentType: { id: number; name: string; duration: number };
 };
 
@@ -26,7 +26,10 @@ export class CommissionResponseDto {
   @ApiProperty({ type: AppointmentTypeSummaryDto })
   appointmentType: AppointmentTypeSummaryDto;
 
-  constructor(c: CommissionWithType) {
+  @ApiProperty({ description: 'Valor cobrado do paciente' })
+  price: number;
+
+  constructor(c: CommissionWithRelations) {
     this.id = c.id;
     this.doctorId = c.doctorId;
     this.appointmentTypeId = c.appointmentTypeId;
@@ -35,5 +38,6 @@ export class CommissionResponseDto {
     this.clinicRateType = c.clinicRateType;
     this.clinicRate = Number(c.clinicRate);
     this.appointmentType = c.appointmentType;
+    this.price = Number(c.price);
   }
 }

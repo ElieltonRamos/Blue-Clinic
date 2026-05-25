@@ -195,3 +195,21 @@ img {
 .modal-backdrop-dark {
   background-color: rgba(0, 0, 0, 0.75);
 }
+
+button {
+  cursor: pointer;
+  transition: scale 150ms ease;
+}
+
+button:hover {
+  scale: 1.05;
+}
+
+button:active {
+  scale: 0.97;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  scale: 1;
+}

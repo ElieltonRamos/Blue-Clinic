@@ -220,7 +220,7 @@
     (click)="closeModal()"
   >
     <div
-      class="bg-bg-card rounded-xl border border-(--color-border) w-80 p-5"
+      class="bg-bg-card rounded-xl border border-(--color-border) w-120 max-h-[80vh] overflow-y-auto p-5"
       (click)="$event.stopPropagation()"
     >
       <div class="flex items-center justify-between mb-4">
@@ -235,75 +235,146 @@
 
       <div class="space-y-0">
         @for (apt of selectedDay()!.appointments; track apt.id) {
-          <div
-            class="flex items-center gap-3 py-2.5 border-b border-(--color-border) last:border-b-0"
-          >
-            <span class="text-xs font-medium text-(--color-text-muted) w-12 shrink-0">{{
-              apt.startTime
-            }}</span>
-            <div class="flex-1 min-w-0">
-              <p class="text-sm font-medium text-(--color-text-primary) truncate">
-                {{ apt.patientName }}
-              </p>
-              <p class="text-[11px] text-(--color-text-muted)">{{ doctorNameFor(apt.doctorId) }}</p>
+          <div class="py-3 border-b border-(--color-border) last:border-b-0">
+            <div class="flex items-center gap-3">
+              <span class="text-xs font-medium text-(--color-text-muted) w-12 shrink-0">
+                {{ apt.startTime }}
+              </span>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium text-(--color-text-primary) truncate">
+                  {{ apt.patientName }}
+                </p>
+                <p class="text-[11px] text-(--color-text-muted)">
+                  {{ doctorNameFor(apt.doctorId) }}
+                </p>
+              </div>
+              <span
+                class="text-[10px] font-medium px-2 py-0.5 rounded-full shrink-0"
+                [class]="statusBadgeClass(apt.status)"
+              >
+                {{ statusLabel(apt.status) }}
+              </span>
+              <div class="flex items-center gap-1 shrink-0">
+                @if (apt.status === 'pending') {
+                  <button
+                    (click)="confirmAppointment(apt); $event.stopPropagation()"
+                    class="text-[10px] px-2 py-1 rounded-lg bg-(--color-primary-subtle) text-(--color-primary-text) hover:opacity-80 transition-opacity"
+                  >
+                    Confirmar
+                  </button>
+                  <button
+                    (click)="requestCancel(apt); $event.stopPropagation()"
+                    class="text-[10px] px-2 py-1 rounded-lg bg-danger-subtle text-(--color-danger) hover:opacity-80 transition-opacity"
+                  >
+                    Cancelar
+                  </button>
+                }
+                @if (apt.status === 'confirmed') {
+                  <button
+                    (click)="closeModal(); openPaymentModal(apt); $event.stopPropagation()"
+                    class="text-[10px] px-2 py-1 rounded-lg bg-success-subtle text-success hover:opacity-80 transition-opacity"
+                  >
+                    Pagar
+                  </button>
+                  <button
+                    (click)="requestReschedule(apt); $event.stopPropagation()"
+                    class="text-[10px] px-2 py-1 rounded-lg bg-warning-subtle text-warning hover:opacity-80 transition-opacity"
+                  >
+                    Remarcar
+                  </button>
+                  <button
+                    (click)="requestCancel(apt); $event.stopPropagation()"
+                    class="text-[10px] px-2 py-1 rounded-lg bg-danger-subtle text-(--color-danger) hover:opacity-80 transition-opacity"
+                  >
+                    Cancelar
+                  </button>
+                }
+                @if (apt.status === 'paid') {
+                  <button
+                    (click)="finishAppointment(apt); $event.stopPropagation()"
+                    class="text-[10px] px-2 py-1 rounded-lg bg-(--color-primary-subtle) text-(--color-primary-text) hover:opacity-80 transition-opacity"
+                  >
+                    Finalizar
+                  </button>
+                  <button
+                    (click)="requestCancel(apt); $event.stopPropagation()"
+                    class="text-[10px] px-2 py-1 rounded-lg bg-danger-subtle text-(--color-danger) hover:opacity-80 transition-opacity"
+                  >
+                    Cancelar
+                  </button>
+                }
+              </div>
             </div>
-            <span
-              class="text-[10px] font-medium px-2 py-0.5 rounded-full"
-              [class]="statusBadgeClass(apt.status)"
-            >
-              {{ statusLabel(apt.status) }}
-            </span>
-            <div class="flex items-center gap-1 shrink-0">
-              @if (apt.status === 'pending') {
-                <button
-                  (click)="confirmAppointment(apt); $event.stopPropagation()"
-                  class="text-[10px] px-2 py-1 rounded-lg bg-(--color-primary-subtle) text-(--color-primary-text) hover:opacity-80 transition-opacity"
-                >
-                  Confirmar
-                </button>
-                <button
-                  (click)="cancelAppointment(apt); $event.stopPropagation()"
-                  class="text-[10px] px-2 py-1 rounded-lg bg-danger-subtle text-(--color-danger) hover:opacity-80 transition-opacity"
-                >
-                  Cancelar
-                </button>
-              }
-              @if (apt.status === 'confirmed') {
-                <button
-                  (click)="openPaymentModal(apt); $event.stopPropagation()"
-                  class="text-[10px] px-2 py-1 rounded-lg bg-success-subtle text-success hover:opacity-80 transition-opacity"
-                >
-                  Pagar
-                </button>
-                <button
-                  (click)="rescheduleAppointment(apt); $event.stopPropagation()"
-                  class="text-[10px] px-2 py-1 rounded-lg bg-warning-subtle text-warning hover:opacity-80 transition-opacity"
-                >
-                  Remarcar
-                </button>
-                <button
-                  (click)="cancelAppointment(apt); $event.stopPropagation()"
-                  class="text-[10px] px-2 py-1 rounded-lg bg-danger-subtle text-(--color-danger) hover:opacity-80 transition-opacity"
-                >
-                  Cancelar
-                </button>
-              }
-              @if (apt.status === 'paid') {
-                <button
-                  (click)="finishAppointment(apt); $event.stopPropagation()"
-                  class="text-[10px] px-2 py-1 rounded-lg bg-(--color-primary-subtle) text-(--color-primary-text) hover:opacity-80 transition-opacity"
-                >
-                  Finalizar
-                </button>
-                <button
-                  (click)="cancelAppointment(apt); $event.stopPropagation()"
-                  class="text-[10px] px-2 py-1 rounded-lg bg-danger-subtle text-(--color-danger) hover:opacity-80 transition-opacity"
-                >
-                  Cancelar
-                </button>
-              }
-            </div>
+
+            @if (pendingRescheduleId === apt.id) {
+              <div
+                class="mt-2 ml-15 rounded-xl border border-warning/40 bg-warning-subtle p-3 flex flex-col gap-2"
+                (click)="$event.stopPropagation()"
+              >
+                <p class="text-[11px] font-semibold text-warning">
+                  Motivo da remarcação (obrigatório)
+                </p>
+                <textarea
+                  class="w-full bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-2.5 py-1.5 text-[12px] text-(--color-text-primary) outline-none focus:border-warning resize-none"
+                  rows="2"
+                  placeholder="Ex: paciente solicitou nova data..."
+                  [(ngModel)]="rescheduleReasonText"
+                ></textarea>
+                <div class="flex justify-end gap-2">
+                  <button
+                    (click)="dismissInline(); $event.stopPropagation()"
+                    class="text-[11px] px-3 py-1 rounded-lg border border-(--color-border) text-(--color-text-secondary) hover:opacity-80 transition-opacity"
+                  >
+                    Desistir
+                  </button>
+                  <button
+                    (click)="rescheduleAppointment(apt); $event.stopPropagation()"
+                    [disabled]="!rescheduleReasonText.trim()"
+                    class="text-[11px] px-3 py-1 rounded-lg bg-warning-subtle text-warning border border-warning/40 hover:opacity-80 transition-opacity disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    Confirmar remarcação
+                  </button>
+                </div>
+              </div>
+            }
+
+            @if (pendingCancelId === apt.id) {
+              <div
+                class="mt-2 ml-15 rounded-xl border border-(--color-danger)/40 bg-danger-subtle p-3 flex flex-col gap-2"
+                (click)="$event.stopPropagation()"
+              >
+                <p class="text-[11px] font-semibold text-(--color-danger)">
+                  Motivo do cancelamento (obrigatório)
+                </p>
+                <textarea
+                  class="w-full bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-2.5 py-1.5 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-danger) resize-none"
+                  rows="2"
+                  placeholder="Ex: paciente não compareceu..."
+                  [(ngModel)]="cancelReasonText"
+                ></textarea>
+                <div class="flex justify-end gap-2">
+                  <button
+                    (click)="dismissInline(); $event.stopPropagation()"
+                    class="text-[11px] px-3 py-1 rounded-lg border border-(--color-border) text-(--color-text-secondary) hover:opacity-80 transition-opacity"
+                  >
+                    Desistir
+                  </button>
+                  <button
+                    (click)="cancelAppointment(apt); $event.stopPropagation()"
+                    [disabled]="!cancelReasonText.trim()"
+                    class="text-[11px] px-3 py-1 rounded-lg bg-danger-subtle text-(--color-danger) border border-(--color-danger)/40 hover:opacity-80 transition-opacity disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    Confirmar cancelamento
+                  </button>
+                </div>
+              </div>
+            }
           </div>
+        }
+        @if (selectedDay()!.appointments.length === 0) {
+          <p class="text-sm text-(--color-text-muted) text-center py-6">
+            Nenhum agendamento para este dia.
+          </p>
         }
       </div>
     </div>

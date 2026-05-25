@@ -20,6 +20,7 @@ import {
   SlotDto,
   SlotStatus,
 } from './dto/available-slots.dto.js';
+import { UpdateAppointmentStatusDto } from './dto/update-appointment-status.dto.js';
 
 @Injectable()
 export class AppointmentsService {
@@ -496,6 +497,34 @@ export class AppointmentsService {
 
       return { ...slot, status: 'available' as SlotStatus };
     });
+  }
+
+  async updateStatus(
+    id: number,
+    companyId: number,
+    dto: UpdateAppointmentStatusDto,
+  ): Promise<AppointmentResponseDto> {
+    await this.findOne(id, companyId);
+
+    const data: Prisma.AppointmentUpdateInput = { status: dto.status };
+
+    if (dto.status === 'cancelled' || dto.status === 'rescheduled') {
+      if (!dto.cancellationReason?.trim()) {
+        throw new BadRequestException('Motivo é obrigatório');
+      }
+      data.cancellationReason = dto.cancellationReason.trim();
+    }
+
+    const appointment = await this.prisma.client.appointment.update({
+      where: { id },
+      data,
+      include: {
+        patient: { select: { id: true, name: true } },
+        doctor: { select: { id: true, name: true, specialty: true } },
+      },
+    });
+
+    return new AppointmentResponseDto(appointment);
   }
 
   // ── Helpers ────────────────────────────────────────────────────────────────

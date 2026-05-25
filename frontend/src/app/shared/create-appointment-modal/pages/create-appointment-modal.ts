@@ -66,7 +66,12 @@ export class CreateAppointmentModal implements AfterViewInit, OnDestroy, OnChang
   });
 
   // ── Steps ─────────────────────────────────────────────────────────────────
-  readonly steps: ModalStep[] = ['doctor', 'type', 'date', 'slot', 'patient', 'confirm'];
+  get steps(): ModalStep[] {
+    return this.prefillPatientId
+      ? ['doctor', 'type', 'date', 'slot', 'confirm']
+      : ['doctor', 'type', 'date', 'slot', 'patient', 'confirm'];
+  }
+
   currentStep = signal<ModalStep>('doctor');
 
   readonly stepIndex = computed(() => this.steps.indexOf(this.currentStep()));
@@ -427,14 +432,15 @@ export class CreateAppointmentModal implements AfterViewInit, OnDestroy, OnChang
     this.selectedType = null;
     this.selectedDate = '';
     this.selectedSlot = null;
-    this.selectedPatient = null;
+    if (!this.prefillPatientId) {
+      this.selectedPatient = null;
+      this.patientSearchQuery = '';
+      this.patients = [];
+    }
     this.slots = [];
-    this.patients = [];
     this.doctorSearchQuery = '';
-    this.patientSearchQuery = '';
     this.notes = '';
     this.responsible = '';
-    this.prefillPatientId = null;
     this.isSaving = false;
   }
 
@@ -453,5 +459,13 @@ export class CreateAppointmentModal implements AfterViewInit, OnDestroy, OnChang
 
   dayLabel(dayOfWeek: number): string {
     return ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][dayOfWeek];
+  }
+
+  get selectedPrice(): number | null {
+    if (!this.selectedDoctor || !this.selectedType) return null;
+    const commission = this.selectedDoctor.commissions?.find(
+      (c) => c.appointmentTypeId === this.selectedType!.id,
+    );
+    return commission?.price ?? null;
   }
 }

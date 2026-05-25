@@ -37,6 +37,7 @@ import { CurrentUser } from '../../core/decorators/current-user.decorator.js';
 import { Roles } from '../../core/decorators/roles.decorator.js';
 import { UpdateBlockedSlotDto } from './dto/update-blocked-slot.dto.js';
 import { CreateBlockedSlotDto } from './dto/create-blocked-slot.dto.js';
+import { UpdateAppointmentStatusDto } from './dto/update-appointment-status.dto.js';
 
 @ApiTags('Agendamentos')
 @ApiBearerAuth()
@@ -212,6 +213,27 @@ export class AppointmentsController {
     @Body() dto: UpdateAppointmentDto,
   ) {
     return this.appointmentsService.update(id, companyId, dto);
+  }
+
+  @Patch(':id/status')
+  @Roles('admin', 'atendimento')
+  @ApiOperation({ summary: 'Atualizar status do agendamento' })
+  @ApiParam({ name: 'id', type: Number })
+  @ApiResponse({ status: HttpStatus.OK, type: AppointmentResponseDto })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Agendamento não encontrado',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Motivo do cancelamento é obrigatório',
+  })
+  updateStatus(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser('companyId') companyId: number,
+    @Body() dto: UpdateAppointmentStatusDto,
+  ) {
+    return this.appointmentsService.updateStatus(id, companyId, dto);
   }
 
   @Post(':id/payments')
