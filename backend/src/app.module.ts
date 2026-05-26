@@ -7,6 +7,7 @@ import { AppointmentsModule } from './features/appointments/appointments.module'
 import { PatientModule } from './features/patient/patient.module';
 import { DoctorsModule } from './features/doctors/doctors.module';
 import { CompanyModule } from './features/company/company.module';
+import { FinanceModule } from './features/financial/finance.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { CompanyModule } from './features/company/company.module';
     PatientModule,
     DoctorsModule,
     CompanyModule,
+    FinanceModule,
   ],
   controllers: [AppController],
   providers: [AppService],
