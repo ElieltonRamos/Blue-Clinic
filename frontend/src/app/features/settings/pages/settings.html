@@ -25,7 +25,7 @@
               >Razão Social</label
             >
             <input
-              [ngModel]="company.name"
+              [ngModel]="company.tradeName"
               (ngModelChange)="companyData.update(c => c ? { ...c, name: $event } : c)"
               type="text"
               class="bg-bg-card border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
@@ -69,7 +69,7 @@
               >Endereço</label
             >
             <input
-              [ngModel]="company.address"
+              [ngModel]="company.street"
               (ngModelChange)="companyData.update(c => c ? { ...c, address: $event } : c)"
               type="text"
               class="bg-bg-card border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
@@ -205,9 +205,7 @@
 
   <!-- Footer -->
   <div class="flex items-center pt-2 border-t border-(--color-border)">
-    <p class="text-[11px] text-(--color-text-muted)">
-      © 2026 BlueClinic. Versão: {{ version }}
-    </p>
+    <p class="text-[11px] text-(--color-text-muted)">© 2026 BlueClinic. Versão: {{ version }}</p>
   </div>
 </div>
 

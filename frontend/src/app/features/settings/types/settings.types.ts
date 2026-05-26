@@ -4,11 +4,18 @@ export type UserLevel = Role;
 
 export interface CompanyData {
   id: number;
-  name: string;
+  tradeName: string;
+  corporateName: string;
   cnpj: string;
+  street: string;
+  number: string;
+  complement?: string;
+  neighborhood: string;
+  city: string;
+  state: string;
+  cityCode: string;
   phone: string | null;
   email: string | null;
-  address: string | null;
 }
 
 export interface TeamMember {

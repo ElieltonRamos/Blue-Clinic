@@ -7,38 +7,35 @@ import {
   AppointmentStatus,
   AutoConfirmation,
   BlockedHour,
+  CalendarDay,
   Doctor,
-  PaymentMethodEntry,
+  PaymentEntry,
+  PaymentMethodConfig,
+  PaymentResponseDto,
 } from '../types/calendar.types';
 import { CalendarService } from '../services/calendar.service';
 import { PaymentMethod } from '../../financial/types/financial.types';
 import { CreateAppointmentModal } from '../../../shared/create-appointment-modal/pages/create-appointment-modal';
 import { AppointmentResponse } from '../../../shared/create-appointment-modal/types/create-appointment.types';
+import { NotificationService } from '../../../shared/toastr/notification.service';
+import { ModalAppointmentReceipt } from '../../../shared/modal-appointment-receipt/modal-appointment-receipt';
 
-export interface CalendarDay {
-  date: Date;
-  dayNumber: number;
-  currentMonth: boolean;
-  isToday: boolean;
-  label: string;
-  appointments: Appointment[];
-}
-
-const PAYMENT_METHODS: { method: PaymentMethod; label: string }[] = [
-  { method: 'pix', label: 'PIX' },
-  { method: 'dinheiro', label: 'Dinheiro' },
-  { method: 'cartao', label: 'Cartão' },
-  { method: 'convenio', label: 'Convênio' },
+const PAYMENT_METHODS: PaymentMethodConfig[] = [
+  { method: 'pix', label: 'PIX', icon: '📱' },
+  { method: 'dinheiro', label: 'Dinheiro', icon: '💵' },
+  { method: 'cartao', label: 'Cartão', icon: '💳' },
+  { method: 'convenio', label: 'Convênio', icon: '🏥' },
 ];
 
 @Component({
   selector: 'app-agenda',
   standalone: true,
-  imports: [CommonModule, FormsModule, CreateAppointmentModal],
+  imports: [CommonModule, FormsModule, CreateAppointmentModal, ModalAppointmentReceipt],
   templateUrl: './calendar.html',
 })
 export class Calendar implements OnInit {
   private readonly service = inject(CalendarService);
+  private readonly notify = inject(NotificationService);
 
   readonly weekDays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
   readonly availablePaymentMethods = PAYMENT_METHODS;
@@ -48,33 +45,54 @@ export class Calendar implements OnInit {
   private doctorMap = new Map<number, string>();
 
   doctors: Doctor[] = [];
+  receiptData: PaymentResponseDto | null = null;
   blockedHours: BlockedHour[] = [];
   autoConfirmation: AutoConfirmation = { confirmed: 0, total: 0 };
+
   selectedDay = signal<CalendarDay | null>(null);
+  actionLoading = signal(false); // bloqueia modais durante ações
+  pageLoading = signal(false); // carregamento mensal
+
   showCreateModal = false;
   cancelReasonText = '';
   rescheduleReasonText = '';
   pendingCancelId: number | null = null;
   pendingRescheduleId: number | null = null;
-
-  paymentModal: Appointment | null = null;
-  paymentEntries: { method: PaymentMethod; value: number; enabled: boolean }[] = [];
   pendingReschedulePatientId: number | null = null;
 
-  loading = false;
-  error: string | null = null;
+  paymentModal: Appointment | null = null;
+  paymentEntries: PaymentEntry[] = [];
+  newPaymentMethod: PaymentMethod | null = null;
+  newPaymentAmount = 0;
+
+  // ── Getters ───────────────────────────────────────────────────
 
   get monthLabel(): string {
-    const d = this.currentDate();
-    return d.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+    return this.currentDate().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
   }
 
   private get currentMonthParam(): string {
     const d = this.currentDate();
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    return `${y}-${m}`;
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
   }
+
+  get paymentRemaining(): number {
+    const expected = this.paymentModal?.price ?? null;
+    if (expected == null) return 0;
+    const paid = this.paymentEntries.reduce((sum, e) => sum + e.amount - e.change, 0);
+    return Math.max(0, expected - paid);
+  }
+
+  get paymentPreviewChange(): number {
+    if (this.newPaymentMethod !== 'dinheiro') return 0;
+    return Math.max(0, this.newPaymentAmount - this.paymentRemaining);
+  }
+
+  get paymentValid(): boolean {
+    return this.paymentEntries.length > 0 && this.paymentRemaining <= 0.01;
+  }
+
+  // ── Calendar computed ─────────────────────────────────────────
 
   readonly calendarDays = computed((): CalendarDay[] => {
     const ref = this.currentDate();
@@ -86,25 +104,21 @@ export class Calendar implements OnInit {
     const days: CalendarDay[] = [];
 
     for (let i = 0; i < firstDay.getDay(); i++) {
-      const date = new Date(year, month, -firstDay.getDay() + i + 1);
-      days.push(this.buildDay(date, false, today));
+      days.push(this.buildDay(new Date(year, month, -firstDay.getDay() + i + 1), false, today));
     }
-
     for (let d = 1; d <= lastDay.getDate(); d++) {
-      const date = new Date(year, month, d);
-      days.push(this.buildDay(date, true, today));
+      days.push(this.buildDay(new Date(year, month, d), true, today));
     }
-
     const remaining = 7 - (days.length % 7);
     if (remaining < 7) {
       for (let d = 1; d <= remaining; d++) {
-        const date = new Date(year, month + 1, d);
-        days.push(this.buildDay(date, false, today));
+        days.push(this.buildDay(new Date(year, month + 1, d), false, today));
       }
     }
-
     return days;
   });
+
+  // ── Lifecycle ─────────────────────────────────────────────────
 
   ngOnInit(): void {
     this.loadDoctors();
@@ -112,11 +126,32 @@ export class Calendar implements OnInit {
     this.loadBlockedSlots();
   }
 
+  // ── Navigation ────────────────────────────────────────────────
+
   prevMonth(): void {
     const d = this.currentDate();
     this.currentDate.set(new Date(d.getFullYear(), d.getMonth() - 1, 1));
     this.loadMonthData();
   }
+
+  nextMonth(): void {
+    const d = this.currentDate();
+    this.currentDate.set(new Date(d.getFullYear(), d.getMonth() + 1, 1));
+    this.loadMonthData();
+  }
+
+  // ── Day modal ─────────────────────────────────────────────────
+
+  openModal(day: CalendarDay): void {
+    this.selectedDay.set(day);
+  }
+
+  closeModal(): void {
+    if (this.actionLoading()) return;
+    this.selectedDay.set(null);
+  }
+
+  // ── Inline actions ────────────────────────────────────────────
 
   requestCancel(apt: Appointment): void {
     this.pendingCancelId = apt.id;
@@ -135,104 +170,161 @@ export class Calendar implements OnInit {
     this.pendingRescheduleId = null;
   }
 
-  private loadBlockedSlots(): void {
-    this.service.getBlockedSlots().subscribe({
-      next: (slots) => {
-        this.blockedHours = slots.map((s) => ({
-          label: s.label,
-          recurrence: this.recurrenceLabel(s.recurrence),
-          color: s.type === 'break' ? 'primary' : 'error',
-        }));
-      },
-      error: (err: HttpErrorResponse) => {
-        this.error = this.getErrorMessage(err, 'Erro ao carregar bloqueios');
-      },
-    });
-  }
-
-  private recurrenceLabel(recurrence: string): string {
-    const map: Record<string, string> = {
-      none: 'Sem recorrência',
-      daily: 'Diário',
-      weekly: 'Semanal',
-      monthly: 'Mensal',
-    };
-    return map[recurrence] ?? recurrence;
-  }
-
-  nextMonth(): void {
-    const d = this.currentDate();
-    this.currentDate.set(new Date(d.getFullYear(), d.getMonth() + 1, 1));
-    this.loadMonthData();
-  }
-
-  openModal(day: CalendarDay): void {
-    this.selectedDay.set(day);
-  }
-
-  closeModal(): void {
-    this.selectedDay.set(null);
-  }
+  // ── Create modal ──────────────────────────────────────────────
 
   openCreateModal(): void {
     this.showCreateModal = true;
   }
 
-  onAppointmentCreated(appointment: AppointmentResponse): void {
+  onAppointmentCreated(_appointment: AppointmentResponse): void {
     this.showCreateModal = false;
     this.loadMonthData();
+    this.notify.success('Agendamento criado com sucesso');
   }
 
   // ── Payment modal ─────────────────────────────────────────────
 
   openPaymentModal(apt: Appointment): void {
     this.paymentModal = apt;
-    this.paymentEntries = PAYMENT_METHODS.map((m) => ({
-      method: m.method,
-      value: 0,
-      enabled: false,
-    }));
+    this.paymentEntries = [];
+    this.newPaymentMethod = null;
+    this.newPaymentAmount = 0;
   }
 
   closePaymentModal(): void {
+    if (this.actionLoading()) return;
     this.paymentModal = null;
     this.paymentEntries = [];
+    this.newPaymentMethod = null;
+    this.newPaymentAmount = 0;
   }
 
-  get paymentTotal(): number {
-    return this.paymentEntries.filter((e) => e.enabled).reduce((sum, e) => sum + (e.value || 0), 0);
+  selectPaymentMethod(method: PaymentMethod): void {
+    this.newPaymentMethod = method;
+    this.newPaymentAmount = this.paymentRemaining;
   }
 
-  get paymentValid(): boolean {
-    return this.paymentTotal > 0 && this.paymentEntries.some((e) => e.enabled && e.value > 0);
+  addPaymentEntry(): void {
+    if (!this.newPaymentMethod || this.newPaymentAmount <= 0) return;
+
+    if (this.newPaymentMethod !== 'dinheiro' && this.newPaymentAmount > this.paymentRemaining) {
+      this.notify.warning(
+        `${this.methodLabel(this.newPaymentMethod)} não pode exceder o valor restante`,
+      );
+      return;
+    }
+
+    this.paymentEntries.push({
+      method: this.newPaymentMethod,
+      amount: this.newPaymentAmount,
+      change: this.paymentPreviewChange,
+    });
+
+    this.newPaymentMethod = null;
+    this.newPaymentAmount = 0;
+  }
+
+  removePaymentEntry(index: number): void {
+    this.paymentEntries.splice(index, 1);
   }
 
   confirmPayment(): void {
-    if (!this.paymentModal || !this.paymentValid) return;
+    if (!this.paymentModal || !this.paymentValid || this.actionLoading()) return;
 
     const apt = this.paymentModal;
-    const entries: PaymentMethodEntry[] = this.paymentEntries
-      .filter((e) => e.enabled && e.value > 0)
-      .map((e) => ({ method: e.method, value: e.value }));
+    this.actionLoading.set(true);
 
-    this.service.createPayment(apt.id, entries).subscribe({
-      next: () => {
+    this.service.createPayment(apt.id, this.paymentEntries).subscribe({
+      next: (response) => {
+        this.receiptData = response; // abre o recibo
         this.updateAppointmentStatus(apt.id, 'paid');
+        this.notify.success('Pagamento registrado com sucesso');
+        this.actionLoading.set(false);
         this.closePaymentModal();
       },
       error: (err: HttpErrorResponse) => {
-        this.error = this.getErrorMessage(err, 'Erro ao registrar pagamento');
+        this.notify.error(this.getErrorMessage(err, 'Erro ao registrar pagamento'));
+        this.actionLoading.set(false);
       },
     });
   }
 
-  doctorNameFor(doctorId: number): string {
-    return this.doctorMap.get(doctorId) ?? String(doctorId);
+  // ── Appointment actions ───────────────────────────────────────
+
+  confirmAppointment(apt: Appointment): void {
+    if (this.actionLoading()) return;
+    this.actionLoading.set(true);
+
+    this.service.updateStatus(apt.id, 'confirmed').subscribe({
+      next: () => {
+        this.updateAppointmentStatus(apt.id, 'confirmed');
+        this.notify.success('Agendamento confirmado');
+        this.actionLoading.set(false);
+      },
+      error: (err) => {
+        this.notify.error(this.getErrorMessage(err, 'Erro ao confirmar'));
+        this.actionLoading.set(false);
+      },
+    });
   }
 
-  methodLabel(method: PaymentMethod): string {
-    return { pix: 'PIX', dinheiro: 'Dinheiro', cartao: 'Cartão', convenio: 'Convênio' }[method];
+  finishAppointment(apt: Appointment): void {
+    if (this.actionLoading()) return;
+    this.actionLoading.set(true);
+
+    this.service.updateStatus(apt.id, 'finished').subscribe({
+      next: () => {
+        this.updateAppointmentStatus(apt.id, 'finished');
+        this.notify.success('Consulta finalizada');
+        this.actionLoading.set(false);
+      },
+      error: (err) => {
+        this.notify.error(this.getErrorMessage(err, 'Erro ao finalizar'));
+        this.actionLoading.set(false);
+      },
+    });
   }
+
+  cancelAppointment(apt: Appointment): void {
+    if (this.actionLoading()) return;
+    this.actionLoading.set(true);
+
+    this.service.updateStatus(apt.id, 'cancelled', this.cancelReasonText).subscribe({
+      next: () => {
+        this.updateAppointmentStatus(apt.id, 'cancelled');
+        this.notify.success('Agendamento cancelado');
+        this.dismissInline();
+        this.actionLoading.set(false);
+      },
+      error: (err) => {
+        this.notify.error(this.getErrorMessage(err, 'Erro ao cancelar'));
+        this.actionLoading.set(false);
+      },
+    });
+  }
+
+  rescheduleAppointment(apt: Appointment): void {
+    if (this.actionLoading()) return;
+    this.actionLoading.set(true);
+
+    this.service.updateStatus(apt.id, 'rescheduled', this.rescheduleReasonText).subscribe({
+      next: () => {
+        this.updateAppointmentStatus(apt.id, 'rescheduled');
+        this.notify.success('Agendamento remarcado');
+        this.dismissInline();
+        this.actionLoading.set(false);
+        this.pendingReschedulePatientId = apt.patientId;
+        this.closeModal();
+        this.showCreateModal = true;
+      },
+      error: (err) => {
+        this.notify.error(this.getErrorMessage(err, 'Erro ao remarcar'));
+        this.actionLoading.set(false);
+      },
+    });
+  }
+
+  // ── CSS helpers ───────────────────────────────────────────────
 
   dayCellClass(day: CalendarDay): string {
     if (!day.currentMonth) return 'border-(--color-border) opacity-30 cursor-default';
@@ -245,6 +337,7 @@ export class Calendar implements OnInit {
     const map: Record<AppointmentStatus, string> = {
       pending: 'bg-(--color-info)',
       confirmed: 'bg-(--color-primary-text)',
+      checkin: 'bg-(--color-warning)',
       paid: 'bg-(--color-success)',
       finished: 'bg-(--color-primary-text)',
       cancelled: 'bg-(--color-dot-neutral)',
@@ -259,6 +352,7 @@ export class Calendar implements OnInit {
     const map: Record<AppointmentStatus, string> = {
       pending: 'bg-(--color-info-subtle) text-(--color-info)',
       confirmed: 'bg-(--color-primary-subtle) text-(--color-primary-text)',
+      checkin: 'bg-warning-subtle text-warning',
       paid: 'bg-(--color-success-subtle) text-(--color-success)',
       finished: 'bg-(--color-bg-hover-md) text-(--color-text-secondary)',
       cancelled: 'bg-(--color-bg-hover-md) text-(--color-text-muted)',
@@ -273,6 +367,7 @@ export class Calendar implements OnInit {
     const map: Record<AppointmentStatus, string> = {
       pending: 'Pendente',
       confirmed: 'Confirmado',
+      checkin: 'Check-in',
       paid: 'Pago',
       finished: 'Finalizado',
       cancelled: 'Cancelado',
@@ -283,7 +378,19 @@ export class Calendar implements OnInit {
     return map[status] ?? status;
   }
 
-  // ── Private / Helpers ─────────────────────────────────────────
+  doctorNameFor(doctorId: number): string {
+    return this.doctorMap.get(doctorId) ?? String(doctorId);
+  }
+
+  methodLabel(method: PaymentMethod): string {
+    return PAYMENT_METHODS.find((m) => m.method === method)?.label ?? method;
+  }
+
+  methodIcon(method: PaymentMethod): string {
+    return PAYMENT_METHODS.find((m) => m.method === method)?.icon ?? '';
+  }
+
+  // ── Private ───────────────────────────────────────────────────
 
   private loadDoctors(): void {
     this.service.getDoctors().subscribe({
@@ -291,31 +398,54 @@ export class Calendar implements OnInit {
         this.doctors = doctors;
         doctors.forEach((d) => this.doctorMap.set(d.id, d.name));
       },
-      error: (err: HttpErrorResponse) => {
-        this.error = this.getErrorMessage(err, 'Erro ao carregar médicos');
-      },
+      error: (err: HttpErrorResponse) =>
+        this.notify.error(this.getErrorMessage(err, 'Erro ao carregar médicos')),
     });
   }
 
   private loadMonthData(): void {
     const month = this.currentMonthParam;
-    this.loading = true;
-    this.error = null;
+    this.pageLoading.set(true);
 
     this.service.getAppointments(month).subscribe({
       next: (appointments) => {
         this.allAppointments.set(appointments);
-        this.loading = false;
+        this.pageLoading.set(false);
       },
       error: (err: HttpErrorResponse) => {
-        this.error = this.getErrorMessage(err, 'Erro ao carregar agendamentos');
-        this.loading = false;
+        this.notify.error(this.getErrorMessage(err, 'Erro ao carregar agendamentos'));
+        this.pageLoading.set(false);
       },
     });
 
     this.service.getAutoConfirmation(month).subscribe({
       next: (data) => (this.autoConfirmation = data),
+      error: (err) => this.notify.error(this.getErrorMessage(err, 'Erro ao carregar confirmações')),
     });
+  }
+
+  private loadBlockedSlots(): void {
+    this.service.getBlockedSlots().subscribe({
+      next: (slots) => {
+        this.blockedHours = slots.map((s) => ({
+          label: s.label,
+          recurrence: this.recurrenceLabel(s.recurrence),
+          color: s.type === 'break' ? 'primary' : 'error',
+        }));
+      },
+      error: (err: HttpErrorResponse) =>
+        this.notify.error(this.getErrorMessage(err, 'Erro ao carregar bloqueios')),
+    });
+  }
+
+  private recurrenceLabel(recurrence: string): string {
+    const map: Record<string, string> = {
+      none: 'Sem recorrência',
+      daily: 'Diário',
+      weekly: 'Semanal',
+      monthly: 'Mensal',
+    };
+    return map[recurrence] ?? recurrence;
   }
 
   private updateAppointmentStatus(id: number, status: AppointmentStatus): void {
@@ -357,46 +487,7 @@ export class Calendar implements OnInit {
   }
 
   private getErrorMessage(err: HttpErrorResponse, defaultMsg: string): string {
-    const nestMessage = err?.error?.message;
-    if (nestMessage) {
-      return Array.isArray(nestMessage) ? nestMessage.join(', ') : nestMessage;
-    }
-    return defaultMsg;
-  }
-
-  confirmAppointment(apt: Appointment): void {
-    this.service.updateStatus(apt.id, 'confirmed').subscribe({
-      next: () => this.updateAppointmentStatus(apt.id, 'confirmed'),
-      error: (err) => (this.error = this.getErrorMessage(err, 'Erro ao confirmar')),
-    });
-  }
-
-  finishAppointment(apt: Appointment): void {
-    this.service.updateStatus(apt.id, 'finished').subscribe({
-      next: () => this.updateAppointmentStatus(apt.id, 'finished'),
-      error: (err) => (this.error = this.getErrorMessage(err, 'Erro ao finalizar')),
-    });
-  }
-
-  cancelAppointment(apt: Appointment): void {
-    this.service.updateStatus(apt.id, 'cancelled', this.cancelReasonText).subscribe({
-      next: () => {
-        this.updateAppointmentStatus(apt.id, 'cancelled');
-        this.dismissInline();
-      },
-      error: (err) => (this.error = this.getErrorMessage(err, 'Erro ao cancelar')),
-    });
-  }
-
-  rescheduleAppointment(apt: Appointment): void {
-    this.service.updateStatus(apt.id, 'rescheduled', this.rescheduleReasonText).subscribe({
-      next: () => {
-        this.updateAppointmentStatus(apt.id, 'rescheduled');
-        this.dismissInline();
-        this.pendingReschedulePatientId = apt.patientId;
-        this.showCreateModal = true;
-      },
-      error: (err) => (this.error = this.getErrorMessage(err, 'Erro ao remarcar')),
-    });
+    const msg = err?.error?.message;
+    return msg ? (Array.isArray(msg) ? msg.join(', ') : msg) : defaultMsg;
   }
 }

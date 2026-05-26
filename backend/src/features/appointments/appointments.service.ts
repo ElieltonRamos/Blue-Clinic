@@ -96,10 +96,16 @@ export class AppointmentsService {
     });
     if (!patient) throw new NotFoundException('Paciente não encontrado');
 
+    const feeOverride = await this.resolveFee(
+      dto.doctorId,
+      dto.appointmentTypeId,
+    );
+
     const appointment = await this.prisma.client.appointment.create({
       data: {
         doctorId: dto.doctorId,
         patientId: dto.patientId,
+        appointmentTypeId: dto.appointmentTypeId,
         specialty: dto.specialty ?? doctor.specialty,
         date: this.parseDateUTC(dto.date),
         startTime: dto.startTime,
@@ -107,6 +113,7 @@ export class AppointmentsService {
         status: 'pending',
         responsible: dto.responsible,
         notes: dto.notes,
+        ...(feeOverride !== null && { feeOverride }),
       },
       include: {
         patient: { select: { id: true, name: true } },
@@ -115,6 +122,21 @@ export class AppointmentsService {
     });
 
     return new AppointmentResponseDto(appointment);
+  }
+
+  private async resolveFee(
+    doctorId: number,
+    appointmentTypeId: number,
+  ): Promise<number | null> {
+    const commission =
+      await this.prisma.client.appointmentTypeCommission.findUnique({
+        where: {
+          doctorId_appointmentTypeId: { doctorId, appointmentTypeId },
+        },
+        select: { price: true },
+      });
+
+    return commission ? Number(commission.price) : null;
   }
 
   async update(
@@ -145,7 +167,6 @@ export class AppointmentsService {
   }
 
   // ── Payments ───────────────────────────────────────────────────────────────
-
   async createPayment(
     appointmentId: number,
     companyId: number,
@@ -163,43 +184,27 @@ export class AppointmentsService {
     if (!appointment) throw new NotFoundException('Agendamento não encontrado');
     if (appointment.status === 'paid')
       throw new BadRequestException('Agendamento já foi pago');
-    if (appointment.status !== 'checkin')
+    if (!['confirmed', 'checkin'].includes(appointment.status))
       throw new BadRequestException(
-        'Agendamento precisa estar em check-in para receber pagamento',
+        'Agendamento precisa estar confirmado para receber pagamento',
       );
 
     const total = dto.entries.reduce((sum, e) => sum + Number(e.amount), 0);
     if (total <= 0)
       throw new BadRequestException('Valor total deve ser maior que zero');
 
-    let doctorEarnings = 0;
-    let clinicEarnings = 0;
-
-    if (appointment.appointmentTypeId) {
-      const commission =
-        await this.prisma.client.appointmentTypeCommission.findUnique({
-          where: {
-            doctorId_appointmentTypeId: {
-              doctorId: appointment.doctorId,
-              appointmentTypeId: appointment.appointmentTypeId,
-            },
-          },
-        });
-
-      if (commission) {
-        const base = Number(appointment.feeOverride ?? total);
-
-        doctorEarnings =
-          commission.doctorRateType === 'percentage'
-            ? (base * Number(commission.doctorRate)) / 100
-            : Number(commission.doctorRate);
-
-        clinicEarnings =
-          commission.clinicRateType === 'percentage'
-            ? (base * Number(commission.clinicRate)) / 100
-            : Number(commission.clinicRate);
-      }
+    if (appointment.feeOverride !== null) {
+      const expected = Number(appointment.feeOverride);
+      if (total !== expected)
+        throw new BadRequestException(
+          `Valor do pagamento deve ser exatamente R$ ${expected.toFixed(2)}`,
+        );
     }
+
+    const { doctorEarnings, clinicEarnings } = await this.resolveCommissions(
+      appointment,
+      total,
+    );
 
     const payment = await this.prisma.client.$transaction(
       async (tx: Prisma.TransactionClient) => {
@@ -234,6 +239,39 @@ export class AppointmentsService {
     );
 
     return new PaymentResponseDto(payment);
+  }
+
+  private async resolveCommissions(
+    appointment: {
+      appointmentTypeId: number | null;
+      doctorId: number;
+      feeOverride: Prisma.Decimal | null;
+    },
+    total: number,
+  ): Promise<{ doctorEarnings: number; clinicEarnings: number }> {
+    if (!appointment.appointmentTypeId)
+      return { doctorEarnings: 0, clinicEarnings: 0 };
+
+    const commission =
+      await this.prisma.client.appointmentTypeCommission.findUnique({
+        where: {
+          doctorId_appointmentTypeId: {
+            doctorId: appointment.doctorId,
+            appointmentTypeId: appointment.appointmentTypeId,
+          },
+        },
+      });
+
+    if (!commission) return { doctorEarnings: 0, clinicEarnings: 0 };
+
+    const base = Number(appointment.feeOverride ?? total);
+    const calc = (rate: Prisma.Decimal, rateType: string) =>
+      rateType === 'percentage' ? (base * Number(rate)) / 100 : Number(rate);
+
+    return {
+      doctorEarnings: calc(commission.doctorRate, commission.doctorRateType),
+      clinicEarnings: calc(commission.clinicRate, commission.clinicRateType),
+    };
   }
 
   // ── Blocked Slots ──────────────────────────────────────────────────────────

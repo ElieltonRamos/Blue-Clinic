@@ -3,6 +3,7 @@ import { PaymentMethod } from '../../financial/types/financial.types';
 export type AppointmentStatus =
   | 'pending'
   | 'confirmed'
+  | 'checkin'
   | 'paid'
   | 'finished'
   | 'cancelled'
@@ -15,6 +16,27 @@ export interface Doctor {
   name: string;
   specialty: string;
   avatarUrl?: string;
+}
+
+export interface CalendarDay {
+  date: Date;
+  dayNumber: number;
+  currentMonth: boolean;
+  isToday: boolean;
+  label: string;
+  appointments: Appointment[];
+}
+
+export interface PaymentEntry {
+  method: PaymentMethod;
+  amount: number;
+  change: number;
+}
+
+export interface PaymentMethodConfig {
+  method: PaymentMethod;
+  label: string;
+  icon: string;
 }
 
 export interface Appointment {
@@ -37,7 +59,7 @@ export interface BlockedSlot {
   id: number;
   companyId: number;
   doctorId: number | null;
-  startDate: string; // era date?
+  startDate: string;
   endDate?: string | null;
   startTime: string;
   endTime: string;
@@ -58,24 +80,16 @@ export interface AutoConfirmation {
   total: number;
 }
 
-export interface PaymentMethodEntry {
-  method: PaymentMethod;
-  value: number;
-}
-
-export interface PaymentRecord {
+export interface PaymentResponseDto {
   id: number;
   appointmentId: number;
   date: string;
   patient: string;
   doctor: string;
   value: number;
-  entries: {
-    id: number;
-    method: PaymentMethod;
-    amount: number;
-    change: number;
-  }[];
+  doctorEarnings: number;
+  clinicEarnings: number;
+  entries: PaymentEntry[];
 }
 
 export interface CreatePaymentRequest {

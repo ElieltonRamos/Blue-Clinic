@@ -17,52 +17,61 @@
       </button>
     </div>
 
-    <div class="grid grid-cols-7 gap-1">
-      @for (d of weekDays; track d) {
+    @if (pageLoading()) {
+      <div class="flex-1 flex items-center justify-center">
         <div
-          class="text-center text-[10px] font-medium text-(--color-text-muted) uppercase tracking-widest pb-2"
-        >
-          {{ d }}
-        </div>
-      }
-
-      @for (day of calendarDays(); track day.date) {
-        <div
-          (click)="day.currentMonth && openModal(day)"
-          class="rounded-lg border p-1.5 min-h-18 transition-colors"
-          [ngClass]="dayCellClass(day)"
-        >
-          <span
-            class="block text-xs font-medium mb-1"
-            [class]="day.isToday ? 'text-(--color-primary-text)' : 'text-(--color-text-secondary)'"
-            >{{ day.dayNumber }}</span
+          class="w-6 h-6 rounded-full border-2 border-(--color-primary) border-t-transparent animate-spin"
+        ></div>
+      </div>
+    } @else {
+      <div class="grid grid-cols-7 gap-1">
+        @for (d of weekDays; track d) {
+          <div
+            class="text-center text-[10px] font-medium text-(--color-text-muted) uppercase tracking-widest pb-2"
           >
+            {{ d }}
+          </div>
+        }
 
-          @for (apt of day.appointments.slice(0, 2); track apt.id) {
-            <div
-              class="flex items-center gap-1 text-[11px] text-(--color-text-muted) truncate mb-0.5"
+        @for (day of calendarDays(); track day.date) {
+          <div
+            (click)="day.currentMonth && openModal(day)"
+            class="rounded-lg border p-1.5 min-h-18 transition-colors"
+            [ngClass]="dayCellClass(day)"
+          >
+            <span
+              class="block text-xs font-medium mb-1"
+              [class]="
+                day.isToday ? 'text-(--color-primary-text)' : 'text-(--color-text-secondary)'
+              "
+              >{{ day.dayNumber }}</span
             >
-              <span
-                class="w-1.5 h-1.5 rounded-full shrink-0"
-                [class]="statusDotClass(apt.status)"
-              ></span>
-              {{ apt.startTime }} {{ apt.patientName | slice: 0 : 8 }}.
-            </div>
-          }
 
-          @if (day.appointments.length > 2) {
-            <span class="text-[10px] text-text-disabled"
-              >+{{ day.appointments.length - 2 }} mais</span
-            >
-          }
-        </div>
-      }
-    </div>
+            @for (apt of day.appointments.slice(0, 2); track apt.id) {
+              <div
+                class="flex items-center gap-1 text-[11px] text-(--color-text-muted) truncate mb-0.5"
+              >
+                <span
+                  class="w-1.5 h-1.5 rounded-full shrink-0"
+                  [class]="statusDotClass(apt.status)"
+                ></span>
+                {{ apt.startTime }} {{ apt.patientName | slice: 0 : 8 }}.
+              </div>
+            }
+
+            @if (day.appointments.length > 2) {
+              <span class="text-[10px] text-text-disabled"
+                >+{{ day.appointments.length - 2 }} mais</span
+              >
+            }
+          </div>
+        }
+      </div>
+    }
   </section>
 
   <!-- Painel direito -->
   <aside class="w-60 flex flex-col gap-4 shrink-0">
-    <!-- Botão novo agendamento -->
     <button
       (click)="openCreateModal()"
       class="w-full bg-(--color-btn-primary-bg) text-(--color-btn-primary-text) rounded-xl py-2.5 text-sm font-bold hover:opacity-90 transition-opacity active:scale-[0.98]"
@@ -70,7 +79,6 @@
       + Novo agendamento
     </button>
 
-    <!-- Bloqueios -->
     <div class="bg-bg-sidebar rounded-xl border border-(--color-border) p-4">
       <p class="text-[10px] font-bold text-(--color-primary-text) uppercase tracking-widest mb-3">
         Horários bloqueados
@@ -95,7 +103,6 @@
       </div>
     </div>
 
-    <!-- Auto-confirmações -->
     <div
       class="bg-info-subtle rounded-xl border border-info/30 p-4 flex items-center justify-between"
     >
@@ -118,9 +125,21 @@
     (click)="closePaymentModal()"
   >
     <div
-      class="bg-bg-card rounded-2xl border border-(--color-border-md) shadow-xl w-full max-w-sm p-6 flex flex-col gap-4"
+      class="relative bg-bg-card rounded-2xl border border-(--color-border-md) shadow-xl w-full max-w-md p-6 flex flex-col gap-4"
       (click)="$event.stopPropagation()"
     >
+      <!-- Overlay de loading -->
+      @if (actionLoading()) {
+        <div
+          class="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-bg-card/70 backdrop-blur-[2px]"
+        >
+          <div
+            class="w-6 h-6 rounded-full border-2 border-(--color-primary) border-t-transparent animate-spin"
+          ></div>
+        </div>
+      }
+
+      <!-- Header -->
       <div class="flex items-start justify-between">
         <div>
           <p class="text-[14px] font-semibold text-(--color-text-primary)">Receber Pagamento</p>
@@ -134,66 +153,158 @@
         </button>
       </div>
 
+      <!-- Info consulta -->
       <div
-        class="rounded-xl bg-(--color-bg-overlay) border border-(--color-border) px-3 py-2.5 flex items-center justify-between"
+        class="rounded-xl bg-(--color-bg-overlay) border border-(--color-border) px-3 py-2.5 grid grid-cols-3 gap-2"
       >
         <div>
-          <p class="text-[11px] text-(--color-text-muted)">Médico</p>
-          <p class="text-[12px] font-medium text-(--color-text-primary)">
+          <p class="text-[10px] text-(--color-text-muted)">Médico</p>
+          <p class="text-[12px] font-medium text-(--color-text-primary) truncate">
             {{ doctorNameFor(paymentModal.doctorId) }}
           </p>
         </div>
-        <div class="text-right">
-          <p class="text-[11px] text-(--color-text-muted)">Especialidade</p>
-          <p class="text-[12px] font-medium text-(--color-text-primary)">
+        <div>
+          <p class="text-[10px] text-(--color-text-muted)">Especialidade</p>
+          <p class="text-[12px] font-medium text-(--color-text-primary) truncate">
             {{ paymentModal.specialty }}
           </p>
         </div>
-        <div class="text-right">
-          <p class="text-[11px] text-(--color-text-muted)">Horário</p>
+        <div>
+          <p class="text-[10px] text-(--color-text-muted)">Horário</p>
           <p class="text-[12px] font-medium text-(--color-text-primary)">
             {{ paymentModal.startTime }}
           </p>
         </div>
       </div>
 
+      <!-- Valor da consulta -->
+      <div
+        class="rounded-xl bg-(--color-primary-subtle) border border-(--color-primary)/20 px-4 py-3 flex items-center justify-between"
+      >
+        <p class="text-[12px] font-semibold text-(--color-primary-text)">Valor da consulta</p>
+        <p class="text-[20px] font-bold text-(--color-primary-text)">
+          @if (paymentModal.price != null) {
+            {{ paymentModal.price | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}
+          } @else {
+            —
+          }
+        </p>
+      </div>
+
+      <!-- Pagamentos adicionados -->
+      @if (paymentEntries.length > 0) {
+        <div class="flex flex-col gap-1">
+          <p class="text-[10px] uppercase tracking-wider text-(--color-text-muted) font-semibold">
+            Pagamentos adicionados
+          </p>
+          @for (entry of paymentEntries; track entry.method; let i = $index) {
+            <div
+              class="flex items-center justify-between bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-3 py-2 text-[12px]"
+            >
+              <div class="flex items-center gap-2">
+                <span class="text-base">{{ methodIcon(entry.method) }}</span>
+                <span class="text-(--color-text-secondary)">{{ methodLabel(entry.method) }}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-(--color-text-primary)">
+                  {{ entry.amount | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}
+                </span>
+                @if (entry.change > 0) {
+                  <span class="text-[10px] text-warning">
+                    troco {{ entry.change | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}
+                  </span>
+                }
+                <button
+                  (click)="removePaymentEntry(i)"
+                  class="text-(--color-danger) hover:opacity-70 text-xs ml-1"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      }
+
+      <!-- Restante -->
+      <div
+        class="rounded-xl bg-(--color-bg-overlay) border border-(--color-border) px-4 py-2.5 flex items-center justify-between"
+      >
+        <p class="text-[12px] font-semibold text-(--color-text-secondary)">Restante</p>
+        <p
+          class="text-[16px] font-bold"
+          [class]="paymentRemaining > 0.01 ? 'text-(--color-danger)' : 'text-success'"
+        >
+          {{
+            (paymentRemaining > 0 ? paymentRemaining : 0)
+              | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR'
+          }}
+        </p>
+      </div>
+
+      <!-- Seleção de método -->
       <div class="flex flex-col gap-2">
         <p class="text-[10px] uppercase tracking-wider text-(--color-text-muted) font-semibold">
-          Formas de pagamento
+          Método de pagamento
         </p>
-        @for (entry of paymentEntries; track entry.method) {
-          <div class="flex items-center gap-3">
-            <input
-              type="checkbox"
-              [(ngModel)]="entry.enabled"
-              class="w-4 h-4 accent-(--color-primary) shrink-0"
-            />
-            <span class="text-[12px] text-(--color-text-secondary) w-20 shrink-0">{{
-              methodLabel(entry.method)
-            }}</span>
+        <div class="grid grid-cols-4 gap-2">
+          @for (m of availablePaymentMethods; track m.method) {
+            <button
+              (click)="selectPaymentMethod(m.method)"
+              [disabled]="paymentRemaining <= 0.01"
+              class="flex flex-col items-center justify-center py-2 rounded-lg border transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              [class]="
+                newPaymentMethod === m.method
+                  ? 'border-(--color-primary) bg-(--color-primary-subtle) text-(--color-primary-text)'
+                  : 'border-(--color-border) bg-(--color-bg-overlay) text-(--color-text-secondary) hover:border-(--color-border-md)'
+              "
+            >
+              <span class="text-lg">{{ m.icon }}</span>
+              <span class="text-[10px] mt-0.5">{{ m.label }}</span>
+            </button>
+          }
+        </div>
+      </div>
+
+      <!-- Input de valor -->
+      @if (newPaymentMethod) {
+        <div class="grid grid-cols-2 gap-3">
+          <div class="flex flex-col gap-1">
+            <label class="text-[10px] text-(--color-text-muted)">Valor</label>
             <input
               type="number"
               min="0"
               step="0.01"
-              placeholder="R$ 0,00"
-              [(ngModel)]="entry.value"
-              [disabled]="!entry.enabled"
-              class="flex-1 bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-2.5 py-1.5 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors disabled:opacity-30"
+              [(ngModel)]="newPaymentAmount"
+              class="bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-3 py-2 text-[13px] font-bold text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors text-center"
             />
           </div>
-        }
-      </div>
+          @if (newPaymentMethod === 'dinheiro') {
+            <div class="flex flex-col gap-1">
+              <label class="text-[10px] text-(--color-text-muted)">Troco</label>
+              <div
+                class="bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-3 py-2 text-[13px] font-bold text-warning text-center"
+              >
+                {{
+                  (newPaymentAmount > paymentRemaining ? newPaymentAmount - paymentRemaining : 0)
+                    | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR'
+                }}
+              </div>
+            </div>
+          }
+        </div>
 
-      <div
-        class="flex items-center justify-between rounded-xl bg-(--color-primary-subtle) border border-(--color-primary)/20 px-4 py-2.5"
-      >
-        <p class="text-[12px] font-semibold text-(--color-primary-text)">Total</p>
-        <p class="text-[16px] font-bold text-(--color-primary-text)">
-          {{ paymentTotal | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}
-        </p>
-      </div>
+        <button
+          (click)="addPaymentEntry()"
+          [disabled]="!newPaymentAmount || newPaymentAmount <= 0"
+          class="w-full py-2 rounded-lg text-[12px] font-medium bg-(--color-primary-subtle) text-(--color-primary-text) border border-(--color-primary)/30 hover:opacity-80 transition-opacity disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          + Adicionar pagamento
+        </button>
+      }
 
-      <div class="flex justify-end gap-2">
+      <!-- Ações -->
+      <div class="flex justify-end gap-2 pt-1">
         <button
           (click)="closePaymentModal()"
           class="px-4 py-2 rounded-lg text-[12px] font-medium text-(--color-text-secondary) hover:bg-(--color-bg-hover-md) transition-colors"
@@ -202,7 +313,7 @@
         </button>
         <button
           (click)="confirmPayment()"
-          [disabled]="!paymentValid"
+          [disabled]="!paymentValid || actionLoading()"
           class="px-4 py-2 rounded-lg text-[12px] font-medium bg-success text-white hover:opacity-90 transition-opacity disabled:opacity-30 disabled:cursor-not-allowed"
         >
           ✓ Confirmar Pagamento
@@ -220,9 +331,20 @@
     (click)="closeModal()"
   >
     <div
-      class="bg-bg-card rounded-xl border border-(--color-border) w-120 max-h-[80vh] overflow-y-auto p-5"
+      class="relative bg-bg-card rounded-xl border border-(--color-border) w-120 max-h-[80vh] overflow-y-auto p-5"
       (click)="$event.stopPropagation()"
     >
+      <!-- Overlay de loading -->
+      @if (actionLoading()) {
+        <div
+          class="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-bg-card/70 backdrop-blur-[2px]"
+        >
+          <div
+            class="w-6 h-6 rounded-full border-2 border-(--color-primary) border-t-transparent animate-spin"
+          ></div>
+        </div>
+      }
+
       <div class="flex items-center justify-between mb-4">
         <p class="text-sm font-semibold text-(--color-text-primary)">{{ selectedDay()!.label }}</p>
         <button
@@ -258,13 +380,15 @@
                 @if (apt.status === 'pending') {
                   <button
                     (click)="confirmAppointment(apt); $event.stopPropagation()"
-                    class="text-[10px] px-2 py-1 rounded-lg bg-(--color-primary-subtle) text-(--color-primary-text) hover:opacity-80 transition-opacity"
+                    [disabled]="actionLoading()"
+                    class="text-[10px] px-2 py-1 rounded-lg bg-(--color-primary-subtle) text-(--color-primary-text) hover:opacity-80 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     Confirmar
                   </button>
                   <button
                     (click)="requestCancel(apt); $event.stopPropagation()"
-                    class="text-[10px] px-2 py-1 rounded-lg bg-danger-subtle text-(--color-danger) hover:opacity-80 transition-opacity"
+                    [disabled]="actionLoading()"
+                    class="text-[10px] px-2 py-1 rounded-lg bg-danger-subtle text-(--color-danger) hover:opacity-80 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     Cancelar
                   </button>
@@ -272,19 +396,22 @@
                 @if (apt.status === 'confirmed') {
                   <button
                     (click)="closeModal(); openPaymentModal(apt); $event.stopPropagation()"
-                    class="text-[10px] px-2 py-1 rounded-lg bg-success-subtle text-success hover:opacity-80 transition-opacity"
+                    [disabled]="actionLoading()"
+                    class="text-[10px] px-2 py-1 rounded-lg bg-success-subtle text-success hover:opacity-80 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     Pagar
                   </button>
                   <button
                     (click)="requestReschedule(apt); $event.stopPropagation()"
-                    class="text-[10px] px-2 py-1 rounded-lg bg-warning-subtle text-warning hover:opacity-80 transition-opacity"
+                    [disabled]="actionLoading()"
+                    class="text-[10px] px-2 py-1 rounded-lg bg-warning-subtle text-warning hover:opacity-80 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     Remarcar
                   </button>
                   <button
                     (click)="requestCancel(apt); $event.stopPropagation()"
-                    class="text-[10px] px-2 py-1 rounded-lg bg-danger-subtle text-(--color-danger) hover:opacity-80 transition-opacity"
+                    [disabled]="actionLoading()"
+                    class="text-[10px] px-2 py-1 rounded-lg bg-danger-subtle text-(--color-danger) hover:opacity-80 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     Cancelar
                   </button>
@@ -292,13 +419,15 @@
                 @if (apt.status === 'paid') {
                   <button
                     (click)="finishAppointment(apt); $event.stopPropagation()"
-                    class="text-[10px] px-2 py-1 rounded-lg bg-(--color-primary-subtle) text-(--color-primary-text) hover:opacity-80 transition-opacity"
+                    [disabled]="actionLoading()"
+                    class="text-[10px] px-2 py-1 rounded-lg bg-(--color-primary-subtle) text-(--color-primary-text) hover:opacity-80 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     Finalizar
                   </button>
                   <button
                     (click)="requestCancel(apt); $event.stopPropagation()"
-                    class="text-[10px] px-2 py-1 rounded-lg bg-danger-subtle text-(--color-danger) hover:opacity-80 transition-opacity"
+                    [disabled]="actionLoading()"
+                    class="text-[10px] px-2 py-1 rounded-lg bg-danger-subtle text-(--color-danger) hover:opacity-80 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     Cancelar
                   </button>
@@ -323,13 +452,14 @@
                 <div class="flex justify-end gap-2">
                   <button
                     (click)="dismissInline(); $event.stopPropagation()"
-                    class="text-[11px] px-3 py-1 rounded-lg border border-(--color-border) text-(--color-text-secondary) hover:opacity-80 transition-opacity"
+                    [disabled]="actionLoading()"
+                    class="text-[11px] px-3 py-1 rounded-lg border border-(--color-border) text-(--color-text-secondary) hover:opacity-80 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     Desistir
                   </button>
                   <button
                     (click)="rescheduleAppointment(apt); $event.stopPropagation()"
-                    [disabled]="!rescheduleReasonText.trim()"
+                    [disabled]="!rescheduleReasonText.trim() || actionLoading()"
                     class="text-[11px] px-3 py-1 rounded-lg bg-warning-subtle text-warning border border-warning/40 hover:opacity-80 transition-opacity disabled:opacity-30 disabled:cursor-not-allowed"
                   >
                     Confirmar remarcação
@@ -355,13 +485,14 @@
                 <div class="flex justify-end gap-2">
                   <button
                     (click)="dismissInline(); $event.stopPropagation()"
-                    class="text-[11px] px-3 py-1 rounded-lg border border-(--color-border) text-(--color-text-secondary) hover:opacity-80 transition-opacity"
+                    [disabled]="actionLoading()"
+                    class="text-[11px] px-3 py-1 rounded-lg border border-(--color-border) text-(--color-text-secondary) hover:opacity-80 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     Desistir
                   </button>
                   <button
                     (click)="cancelAppointment(apt); $event.stopPropagation()"
-                    [disabled]="!cancelReasonText.trim()"
+                    [disabled]="!cancelReasonText.trim() || actionLoading()"
                     class="text-[11px] px-3 py-1 rounded-lg bg-danger-subtle text-(--color-danger) border border-(--color-danger)/40 hover:opacity-80 transition-opacity disabled:opacity-30 disabled:cursor-not-allowed"
                   >
                     Confirmar cancelamento
@@ -371,6 +502,7 @@
             }
           </div>
         }
+
         @if (selectedDay()!.appointments.length === 0) {
           <p class="text-sm text-(--color-text-muted) text-center py-6">
             Nenhum agendamento para este dia.
@@ -379,6 +511,10 @@
       </div>
     </div>
   </div>
+}
+
+@if (receiptData) {
+  <app-modal-appointment-receipt [paymentData]="receiptData" (closeModal)="receiptData = null" />
 }
 
 <app-create-appointment-modal

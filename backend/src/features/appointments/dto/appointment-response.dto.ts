@@ -43,6 +43,9 @@ export class AppointmentResponseDto {
   })
   responsible?: string;
 
+  @ApiPropertyOptional({ example: 150.0, description: 'Valor da consulta' })
+  price?: number;
+
   @ApiPropertyOptional({
     example: 'Paciente não compareceu',
     description: 'Motivo do cancelamento ou remarcação',
@@ -60,6 +63,8 @@ export class AppointmentResponseDto {
     this.endTime = data.endTime;
     this.status = data.status;
     this.responsible = data.responsible ?? undefined;
+    this.price =
+      data.feeOverride != null ? Number(data.feeOverride) : undefined;
     this.cancellationReason = data.cancellationReason ?? undefined;
   }
 }

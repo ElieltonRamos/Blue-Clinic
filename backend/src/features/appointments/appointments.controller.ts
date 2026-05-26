@@ -243,7 +243,7 @@ export class AppointmentsController {
   @ApiResponse({ status: HttpStatus.CREATED, type: PaymentResponseDto })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
-    description: 'Agendamento não está em check-in ou já foi pago',
+    description: 'Agendamento não está confirmado ou já foi pago',
   })
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,

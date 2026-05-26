@@ -23,6 +23,7 @@ enum AppointmentStatus {
   paid
   cancelled
   rescheduled
+  finished
 }
 
 enum PaymentMethod {
@@ -113,7 +114,7 @@ model AppointmentType {
   id        Int     @id @default(autoincrement())
   companyId Int
   name      String
-  duration  Int // minutos
+  duration  Int
   active    Boolean @default(true)
 
   company      Company                     @relation(fields: [companyId], references: [id])
@@ -127,7 +128,7 @@ model AppointmentTypeCommission {
   id                Int            @id @default(autoincrement())
   doctorId          Int
   appointmentTypeId Int
-  price             Decimal        @db.Decimal(10, 2)  // adicionar
+  price             Decimal        @db.Decimal(10, 2)
   doctorRateType    CommissionType
   doctorRate        Decimal        @db.Decimal(10, 2)
   clinicRateType    CommissionType

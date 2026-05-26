@@ -8,7 +8,8 @@ import {
   BlockedSlot,
   CreatePaymentRequest,
   Doctor,
-  PaymentMethodEntry,
+  PaymentEntry,
+  PaymentResponseDto,
 } from '../types/calendar.types';
 
 @Injectable({
@@ -42,14 +43,11 @@ export class CalendarService {
     });
   }
 
-  createPayment(appointmentId: number, entries: PaymentMethodEntry[]) {
+  createPayment(appointmentId: number, entries: PaymentEntry[]) {
     const body: CreatePaymentRequest = {
-      entries: entries.map((e) => ({
-        method: e.method,
-        amount: e.value,
-      })),
+      entries: entries.map(({ method, amount, change }) => ({ method, amount, change })),
     };
-    return this.http.post<PaymentResponse>(
+    return this.http.post<PaymentResponseDto>(
       `${this.apiUrl}/appointments/${appointmentId}/payments`,
       body,
     );
