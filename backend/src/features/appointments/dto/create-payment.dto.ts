@@ -39,6 +39,16 @@ export class CreatePaymentDto {
     description: 'Lista de lançamentos/métodos utilizados no pagamento',
   })
   @IsArray({ message: 'entries deve ser um array' })
-  @Type(() => PaymentEntryDto) // Necessário para o class-validator validar cada item do array
+  @Type(() => PaymentEntryDto)
   entries: PaymentEntryDto[];
+
+  @ApiPropertyOptional({
+    description: 'Valor do desconto aplicado',
+    example: 10.0,
+    minimum: 0,
+  })
+  @IsOptional()
+  @IsNumber({}, { message: 'O desconto deve ser um número' })
+  @Min(0, { message: 'O desconto não pode ser negativo' })
+  discount?: number;
 }

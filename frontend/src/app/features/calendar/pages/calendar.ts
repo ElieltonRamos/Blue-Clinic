@@ -40,6 +40,8 @@ export class Calendar implements OnInit {
   readonly weekDays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
   readonly availablePaymentMethods = PAYMENT_METHODS;
 
+  // ── State ─────────────────────────────────────────────────────
+
   private currentDate = signal(new Date());
   private allAppointments = signal<Appointment[]>([]);
   private doctorMap = new Map<number, string>();
@@ -50,8 +52,8 @@ export class Calendar implements OnInit {
   autoConfirmation: AutoConfirmation = { confirmed: 0, total: 0 };
 
   selectedDay = signal<CalendarDay | null>(null);
-  actionLoading = signal(false); // bloqueia modais durante ações
-  pageLoading = signal(false); // carregamento mensal
+  actionLoading = signal(false);
+  pageLoading = signal(false);
 
   showCreateModal = false;
   cancelReasonText = '';
@@ -60,10 +62,14 @@ export class Calendar implements OnInit {
   pendingRescheduleId: number | null = null;
   pendingReschedulePatientId: number | null = null;
 
+  // ── Payment state ─────────────────────────────────────────────
+
   paymentModal: Appointment | null = null;
   paymentEntries: PaymentEntry[] = [];
   newPaymentMethod: PaymentMethod | null = null;
   newPaymentAmount = 0;
+  discountType: 'fixed' | 'percent' = 'fixed';
+  discountValue = 0;
 
   // ── Getters ───────────────────────────────────────────────────
 
@@ -76,11 +82,21 @@ export class Calendar implements OnInit {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
   }
 
+  get discountAmount(): number {
+    const price = this.paymentModal?.price;
+    if (!price) return 0;
+    if (this.discountType === 'percent') {
+      return Math.min((price * this.discountValue) / 100, price);
+    }
+    return Math.min(this.discountValue, price);
+  }
+
   get paymentRemaining(): number {
-    const expected = this.paymentModal?.price ?? null;
-    if (expected == null) return 0;
+    const price = this.paymentModal?.price ?? null;
+    if (price == null) return 0;
+    const discounted = price - this.discountAmount;
     const paid = this.paymentEntries.reduce((sum, e) => sum + e.amount - e.change, 0);
-    return Math.max(0, expected - paid);
+    return Math.max(0, discounted - paid);
   }
 
   get paymentPreviewChange(): number {
@@ -89,6 +105,8 @@ export class Calendar implements OnInit {
   }
 
   get paymentValid(): boolean {
+    const discounted = (this.paymentModal?.price ?? 0) - this.discountAmount;
+    if (discounted <= 0) return true;
     return this.paymentEntries.length > 0 && this.paymentRemaining <= 0.01;
   }
 
@@ -189,6 +207,8 @@ export class Calendar implements OnInit {
     this.paymentEntries = [];
     this.newPaymentMethod = null;
     this.newPaymentAmount = 0;
+    this.discountType = 'fixed';
+    this.discountValue = 0;
   }
 
   closePaymentModal(): void {
@@ -197,6 +217,8 @@ export class Calendar implements OnInit {
     this.paymentEntries = [];
     this.newPaymentMethod = null;
     this.newPaymentAmount = 0;
+    this.discountType = 'fixed';
+    this.discountValue = 0;
   }
 
   selectPaymentMethod(method: PaymentMethod): void {
@@ -234,9 +256,9 @@ export class Calendar implements OnInit {
     const apt = this.paymentModal;
     this.actionLoading.set(true);
 
-    this.service.createPayment(apt.id, this.paymentEntries).subscribe({
+    this.service.createPayment(apt.id, this.paymentEntries, this.discountAmount).subscribe({
       next: (response) => {
-        this.receiptData = response; // abre o recibo
+        this.receiptData = response;
         this.updateAppointmentStatus(apt.id, 'paid');
         this.notify.success('Pagamento registrado com sucesso');
         this.actionLoading.set(false);
@@ -491,3 +513,4 @@ export class Calendar implements OnInit {
     return msg ? (Array.isArray(msg) ? msg.join(', ') : msg) : defaultMsg;
   }
 }
+

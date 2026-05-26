@@ -189,13 +189,18 @@ export class AppointmentsService {
         'Agendamento precisa estar confirmado para receber pagamento',
       );
 
-    const total = dto.entries.reduce((sum, e) => sum + Number(e.amount), 0);
+    const discount = Number(dto.discount ?? 0);
+    const total = dto.entries.reduce(
+      (sum, e) => sum + Number(e.amount) - Number(e.change ?? 0),
+      0,
+    );
+
     if (total <= 0)
       throw new BadRequestException('Valor total deve ser maior que zero');
 
     if (appointment.feeOverride !== null) {
-      const expected = Number(appointment.feeOverride);
-      if (total !== expected)
+      const expected = Number(appointment.feeOverride) - discount;
+      if (Math.abs(total - expected) > 0.01)
         throw new BadRequestException(
           `Valor do pagamento deve ser exatamente R$ ${expected.toFixed(2)}`,
         );
@@ -216,6 +221,7 @@ export class AppointmentsService {
             doctor: appointment.doctor.name,
             registeredById,
             value: total,
+            discount,
             doctorEarnings,
             clinicEarnings,
             entries: {

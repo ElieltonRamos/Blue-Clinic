@@ -43,9 +43,10 @@ export class CalendarService {
     });
   }
 
-  createPayment(appointmentId: number, entries: PaymentEntry[]) {
+  createPayment(appointmentId: number, entries: PaymentEntry[], discount: number) {
     const body: CreatePaymentRequest = {
       entries: entries.map(({ method, amount, change }) => ({ method, amount, change })),
+      discount,
     };
     return this.http.post<PaymentResponseDto>(
       `${this.apiUrl}/appointments/${appointmentId}/payments`,

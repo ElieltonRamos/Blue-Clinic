@@ -98,4 +98,5 @@ export interface CreatePaymentRequest {
     amount: number;
     change?: number;
   }[];
+  discount: number;
 }

@@ -191,6 +191,57 @@
         </p>
       </div>
 
+      <!-- Desconto -->
+      <div class="flex flex-col gap-1.5">
+        <p class="text-[10px] uppercase tracking-wider text-(--color-text-muted) font-semibold">
+          Desconto
+        </p>
+        <div class="flex gap-2">
+          <div
+            class="flex rounded-lg border border-(--color-border) overflow-hidden text-[12px] shrink-0"
+          >
+            <button
+              (click)="discountType = 'fixed'; discountValue = 0"
+              class="px-3 py-1.5 transition-colors"
+              [class]="
+                discountType === 'fixed'
+                  ? 'bg-(--color-primary-subtle) text-(--color-primary-text) font-medium'
+                  : 'text-(--color-text-secondary) hover:bg-(--color-bg-overlay)'
+              "
+            >
+              R$
+            </button>
+            <button
+              (click)="discountType = 'percent'; discountValue = 0"
+              class="px-3 py-1.5 border-l border-(--color-border) transition-colors"
+              [class]="
+                discountType === 'percent'
+                  ? 'bg-(--color-primary-subtle) text-(--color-primary-text) font-medium'
+                  : 'text-(--color-text-secondary) hover:bg-(--color-bg-overlay)'
+              "
+            >
+              %
+            </button>
+          </div>
+          <input
+            type="number"
+            min="0"
+            [max]="discountType === 'percent' ? 100 : (paymentModal.price ?? 0)"
+            step="1"
+            [(ngModel)]="discountValue"
+            placeholder="0"
+            class="flex-1 bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-3 py-1.5 text-[13px] font-bold text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors text-center"
+          />
+          @if (discountAmount > 0) {
+            <span
+              class="flex items-center text-[12px] font-bold text-(--color-danger) shrink-0 px-1"
+            >
+              −{{ discountAmount | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}
+            </span>
+          }
+        </div>
+      </div>
+
       <!-- Pagamentos adicionados -->
       @if (paymentEntries.length > 0) {
         <div class="flex flex-col gap-1">
@@ -274,7 +325,7 @@
             <input
               type="number"
               min="0"
-              step="0.01"
+              step="1"
               [(ngModel)]="newPaymentAmount"
               class="bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-3 py-2 text-[13px] font-bold text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors text-center"
             />

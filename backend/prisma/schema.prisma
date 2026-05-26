@@ -295,6 +295,7 @@ model Payment {
   value          Decimal  @db.Decimal(10, 2)
   doctorEarnings Decimal  @default(0) @db.Decimal(10, 2)
   clinicEarnings Decimal  @default(0) @db.Decimal(10, 2)
+  discount       Decimal  @default(0) @db.Decimal(10, 2)
 
   appointment  Appointment    @relation(fields: [appointmentId], references: [id])
   registeredBy User           @relation("PaymentRegisteredBy", fields: [registeredById], references: [id])
