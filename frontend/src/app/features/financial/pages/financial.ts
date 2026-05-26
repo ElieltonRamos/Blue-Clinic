@@ -1,7 +1,10 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { FinanceiroService } from '../services/financial.service';
+import { HttpErrorResponse } from '@angular/common/http';
+import { forkJoin } from 'rxjs';
+import { FinanceiroService, FinanceFilter } from '../services/financial.service';
+import { NotificationService } from '../../../shared/toastr/notification.service';
 import {
   CashClosingRow,
   Expense,
@@ -18,26 +21,53 @@ import {
   providers: [FinanceiroService],
   templateUrl: './financial.html',
 })
-export class Financial {
+export class Financial implements OnInit {
   private service = inject(FinanceiroService);
+  private notify = inject(NotificationService);
 
-  summary!: FinanceSummary;
+  summary: FinanceSummary = { totalEntradas: 0, entradasChange: 0, totalSaidas: 0, saidasCount: 0 };
   expenses: Expense[] = [];
   transactions: Transaction[] = [];
   professionals: ProfessionalRevenue[] = [];
   cashClosing: CashClosingRow[] = [];
 
-  dateFrom: string = '';
-  dateTo: string = '';
+  dateFrom = '';
+  dateTo = '';
   activeRange: 'hoje' | 'semana' | 'mes' = 'hoje';
+  pageLoading = signal(false);
 
   ngOnInit(): void {
-    this.summary = this.service.getSummary();
-    this.expenses = this.service.getExpenses();
-    this.transactions = this.service.getTransactions();
-    this.professionals = this.service.getProfessionalRevenues();
-    this.cashClosing = this.service.getCashClosing();
     this.setRange('hoje');
+  }
+
+  private get filter(): FinanceFilter {
+    return { dateFrom: this.dateFrom, dateTo: this.dateTo };
+  }
+
+  private loadAll(): void {
+    if (!this.dateFrom || !this.dateTo) return;
+    this.pageLoading.set(true);
+
+    forkJoin({
+      summary: this.service.getSummary(this.filter),
+      expenses: this.service.getExpenses(this.filter),
+      transactions: this.service.getTransactions(this.filter),
+      professionals: this.service.getProfessionalRevenues(this.filter),
+      cashClosing: this.service.getCashClosing(this.filter),
+    }).subscribe({
+      next: (data) => {
+        this.summary = data.summary;
+        this.expenses = data.expenses;
+        this.transactions = data.transactions;
+        this.professionals = data.professionals;
+        this.cashClosing = data.cashClosing;
+        this.pageLoading.set(false);
+      },
+      error: (err: HttpErrorResponse) => {
+        this.notify.error(this.getErrorMessage(err, 'Erro ao carregar dados financeiros'));
+        this.pageLoading.set(false);
+      },
+    });
   }
 
   setRange(range: 'hoje' | 'semana' | 'mes'): void {
@@ -62,10 +92,13 @@ export class Financial {
       this.dateFrom = fmt(first);
       this.dateTo = fmt(last);
     }
+
+    this.loadAll();
   }
 
   onDateChange(): void {
-    this.activeRange = 'hoje'; // nenhum preset ativo ao editar manualmente
+    this.activeRange = 'hoje';
+    this.loadAll();
   }
 
   get cashClosingTotals(): CashClosingRow {
@@ -114,6 +147,11 @@ export class Financial {
   }
 
   maxProfessionalValue(): number {
-    return Math.max(...this.professionals.map((p) => p.value));
+    return Math.max(...this.professionals.map((p) => p.value), 1);
+  }
+
+  private getErrorMessage(err: HttpErrorResponse, defaultMsg: string): string {
+    const msg = err?.error?.message;
+    return msg ? (Array.isArray(msg) ? msg.join(', ') : msg) : defaultMsg;
   }
 }

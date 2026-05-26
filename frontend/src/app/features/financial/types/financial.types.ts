@@ -6,7 +6,8 @@ export interface Expense {
   id: string;
   description: string;
   category: string;
-  receptionist: string;
+  registeredById: number; // era: receptionist: string
+  registeredByName: string; // era: receptionist: string
   value: number;
   date: string;
   status: ExpenseStatus;
@@ -21,7 +22,7 @@ export interface Transaction {
   doctor: string;
   registeredBy: string;
   value: number;
-  method: PaymentMethod;
+  methods: PaymentMethod[]; // era: method: PaymentMethod
 }
 
 export interface ProfessionalRevenue {

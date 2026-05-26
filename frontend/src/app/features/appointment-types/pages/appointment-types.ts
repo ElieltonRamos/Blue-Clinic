@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -27,6 +27,7 @@ interface TypeForm {
 export class AppointmentTypes implements OnInit {
   private readonly service = inject(AppointmentTypeService);
   private readonly notification = inject(NotificationService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   loading = signal(false);
 
@@ -45,10 +46,12 @@ export class AppointmentTypes implements OnInit {
       next: (types) => {
         this.rows = types.map((t) => this.toRow(t));
         this.loading.set(false);
+        this.cdr.detectChanges();
       },
       error: (err: HttpErrorResponse) => {
         this.loading.set(false);
         this.notification.error(this.getErrorMessage(err, 'Erro ao carregar tipos de consulta'));
+        this.cdr.detectChanges();
       },
     });
   }
@@ -83,10 +86,12 @@ export class AppointmentTypes implements OnInit {
           this.showNewForm = false;
           this.savingNew = false;
           this.notification.success('Tipo de consulta criado');
+          this.cdr.detectChanges();
         },
         error: (err: HttpErrorResponse) => {
           this.savingNew = false;
           this.notification.error(this.getErrorMessage(err, 'Erro ao criar tipo de consulta'));
+          this.cdr.detectChanges();
         },
       });
   }
@@ -111,10 +116,12 @@ export class AppointmentTypes implements OnInit {
           row.editing = false;
           row.saving = false;
           this.notification.success('Tipo atualizado');
+          this.cdr.detectChanges();
         },
         error: (err: HttpErrorResponse) => {
           row.saving = false;
           this.notification.error(this.getErrorMessage(err, 'Erro ao atualizar tipo'));
+          this.cdr.detectChanges();
         },
       });
   }
@@ -125,10 +132,12 @@ export class AppointmentTypes implements OnInit {
       next: () => {
         this.rows = this.rows.filter((r) => r !== row);
         this.notification.success('Tipo removido');
+        this.cdr.detectChanges();
       },
       error: (err: HttpErrorResponse) => {
         row.saving = false;
         this.notification.error(this.getErrorMessage(err, 'Erro ao remover tipo'));
+        this.cdr.detectChanges();
       },
     });
   }
