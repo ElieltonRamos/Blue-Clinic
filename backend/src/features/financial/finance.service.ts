@@ -1,4 +1,8 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../../core/database/prisma.service.js';
 import { FinanceSummaryDto } from './dto/finance-summary.dto.js';
 import { FinanceExpenseDto } from './dto/finance-expense.dto.js';
@@ -6,6 +10,8 @@ import { FinanceTransactionDto } from './dto/finance-transaction.dto.js';
 import { ProfessionalRevenueDto } from './dto/professional-revenue.dto.js';
 import { CashClosingRowDto } from './dto/cash-closing-row.dto.js';
 import { FinanceFilterDto } from './dto/finance-filter.dto.js';
+import { CreateExpenseDto } from './dto/create-expense.dto.js';
+import { UpdateExpenseDto } from './dto/update-expense.dto.js';
 
 @Injectable()
 export class FinanceService {
@@ -53,7 +59,7 @@ export class FinanceService {
         select: { value: true },
       }),
       this.prisma.client.expense.findMany({
-        where: { companyId, date: range },
+        where: { companyId, date: range, status: 'pago' },
         select: { value: true },
       }),
     ]);
@@ -122,7 +128,7 @@ export class FinanceService {
         orderBy: { date: 'desc' },
       }),
       this.prisma.client.expense.findMany({
-        where: { companyId, date: range },
+        where: { companyId, date: range, status: 'pago' },
         include: {
           registeredBy: { select: { username: true } },
         },
@@ -260,5 +266,75 @@ export class FinanceService {
     }
 
     return Array.from(map.values());
+  }
+
+  async createExpense(
+    companyId: number,
+    registeredById: number,
+    dto: CreateExpenseDto,
+  ): Promise<FinanceExpenseDto> {
+    const expense = await this.prisma.client.expense.create({
+      data: {
+        companyId,
+        registeredById,
+        description: dto.description,
+        category: dto.category,
+        value: dto.value,
+        date: new Date(`${dto.date}T00:00:00.000Z`),
+        status: dto.status,
+      },
+      include: {
+        registeredBy: { select: { id: true, username: true } },
+      },
+    });
+
+    return {
+      id: String(expense.id),
+      description: expense.description,
+      category: expense.category,
+      registeredById: expense.registeredById,
+      registeredByName: expense.registeredBy.username,
+      value: Number(expense.value),
+      date: expense.date.toISOString().split('T')[0],
+      status: expense.status,
+    };
+  }
+
+  async updateExpense(
+    id: number,
+    companyId: number,
+    dto: UpdateExpenseDto,
+  ): Promise<FinanceExpenseDto> {
+    const existing = await this.prisma.client.expense.findFirst({
+      where: { id, companyId },
+    });
+    if (!existing) throw new NotFoundException('Despesa não encontrada');
+
+    const expense = await this.prisma.client.expense.update({
+      where: { id },
+      data: {
+        ...(dto.description !== undefined && { description: dto.description }),
+        ...(dto.category !== undefined && { category: dto.category }),
+        ...(dto.value !== undefined && { value: dto.value }),
+        ...(dto.date !== undefined && {
+          date: new Date(`${dto.date}T00:00:00.000Z`),
+        }),
+        ...(dto.status !== undefined && { status: dto.status }),
+      },
+      include: {
+        registeredBy: { select: { id: true, username: true } },
+      },
+    });
+
+    return {
+      id: String(expense.id),
+      description: expense.description,
+      category: expense.category,
+      registeredById: expense.registeredById,
+      registeredByName: expense.registeredBy.username,
+      value: Number(expense.value),
+      date: expense.date.toISOString().split('T')[0],
+      status: expense.status,
+    };
   }
 }

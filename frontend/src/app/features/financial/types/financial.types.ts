@@ -2,6 +2,22 @@ export type TransactionType = 'entrada' | 'saida';
 export type PaymentMethod = 'pix' | 'dinheiro' | 'cartao' | 'convenio';
 export type ExpenseStatus = 'pago' | 'pendente';
 
+export interface CreateExpenseDto {
+  description: string;
+  category: string;
+  value: number;
+  date: string;
+  status: ExpenseStatus;
+}
+
+export interface UpdateExpenseDto {
+  description?: string;
+  category?: string;
+  value?: number;
+  date?: string;
+  status?: ExpenseStatus;
+}
+
 export interface Expense {
   id: string;
   description: string;

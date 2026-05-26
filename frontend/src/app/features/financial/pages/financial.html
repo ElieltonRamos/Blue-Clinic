@@ -136,6 +136,7 @@
               </span>
             </div>
             <button
+              (click)="openExpenseModal()"
               class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-(--color-primary) text-(--color-text-inverse) text-[12px] font-medium hover:bg-(--color-primary-hover) transition-colors"
             >
               ＋ Lançar Despesa
@@ -144,10 +145,18 @@
 
           <div class="w-full">
             <div
-              class="grid grid-cols-[2fr_1.2fr_1.4fr_1fr_1fr_80px] gap-2 pb-2 border-b border-(--color-border)"
+              class="grid grid-cols-[2fr_1.2fr_1.4fr_1fr_1fr_80px_100px] gap-2 pb-2 border-b border-(--color-border)"
             >
               @for (
-                col of ['Descrição', 'Categoria', 'Registrado por', 'Valor', 'Data', 'Status'];
+                col of [
+                  'Descrição',
+                  'Categoria',
+                  'Registrado por',
+                  'Valor',
+                  'Data',
+                  'Status',
+                  'Ações',
+                ];
                 track col
               ) {
                 <p
@@ -160,7 +169,7 @@
 
             @for (expense of expenses; track expense.id) {
               <div
-                class="grid grid-cols-[2fr_1.2fr_1.4fr_1fr_1fr_80px] gap-2 py-3 border-b border-(--color-border) items-center"
+                class="grid grid-cols-[2fr_1.2fr_1.4fr_1fr_1fr_80px_100px] gap-2 py-3 border-b border-(--color-border) items-center"
               >
                 <p class="text-[12px] font-medium text-(--color-text-primary)">
                   {{ expense.description }}
@@ -179,6 +188,24 @@
                 >
                   {{ expense.status === 'pago' ? 'PAGO' : 'PENDENTE' }}
                 </span>
+                <div class="flex items-center gap-1">
+                  @if (expense.status === 'pendente') {
+                    <button
+                      (click)="markAsPaid(expense)"
+                      title="Marcar como pago"
+                      class="text-[10px] px-2 py-0.5 rounded-full bg-success-subtle text-success hover:opacity-80 transition-opacity font-semibold"
+                    >
+                      ✓ Pago
+                    </button>
+                  }
+                  <button
+                    (click)="openEditExpenseModal(expense)"
+                    title="Editar"
+                    class="text-[10px] px-2 py-0.5 rounded-full bg-(--color-bg-overlay) text-(--color-text-muted) hover:opacity-80 transition-opacity font-semibold"
+                  >
+                    ✎ Editar
+                  </button>
+                </div>
               </div>
             }
 
@@ -188,12 +215,6 @@
               </p>
             }
           </div>
-
-          <button
-            class="mt-3 text-[12px] text-(--color-primary) hover:opacity-80 transition-opacity w-full text-center"
-          >
-            Ver Histórico Completo de Despesas
-          </button>
         </div>
 
         <!-- Produtividade por Profissional -->
@@ -424,18 +445,23 @@
         </button>
       </div>
     </div>
-
-    <!-- Footer -->
-    <div class="flex items-center justify-between pt-2 border-t border-(--color-border)">
-      <div class="flex items-center gap-2">
-        <span class="w-2 h-2 rounded-full bg-success"></span>
-        <p class="text-[11px] text-(--color-text-muted)">SERVIDOR: ONLINE</p>
-        <span class="text-(--color-border-md)">•</span>
-        <p class="text-[11px] text-(--color-text-muted)">ÚLTIMO BACKUP: 14:02</p>
-      </div>
-      <p class="text-[11px] text-(--color-text-muted)">
-        © 2024 BlueClinic. Sistema de Alta Precisão Clínica.
-      </p>
-    </div>
   }
 </div>
+
+<app-modal-edit-entity
+  title="Lançar Despesa"
+  [show]="showExpenseModal"
+  [entity]="expenseEntity"
+  [fields]="expenseFields"
+  (close)="showExpenseModal = false"
+  (save)="saveExpense($event)"
+/>
+
+<app-modal-edit-entity
+  title="Editar Despesa"
+  [show]="showEditExpenseModal"
+  [entity]="editExpenseEntity"
+  [fields]="expenseFields"
+  (close)="showEditExpenseModal = false"
+  (save)="saveEditExpense($event)"
+/>

@@ -3,11 +3,14 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {
   CashClosingRow,
+  CreateExpenseDto,
   Expense,
   FinanceSummary,
   ProfessionalRevenue,
   Transaction,
+  UpdateExpenseDto,
 } from '../types/financial.types';
+import { environment } from '../../../core/services/environment';
 
 export interface FinanceFilter {
   dateFrom: string;
@@ -17,7 +20,7 @@ export interface FinanceFilter {
 @Injectable()
 export class FinanceiroService {
   private http = inject(HttpClient);
-  private base = '/api/finance';
+  private base = `${environment.apiUrl}/finance`;
 
   private params(filter: FinanceFilter): HttpParams {
     return new HttpParams().set('dateFrom', filter.dateFrom).set('dateTo', filter.dateTo);
@@ -33,6 +36,18 @@ export class FinanceiroService {
     return this.http.get<Expense[]>(`${this.base}/expenses`, {
       params: this.params(filter),
     });
+  }
+
+  createExpense(dto: CreateExpenseDto): Observable<Expense> {
+    return this.http.post<Expense>(`${this.base}/expenses`, dto);
+  }
+
+  updateExpense(id: string, dto: UpdateExpenseDto): Observable<Expense> {
+    return this.http.patch<Expense>(`${this.base}/expenses/${id}`, dto);
+  }
+
+  markExpenseAsPaid(id: string): Observable<Expense> {
+    return this.http.patch<Expense>(`${this.base}/expenses/${id}/status`, { status: 'pago' });
   }
 
   getTransactions(filter: FinanceFilter): Observable<Transaction[]> {

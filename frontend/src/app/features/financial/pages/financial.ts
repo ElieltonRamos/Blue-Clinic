@@ -13,11 +13,12 @@ import {
   ProfessionalRevenue,
   Transaction,
 } from '../types/financial.types';
+import { FormField, ModalEditEntity } from '../../../shared/modal-edit-entity/modal-edit-entity';
 
 @Component({
   selector: 'app-financeiro',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ModalEditEntity],
   providers: [FinanceiroService],
   templateUrl: './financial.html',
 })
@@ -35,6 +36,37 @@ export class Financial implements OnInit {
   dateTo = '';
   activeRange: 'hoje' | 'semana' | 'mes' = 'hoje';
   pageLoading = signal(false);
+  showExpenseModal = false;
+  expenseEntity: any = {};
+  showEditExpenseModal = false;
+  editExpenseEntity: any = {};
+  editingExpenseId: string | null = null;
+
+  readonly expenseFields: FormField[] = [
+    {
+      name: 'description',
+      label: 'Descrição',
+      type: 'text',
+      placeholder: 'Ex: Aluguel',
+      required: true,
+    },
+    {
+      name: 'category',
+      label: 'Categoria',
+      type: 'select',
+      options: ['Infraestrutura', 'Insumos', 'Contas Fixas', 'Outros'],
+      required: true,
+    },
+    { name: 'value', label: 'Valor (R$)', type: 'number', placeholder: '0.00', required: true },
+    { name: 'date', label: 'Data', type: 'date', required: true },
+    {
+      name: 'status',
+      label: 'Status',
+      type: 'select',
+      options: ['pago', 'pendente'],
+      required: true,
+    },
+  ];
 
   ngOnInit(): void {
     this.setRange('hoje');
@@ -64,6 +96,7 @@ export class Financial implements OnInit {
         this.pageLoading.set(false);
       },
       error: (err: HttpErrorResponse) => {
+        console.log('erro', err);
         this.notify.error(this.getErrorMessage(err, 'Erro ao carregar dados financeiros'));
         this.pageLoading.set(false);
       },
@@ -134,6 +167,63 @@ export class Financial implements OnInit {
       cartao: 'bg-(--color-info-subtle) text-(--color-info)',
       convenio: 'bg-(--color-warning-subtle) text-(--color-warning)',
     }[method];
+  }
+
+  openExpenseModal(): void {
+    this.expenseEntity = { status: 'pendente', date: this.dateFrom };
+    this.showExpenseModal = true;
+  }
+
+  saveExpense(entity: any): void {
+    this.service.createExpense(entity).subscribe({
+      next: () => {
+        this.notify.success('Despesa cadastrada com sucesso');
+        this.showExpenseModal = false;
+        this.loadAll();
+      },
+      error: (err: HttpErrorResponse) => {
+        this.notify.error(this.getErrorMessage(err, 'Erro ao cadastrar despesa'));
+      },
+    });
+  }
+
+  openEditExpenseModal(expense: Expense): void {
+    this.editingExpenseId = expense.id;
+    this.editExpenseEntity = {
+      description: expense.description,
+      category: expense.category,
+      value: expense.value,
+      date: expense.date,
+      status: expense.status,
+    };
+    this.showEditExpenseModal = true;
+  }
+
+  saveEditExpense(entity: any): void {
+    if (!this.editingExpenseId) return;
+    this.service.updateExpense(this.editingExpenseId, entity).subscribe({
+      next: () => {
+        this.notify.success('Despesa atualizada com sucesso');
+        this.showEditExpenseModal = false;
+        this.editingExpenseId = null;
+        this.loadAll();
+      },
+      error: (err: HttpErrorResponse) => {
+        this.notify.error(this.getErrorMessage(err, 'Erro ao atualizar despesa'));
+      },
+    });
+  }
+
+  markAsPaid(expense: Expense): void {
+    this.service.markExpenseAsPaid(expense.id).subscribe({
+      next: () => {
+        this.notify.success('Despesa marcada como paga');
+        this.loadAll();
+      },
+      error: (err: HttpErrorResponse) => {
+        this.notify.error(this.getErrorMessage(err, 'Erro ao atualizar status'));
+      },
+    });
   }
 
   statusClass(status: 'pago' | 'pendente'): string {

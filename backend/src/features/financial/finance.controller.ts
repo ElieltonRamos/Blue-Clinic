@@ -1,9 +1,21 @@
-import { Controller, Get, Query, UseGuards, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Query,
+  UseGuards,
+  HttpStatus,
+  Post,
+  Body,
+  Param,
+  ParseIntPipe,
+  Patch,
+} from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
+  ApiParam,
 } from '@nestjs/swagger';
 import { FinanceService } from './finance.service.js';
 import { FinanceFilterDto } from './dto/finance-filter.dto.js';
@@ -16,6 +28,8 @@ import { JwtAuthGuard } from '../../core/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../../core/guards/roles.guard.js';
 import { CurrentUser } from '../../core/decorators/current-user.decorator.js';
 import { Roles } from '../../core/decorators/roles.decorator.js';
+import { CreateExpenseDto } from './dto/create-expense.dto.js';
+import { UpdateExpenseDto } from './dto/update-expense.dto.js';
 
 @ApiTags('Financeiro')
 @ApiBearerAuth()
@@ -97,5 +111,51 @@ export class FinanceController {
     @Query() filter: FinanceFilterDto,
   ): Promise<CashClosingRowDto[]> {
     return this.financeService.getCashClosing(companyId, filter);
+  }
+
+  @Post('expenses')
+  @Roles('admin', 'atendimento')
+  @ApiOperation({ summary: 'Cadastrar despesa' })
+  @ApiResponse({ status: HttpStatus.CREATED, type: FinanceExpenseDto })
+  createExpense(
+    @CurrentUser('companyId') companyId: number,
+    @CurrentUser('userId') registeredById: number,
+    @Body() dto: CreateExpenseDto,
+  ): Promise<FinanceExpenseDto> {
+    return this.financeService.createExpense(companyId, registeredById, dto);
+  }
+
+  @Patch('expenses/:id')
+  @Roles('admin', 'atendimento')
+  @ApiOperation({ summary: 'Atualizar despesa' })
+  @ApiParam({ name: 'id', type: Number })
+  @ApiResponse({ status: HttpStatus.OK, type: FinanceExpenseDto })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Despesa não encontrada',
+  })
+  updateExpense(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser('companyId') companyId: number,
+    @Body() dto: UpdateExpenseDto,
+  ): Promise<FinanceExpenseDto> {
+    return this.financeService.updateExpense(id, companyId, dto);
+  }
+
+  @Patch('expenses/:id/status')
+  @Roles('admin', 'atendimento')
+  @ApiOperation({ summary: 'Atualizar status da despesa' })
+  @ApiParam({ name: 'id', type: Number })
+  @ApiResponse({ status: HttpStatus.OK, type: FinanceExpenseDto })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Despesa não encontrada',
+  })
+  updateExpenseStatus(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser('companyId') companyId: number,
+    @Body() dto: UpdateExpenseDto,
+  ): Promise<FinanceExpenseDto> {
+    return this.financeService.updateExpense(id, companyId, dto);
   }
 }
