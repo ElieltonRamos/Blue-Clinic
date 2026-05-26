@@ -73,25 +73,32 @@ enum CommissionType {
 }
 
 model Company {
-  id           Int     @id @default(autoincrement())
-  name         String
-  cnpj         String  @unique
-  phone        String?
-  email        String?
-  address      String?
-  licenseKey   String?
-  licenseToken String? @db.Text
+  id            Int     @id @default(autoincrement())
+  tradeName     String
+  corporateName String
+  cnpj          String  @unique
+  street        String?
+  number        String?
+  complement    String?
+  neighborhood  String?
+  city          String?
+  state         String?
+  cityCode      String?
+  phone         String?
+  email         String?
+  licenseKey    String?
+  licenseToken  String? @db.Text
 
-  users          User[]
-  doctors        Doctor[]
-  patients       Patient[]
-  expenses       Expense[]
-  blockedSlots   BlockedSlot[]
-  whatsappConfig WhatsappConfig?
-
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
+  users            User[]
+  doctors          Doctor[]
+  patients         Patient[]
+  expenses         Expense[]
+  blockedSlots     BlockedSlot[]
+  whatsappConfig   WhatsappConfig?
   appointmentTypes AppointmentType[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("company")
 }

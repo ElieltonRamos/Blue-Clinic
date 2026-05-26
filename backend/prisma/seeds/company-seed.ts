@@ -5,13 +5,19 @@ export async function seedCompany(prisma: PrismaClient): Promise<number> {
     where: { cnpj: '00000000000100' },
     update: {},
     create: {
-      name: 'Blue Clinic',
+      tradeName: 'Blue Clinic',
+      corporateName: 'Blue Clinic Ltda',
       cnpj: '00000000000100',
       phone: '(38) 99999-9999',
+      email: 'contato@blueclinic.com.br',
+      street: 'Rua Exemplo',
+      number: '123',
+      neighborhood: 'Centro',
+      city: 'Espinosa',
+      state: 'MG',
+      cityCode: '3124302',
       licenseKey:
         '53fd9d55780f1646ed650da9a0b465bbb1fa6da70c88f6f22c50ecf159170642',
-      email: 'contato@blueclinic.com.br',
-      address: 'Rua Exemplo, 123',
     },
   });
 

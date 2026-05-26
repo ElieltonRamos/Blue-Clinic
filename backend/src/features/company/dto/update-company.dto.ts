@@ -1,12 +1,16 @@
-// dto/update-company.dto.ts
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsString, IsEmail, IsOptional } from 'class-validator';
 
 export class UpdateCompanyDto {
-  @ApiPropertyOptional({ example: 'Clínica Exemplo' })
+  @ApiPropertyOptional({ example: 'Blue Clinic' })
   @IsOptional()
   @IsString()
-  name?: string;
+  tradeName?: string;
+
+  @ApiPropertyOptional({ example: 'Blue Clinic Ltda' })
+  @IsOptional()
+  @IsString()
+  corporateName?: string;
 
   @ApiPropertyOptional({ example: '(38) 99999-9999' })
   @IsOptional()
@@ -18,8 +22,38 @@ export class UpdateCompanyDto {
   @IsEmail()
   email?: string;
 
-  @ApiPropertyOptional({ example: 'Rua Exemplo, 123' })
+  @ApiPropertyOptional({ example: 'Rua Exemplo' })
   @IsOptional()
   @IsString()
-  address?: string;
+  street?: string;
+
+  @ApiPropertyOptional({ example: '123' })
+  @IsOptional()
+  @IsString()
+  number?: string;
+
+  @ApiPropertyOptional({ example: 'Apto 1' })
+  @IsOptional()
+  @IsString()
+  complement?: string;
+
+  @ApiPropertyOptional({ example: 'Centro' })
+  @IsOptional()
+  @IsString()
+  neighborhood?: string;
+
+  @ApiPropertyOptional({ example: 'Espinosa' })
+  @IsOptional()
+  @IsString()
+  city?: string;
+
+  @ApiPropertyOptional({ example: 'MG' })
+  @IsOptional()
+  @IsString()
+  state?: string;
+
+  @ApiPropertyOptional({ example: '3124302' })
+  @IsOptional()
+  @IsString()
+  cityCode?: string;
 }

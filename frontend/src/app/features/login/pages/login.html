@@ -101,7 +101,6 @@
               [type]="showPassword() ? 'text' : 'password'"
               formControlName="password"
               placeholder="••••••••"
-              (keydown.enter)="onSubmit()"
               class="w-full h-11 pl-10 pr-10 rounded-lg text-sm text-(--color-input-text) placeholder:text-(--color-input-placeholder) outline-none transition-all bg-(--color-input-bg) border border-(--color-input-border) focus:border-(--color-input-border-focus)"
               [class.border-danger!]="
                 form.get('password')?.touched && form.get('password')?.invalid

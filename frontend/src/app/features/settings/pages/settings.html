@@ -22,11 +22,22 @@
         <div class="grid grid-cols-2 gap-3">
           <div class="flex flex-col gap-1">
             <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)"
-              >Razão Social</label
+              >Nome Fantasia</label
             >
             <input
               [ngModel]="company.tradeName"
-              (ngModelChange)="companyData.update(c => c ? { ...c, name: $event } : c)"
+              (ngModelChange)="companyData.update(c => c ? { ...c, tradeName: $event } : c)"
+              type="text"
+              class="bg-bg-card border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
+            />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)"
+              >Razão Social</label
+            >
+            <input
+              [ngModel]="company.corporateName"
+              (ngModelChange)="companyData.update(c => c ? { ...c, corporateName: $event } : c)"
               type="text"
               class="bg-bg-card border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
             />
@@ -64,13 +75,80 @@
               class="bg-bg-card border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
             />
           </div>
-          <div class="col-span-2 flex flex-col gap-1">
+          <!-- substitui o div col-span-2 de Endereço -->
+          <div class="flex flex-col gap-1">
             <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)"
-              >Endereço</label
+              >Rua</label
             >
             <input
               [ngModel]="company.street"
-              (ngModelChange)="companyData.update(c => c ? { ...c, address: $event } : c)"
+              (ngModelChange)="companyData.update(c => c ? { ...c, street: $event } : c)"
+              type="text"
+              class="bg-bg-card border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
+            />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)"
+              >Número</label
+            >
+            <input
+              [ngModel]="company.number"
+              (ngModelChange)="companyData.update(c => c ? { ...c, number: $event } : c)"
+              type="text"
+              class="bg-bg-card border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
+            />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)"
+              >Complemento</label
+            >
+            <input
+              [ngModel]="company.complement"
+              (ngModelChange)="companyData.update(c => c ? { ...c, complement: $event } : c)"
+              type="text"
+              class="bg-bg-card border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
+            />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)"
+              >Bairro</label
+            >
+            <input
+              [ngModel]="company.neighborhood"
+              (ngModelChange)="companyData.update(c => c ? { ...c, neighborhood: $event } : c)"
+              type="text"
+              class="bg-bg-card border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
+            />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)"
+              >Cidade</label
+            >
+            <input
+              [ngModel]="company.city"
+              (ngModelChange)="companyData.update(c => c ? { ...c, city: $event } : c)"
+              type="text"
+              class="bg-bg-card border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
+            />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)"
+              >Código do Município</label
+            >
+            <input
+              [ngModel]="company.cityCode"
+              (ngModelChange)="companyData.update(c => c ? { ...c, cityCode: $event } : c)"
+              type="text"
+              class="bg-bg-card border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
+            />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)"
+              >Estado</label
+            >
+            <input
+              [ngModel]="company.state"
+              (ngModelChange)="companyData.update(c => c ? { ...c, state: $event } : c)"
               type="text"
               class="bg-bg-card border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
             />
