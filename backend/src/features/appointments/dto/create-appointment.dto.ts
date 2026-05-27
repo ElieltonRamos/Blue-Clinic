@@ -6,7 +6,9 @@ import {
   IsString,
   IsOptional,
   Matches,
+  IsEnum,
 } from 'class-validator';
+import { AppointmentOrigin } from '../../../../generated/prisma/client';
 
 export class CreateAppointmentDto {
   @ApiProperty()
@@ -60,4 +62,13 @@ export class CreateAppointmentDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @ApiPropertyOptional({
+    enum: AppointmentOrigin,
+    description: 'Canal de origem do agendamento. Padrão: presencial',
+    example: AppointmentOrigin.whatsapp,
+  })
+  @IsOptional()
+  @IsEnum(AppointmentOrigin, { message: 'Origem inválida' })
+  origin?: AppointmentOrigin;
 }

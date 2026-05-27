@@ -1,6 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { RouterModule, Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
+import { AuthService } from '../../core/services/auth.service';
+import { SettingsService } from '../../features/settings/services/settings.service';
 
 interface NavItem {
   label: string;
@@ -15,18 +17,16 @@ interface NavItem {
   imports: [RouterModule],
   templateUrl: './app-layout.html',
 })
-export class AppLayout {
-  company = { name: 'Sua Empresa' };
-  exactMatch = { exact: false };
+export class AppLayout implements OnInit {
+  company = { name: '' };
   isDark = true;
+  currentRouteTitle = 'Visão Geral da Clínica';
 
   currentUser = {
-    initials: 'JS',
-    name: 'Dr. Julian Smith',
-    role: 'Diretor Médico',
+    initials: '',
+    name: '',
+    role: '',
   };
-
-  currentRouteTitle = 'Visão Geral da Clínica';
 
   mainNav: NavItem[] = [
     { label: 'Dashboard', title: 'Visão Geral da Clínica', route: '/dashboard', icon: 'grid' },
@@ -71,7 +71,11 @@ export class AppLayout {
 
   private allNav = [...this.mainNav, ...this.bottomNav];
 
-  constructor(private router: Router) {
+  constructor(
+    private router: Router,
+    private auth: AuthService,
+    private settings: SettingsService,
+  ) {
     this.router.events.pipe(filter((e) => e instanceof NavigationEnd)).subscribe((e: any) => {
       const url = e.urlAfterRedirects;
       const match = this.allNav
@@ -79,6 +83,22 @@ export class AppLayout {
         .sort((a, b) => b.route.length - a.route.length)
         .find((item) => url.startsWith(item.route));
       this.currentRouteTitle = match?.title ?? '';
+    });
+  }
+
+  ngOnInit(): void {
+    const payload = this.auth.getTokenPayload();
+    if (payload) {
+      this.currentUser = {
+        name: payload.username,
+        role: payload.role ?? '',
+        initials: payload.username.slice(0, 2).toUpperCase(),
+      };
+    }
+
+    this.settings.getCompany().subscribe({
+      next: (company) => (this.company.name = company.tradeName),
+      error: () => {},
     });
   }
 

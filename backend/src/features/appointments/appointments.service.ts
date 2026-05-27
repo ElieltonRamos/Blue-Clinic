@@ -113,6 +113,7 @@ export class AppointmentsService {
         status: 'pending',
         responsible: dto.responsible,
         notes: dto.notes,
+        origin: dto.origin ?? 'presencial',
         ...(feeOverride !== null && { feeOverride }),
       },
       include: {
@@ -122,6 +123,39 @@ export class AppointmentsService {
     });
 
     return new AppointmentResponseDto(appointment);
+  }
+
+  async rateAppointment(
+    id: number,
+    companyId: number,
+    rating: number,
+  ): Promise<AppointmentResponseDto> {
+    const appointment = await this.prisma.client.appointment.findFirst({
+      where: { id, doctor: { companyId } },
+    });
+
+    if (!appointment) throw new NotFoundException('Agendamento não encontrado');
+
+    if (appointment.status !== 'finished') {
+      throw new BadRequestException(
+        'Apenas consultas finalizadas podem ser avaliadas',
+      );
+    }
+
+    if (appointment.rating !== null) {
+      throw new BadRequestException('Consulta já foi avaliada');
+    }
+
+    const updated = await this.prisma.client.appointment.update({
+      where: { id },
+      data: { rating },
+      include: {
+        patient: { select: { id: true, name: true } },
+        doctor: { select: { id: true, name: true, specialty: true } },
+      },
+    });
+
+    return new AppointmentResponseDto(updated);
   }
 
   private async resolveFee(

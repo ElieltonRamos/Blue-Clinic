@@ -214,11 +214,21 @@ export class UsersService {
       );
     }
 
+    let doctorId: number | undefined;
+    if (user.role === Role.medico) {
+      const doctor = await this.prisma.client.doctor.findFirst({
+        where: { userId: user.id, active: true },
+        select: { id: true },
+      });
+      doctorId = doctor?.id;
+    }
+
     const payload = {
       userId: user.id,
       username: user.username,
       role: user.role,
       companyId: user.companyId,
+      ...(doctorId !== undefined && { doctorId }),
     };
     const token = await this.jwtService.signAsync(payload);
 

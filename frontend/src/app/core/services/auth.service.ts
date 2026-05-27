@@ -17,6 +17,16 @@ export interface Token {
   licenseWarning?: string;
 }
 
+export interface TokenPayload {
+  userId: number;
+  username: string;
+  role: string;
+  companyId: number;
+  doctorId?: number;
+  iat: number;
+  exp: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   isValidToken(token: string): boolean {
@@ -45,7 +55,7 @@ export class AuthService {
     return this.isValidToken(token || '');
   }
 
-  getTokenPayload(token?: string): User | null {
+  getTokenPayload(token?: string): TokenPayload | null {
     token = token || localStorage.getItem('token') || '';
 
     if (!token) return null;

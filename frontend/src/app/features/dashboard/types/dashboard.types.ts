@@ -1,17 +1,5 @@
 export type Role = 'admin' | 'medico' | 'atendimento';
 
-enum Role2 {
-  admin,
-  medico,
-  atendimento,
-}
-
-export interface User {
-  id: string;
-  username: string;
-  role: Role;
-}
-
 export interface StatCard {
   label: string;
   value: string;
@@ -42,13 +30,34 @@ export interface NextPatient {
   color: string;
 }
 
-export interface ChartData {
-  newPatients: number[];
-  completed: number[];
+export interface AppointmentChartData {
+  agendados: number[]; // confirmed + pending + checkin
+  concluidos: number[]; // finished + paid
+  cancelados: number[]; // cancelled
+  reagendados: number[]; // rescheduled
 }
 
 export interface ChatbotStats {
   percent: number;
   botInteractions: number;
   humanInteractions: number;
+}
+
+export interface DashboardStats {
+  totalConsultasHoje: number;
+  totalConsultasHojeTrend: number;
+  receitaMensal: number;
+  receitaMensalTrend: number;
+  taxaFaltas: number;
+  taxaFaltasTrend: number;
+  chatsAtivos: number;
+}
+
+export interface DashboardData {
+  stats: DashboardStats;
+  appointments: Appointment[];
+  nextPatient: NextPatient | null;
+  chartMonths: string[];
+  chartData: AppointmentChartData;
+  chatbotStats: ChatbotStats;
 }

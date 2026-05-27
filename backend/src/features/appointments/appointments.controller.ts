@@ -38,6 +38,7 @@ import { Roles } from '../../core/decorators/roles.decorator.js';
 import { UpdateBlockedSlotDto } from './dto/update-blocked-slot.dto.js';
 import { CreateBlockedSlotDto } from './dto/create-blocked-slot.dto.js';
 import { UpdateAppointmentStatusDto } from './dto/update-appointment-status.dto.js';
+import { RateAppointmentDto } from './dto/rate-appointment.dto.js';
 
 @ApiTags('Agendamentos')
 @ApiBearerAuth()
@@ -261,5 +262,26 @@ export class AppointmentsController {
       dto,
       registeredById,
     );
+  }
+
+  @Patch(':id/rate')
+  @Roles('admin', 'atendimento')
+  @ApiOperation({ summary: 'Avaliar consulta finalizada' })
+  @ApiParam({ name: 'id', type: Number })
+  @ApiResponse({ status: HttpStatus.OK, type: AppointmentResponseDto })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Consulta não finalizada ou já avaliada',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Agendamento não encontrado',
+  })
+  async rateAppointment(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser('companyId') companyId: number,
+    @Body() dto: RateAppointmentDto,
+  ): Promise<AppointmentResponseDto> {
+    return this.appointmentsService.rateAppointment(id, companyId, dto.rating);
   }
 }
