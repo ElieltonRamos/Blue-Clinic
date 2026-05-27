@@ -8,7 +8,6 @@ export interface ReportStat {
 export interface ChartBar {
   month: string;
   realized: number;
-  goal: number;
 }
 
 export interface OriginChannel {

@@ -1,17 +1,63 @@
 -- CreateTable
 CREATE TABLE `company` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
-    `name` VARCHAR(191) NOT NULL,
+    `tradeName` VARCHAR(191) NOT NULL,
+    `corporateName` VARCHAR(191) NOT NULL,
     `cnpj` VARCHAR(191) NOT NULL,
+    `street` VARCHAR(191) NULL,
+    `number` VARCHAR(191) NULL,
+    `complement` VARCHAR(191) NULL,
+    `neighborhood` VARCHAR(191) NULL,
+    `city` VARCHAR(191) NULL,
+    `state` VARCHAR(191) NULL,
+    `cityCode` VARCHAR(191) NULL,
     `phone` VARCHAR(191) NULL,
     `email` VARCHAR(191) NULL,
-    `address` VARCHAR(191) NULL,
     `licenseKey` VARCHAR(191) NULL,
     `licenseToken` TEXT NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
 
     UNIQUE INDEX `company_cnpj_key`(`cnpj`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `doctor_schedule` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `doctorId` INTEGER NOT NULL,
+    `dayOfWeek` INTEGER NOT NULL,
+    `startTime` VARCHAR(191) NOT NULL,
+    `endTime` VARCHAR(191) NOT NULL,
+    `active` BOOLEAN NOT NULL DEFAULT true,
+
+    UNIQUE INDEX `doctor_schedule_doctorId_dayOfWeek_key`(`doctorId`, `dayOfWeek`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `appointment_type` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `companyId` INTEGER NOT NULL,
+    `name` VARCHAR(191) NOT NULL,
+    `duration` INTEGER NOT NULL,
+    `active` BOOLEAN NOT NULL DEFAULT true,
+
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `appointment_type_commission` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `doctorId` INTEGER NOT NULL,
+    `appointmentTypeId` INTEGER NOT NULL,
+    `price` DECIMAL(10, 2) NOT NULL,
+    `doctorRateType` ENUM('percentage', 'fixed') NOT NULL,
+    `doctorRate` DECIMAL(10, 2) NOT NULL,
+    `clinicRateType` ENUM('percentage', 'fixed') NOT NULL,
+    `clinicRate` DECIMAL(10, 2) NOT NULL,
+
+    UNIQUE INDEX `appointment_type_commission_doctorId_appointmentTypeId_key`(`doctorId`, `appointmentTypeId`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -84,13 +130,18 @@ CREATE TABLE `appointment` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `doctorId` INTEGER NOT NULL,
     `patientId` INTEGER NOT NULL,
+    `appointmentTypeId` INTEGER NULL,
     `specialty` VARCHAR(191) NOT NULL,
     `date` DATETIME(3) NOT NULL,
     `startTime` VARCHAR(191) NOT NULL,
     `endTime` VARCHAR(191) NOT NULL,
-    `status` ENUM('confirmed', 'pending', 'checkin', 'blocked', 'external', 'paid', 'cancelled') NOT NULL DEFAULT 'pending',
+    `status` ENUM('confirmed', 'pending', 'checkin', 'blocked', 'external', 'paid', 'cancelled', 'rescheduled', 'finished') NOT NULL DEFAULT 'pending',
+    `feeOverride` DECIMAL(10, 2) NULL,
     `responsible` VARCHAR(191) NULL,
     `notes` VARCHAR(191) NULL,
+    `cancellationReason` TEXT NULL,
+    `origin` ENUM('whatsapp', 'telefone', 'presencial') NULL,
+    `rating` DECIMAL(3, 2) NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
 
@@ -116,7 +167,8 @@ CREATE TABLE `blocked_slot` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `companyId` INTEGER NOT NULL,
     `doctorId` INTEGER NULL,
-    `date` DATETIME(3) NULL,
+    `startDate` DATETIME(3) NOT NULL,
+    `endDate` DATETIME(3) NULL,
     `startTime` VARCHAR(191) NOT NULL,
     `endTime` VARCHAR(191) NOT NULL,
     `label` VARCHAR(191) NOT NULL,
@@ -137,6 +189,9 @@ CREATE TABLE `payment` (
     `doctor` VARCHAR(191) NULL,
     `registeredById` INTEGER NOT NULL,
     `value` DECIMAL(10, 2) NOT NULL,
+    `doctorEarnings` DECIMAL(10, 2) NOT NULL DEFAULT 0,
+    `clinicEarnings` DECIMAL(10, 2) NOT NULL DEFAULT 0,
+    `discount` DECIMAL(10, 2) NOT NULL DEFAULT 0,
 
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -216,6 +271,18 @@ CREATE TABLE `chat_message` (
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- AddForeignKey
+ALTER TABLE `doctor_schedule` ADD CONSTRAINT `doctor_schedule_doctorId_fkey` FOREIGN KEY (`doctorId`) REFERENCES `doctor`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `appointment_type` ADD CONSTRAINT `appointment_type_companyId_fkey` FOREIGN KEY (`companyId`) REFERENCES `company`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `appointment_type_commission` ADD CONSTRAINT `appointment_type_commission_doctorId_fkey` FOREIGN KEY (`doctorId`) REFERENCES `doctor`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `appointment_type_commission` ADD CONSTRAINT `appointment_type_commission_appointmentTypeId_fkey` FOREIGN KEY (`appointmentTypeId`) REFERENCES `appointment_type`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE `user` ADD CONSTRAINT `user_companyId_fkey` FOREIGN KEY (`companyId`) REFERENCES `company`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -235,6 +302,9 @@ ALTER TABLE `appointment` ADD CONSTRAINT `appointment_doctorId_fkey` FOREIGN KEY
 
 -- AddForeignKey
 ALTER TABLE `appointment` ADD CONSTRAINT `appointment_patientId_fkey` FOREIGN KEY (`patientId`) REFERENCES `patient`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `appointment` ADD CONSTRAINT `appointment_appointmentTypeId_fkey` FOREIGN KEY (`appointmentTypeId`) REFERENCES `appointment_type`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `consultation` ADD CONSTRAINT `consultation_appointmentId_fkey` FOREIGN KEY (`appointmentId`) REFERENCES `appointment`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;

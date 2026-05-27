@@ -8,6 +8,7 @@ import { PatientModule } from './features/patient/patient.module';
 import { DoctorsModule } from './features/doctors/doctors.module';
 import { CompanyModule } from './features/company/company.module';
 import { FinanceModule } from './features/financial/finance.module';
+import { ReportsModule } from './features/reports/reports.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { FinanceModule } from './features/financial/finance.module';
     DoctorsModule,
     CompanyModule,
     FinanceModule,
+    ReportsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

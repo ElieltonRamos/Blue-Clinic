@@ -72,6 +72,12 @@ enum CommissionType {
   fixed
 }
 
+enum AppointmentOrigin {
+  whatsapp
+  telefone
+  presencial
+}
+
 model Company {
   id            Int     @id @default(autoincrement())
   tradeName     String
@@ -230,7 +236,7 @@ model PatientDocument {
 }
 
 model Appointment {
-  id                 Int               @id @default(autoincrement())
+  id                 Int                @id @default(autoincrement())
   doctorId           Int
   patientId          Int
   appointmentTypeId  Int?
@@ -238,11 +244,13 @@ model Appointment {
   date               DateTime
   startTime          String
   endTime            String
-  status             AppointmentStatus @default(pending)
-  feeOverride        Decimal?          @db.Decimal(10, 2)
+  status             AppointmentStatus  @default(pending)
+  feeOverride        Decimal?           @db.Decimal(10, 2)
   responsible        String?
   notes              String?
-  cancellationReason String?           @db.Text
+  cancellationReason String?            @db.Text
+  origin             AppointmentOrigin?
+  rating             Decimal?           @db.Decimal(3, 2)
 
   doctor          Doctor           @relation(fields: [doctorId], references: [id])
   patient         Patient          @relation(fields: [patientId], references: [id])
