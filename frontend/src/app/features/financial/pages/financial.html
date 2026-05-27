@@ -229,6 +229,7 @@
               </p>
             </div>
             <button
+              (click)="exportProfessionalRevenues()"
               class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-(--color-border) bg-bg-card text-[12px] text-(--color-text-secondary) hover:bg-(--color-bg-hover-md) transition-colors"
             >
               ↑ Exportar
@@ -282,6 +283,7 @@
               </p>
             </div>
             <button
+              (click)="exportCashClosing()"
               class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-(--color-border) bg-bg-card text-[12px] text-(--color-text-secondary) hover:bg-(--color-bg-hover-md) transition-colors"
             >
               🖨 Exportar PDF
@@ -439,6 +441,7 @@
         </div>
 
         <button
+          (click)="exportTransactions()"
           class="mt-1 w-full py-2 rounded-lg border border-(--color-border) bg-bg-card text-[12px] font-medium text-(--color-text-secondary) hover:bg-(--color-bg-hover-md) transition-colors"
         >
           Gerar Extrato em PDF
