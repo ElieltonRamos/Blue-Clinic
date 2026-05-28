@@ -1,5 +1,10 @@
 // patients.service.ts
-import { Injectable, NotFoundException } from '@nestjs/common';
+
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '../../core/database/prisma.service.js';
 import { Prisma } from '../../../generated/prisma/client.js';
 import { PatientFiltersDto } from './dto/patient-filters.dto.js';
@@ -15,6 +20,19 @@ export interface UploadedFileCustom {
   mimetype: string;
   size: number;
 }
+
+const PATIENT_DETAIL_INCLUDE = {
+  documents: true,
+  appointments: {
+    include: {
+      consultation: {
+        select: { title: true, notes: true, active: true },
+      },
+      doctor: { select: { name: true } },
+    },
+    orderBy: { date: 'desc' as const },
+  },
+} satisfies Prisma.PatientInclude;
 
 @Injectable()
 export class PatientsService {
@@ -65,18 +83,7 @@ export class PatientsService {
   ): Promise<PatientDetailResponseDto> {
     const patient = await this.prisma.client.patient.findFirst({
       where: { id, companyId },
-      include: {
-        documents: true,
-        appointments: {
-          include: {
-            consultation: {
-              select: { title: true, notes: true, active: true },
-            },
-            doctor: { select: { name: true } },
-          },
-          orderBy: { date: 'desc' },
-        },
-      },
+      include: PATIENT_DETAIL_INCLUDE,
     });
 
     if (!patient) throw new NotFoundException('Paciente não encontrado');
@@ -87,6 +94,9 @@ export class PatientsService {
     companyId: number,
     dto: CreatePatientDto,
   ): Promise<PatientDetailResponseDto> {
+    await this.assertNoDuplicateName(companyId, dto.name);
+    await this.assertNoDuplicateCpf(companyId, dto.cpf);
+
     const patient = await this.prisma.client.patient.create({
       data: {
         companyId,
@@ -97,18 +107,7 @@ export class PatientsService {
         birthDate: dto.birthDate ? new Date(dto.birthDate) : undefined,
         status: 'Ativo',
       },
-      include: {
-        documents: true,
-        appointments: {
-          include: {
-            consultation: {
-              select: { title: true, notes: true, active: true },
-            },
-            doctor: { select: { name: true } },
-          },
-          orderBy: { date: 'desc' },
-        },
-      },
+      include: PATIENT_DETAIL_INCLUDE,
     });
 
     return new PatientDetailResponseDto(patient);
@@ -120,6 +119,11 @@ export class PatientsService {
     dto: UpdatePatientDto,
   ): Promise<PatientDetailResponseDto> {
     await this.findOne(id, companyId);
+
+    if (dto.name !== undefined)
+      await this.assertNoDuplicateName(companyId, dto.name, id);
+    if (dto.cpf !== undefined)
+      await this.assertNoDuplicateCpf(companyId, dto.cpf, id);
 
     const data: Prisma.PatientUpdateInput = {};
     if (dto.name !== undefined) data.name = dto.name;
@@ -135,18 +139,7 @@ export class PatientsService {
     const patient = await this.prisma.client.patient.update({
       where: { id },
       data,
-      include: {
-        documents: true,
-        appointments: {
-          include: {
-            consultation: {
-              select: { title: true, notes: true, active: true },
-            },
-            doctor: { select: { name: true } },
-          },
-          orderBy: { date: 'desc' },
-        },
-      },
+      include: PATIENT_DETAIL_INCLUDE,
     });
 
     return new PatientDetailResponseDto(patient);
@@ -172,5 +165,53 @@ export class PatientsService {
         url,
       },
     });
+  }
+
+  // ─── private helpers ───────────────────────────────────────────────────────
+
+  private validateCpfFormat(cpf: string | undefined): void {
+    if (cpf !== undefined && !/^\d{11}$/.test(cpf)) {
+      throw new ConflictException(
+        'CPF deve conter exatamente 11 dígitos numéricos',
+      );
+    }
+  }
+
+  private async assertNoDuplicateName(
+    companyId: number,
+    name: string,
+    excludeId?: number,
+  ): Promise<void> {
+    const existing = await this.prisma.client.patient.findFirst({
+      where: {
+        companyId,
+        name: { contains: name },
+        ...(excludeId ? { NOT: { id: excludeId } } : {}),
+      },
+      select: { id: true },
+    });
+
+    if (existing)
+      throw new ConflictException('Já existe um paciente com este nome');
+  }
+
+  private async assertNoDuplicateCpf(
+    companyId: number,
+    cpf: string | undefined,
+    excludeId?: number,
+  ): Promise<void> {
+    if (!cpf) return;
+
+    const existing = await this.prisma.client.patient.findFirst({
+      where: {
+        companyId,
+        cpf,
+        ...(excludeId ? { NOT: { id: excludeId } } : {}),
+      },
+      select: { id: true },
+    });
+
+    if (existing)
+      throw new ConflictException('Já existe um paciente com este CPF');
   }
 }

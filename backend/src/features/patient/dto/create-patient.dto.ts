@@ -1,5 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsEmail, IsOptional, IsDateString } from 'class-validator';
+import {
+  IsString,
+  IsEmail,
+  IsOptional,
+  IsDateString,
+  Matches,
+} from 'class-validator';
 
 export class CreatePatientDto {
   @ApiProperty({ example: 'João da Silva' })
@@ -16,10 +22,12 @@ export class CreatePatientDto {
   @IsOptional()
   phone?: string;
 
-  @ApiPropertyOptional({ example: '000.000.000-00' })
+  @ApiProperty({ example: '00000000000' })
   @IsString({ message: 'CPF deve ser um texto.' })
-  @IsOptional()
-  cpf?: string;
+  @Matches(/^\d{11}$/, {
+    message: 'CPF deve conter exatamente 11 dígitos numéricos.',
+  })
+  cpf: string;
 
   @ApiPropertyOptional({ example: '1990-01-15' })
   @IsDateString({}, { message: 'Data de nascimento inválida.' })

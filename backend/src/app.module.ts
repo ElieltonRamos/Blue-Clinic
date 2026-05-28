@@ -9,6 +9,7 @@ import { DoctorsModule } from './features/doctors/doctors.module';
 import { CompanyModule } from './features/company/company.module';
 import { FinanceModule } from './features/financial/finance.module';
 import { ReportsModule } from './features/reports/reports.module';
+import { DashboardModule } from './features/dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { ReportsModule } from './features/reports/reports.module';
     CompanyModule,
     FinanceModule,
     ReportsModule,
+    DashboardModule,
   ],
   controllers: [AppController],
   providers: [AppService],

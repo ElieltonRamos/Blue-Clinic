@@ -6,6 +6,7 @@ import {
   IsEnum,
   IsBoolean,
   IsDateString,
+  Matches,
 } from 'class-validator';
 import { PatientStatus } from '../../../../generated/prisma/client.js';
 
@@ -25,8 +26,11 @@ export class UpdatePatientDto {
   @IsOptional()
   phone?: string;
 
-  @ApiPropertyOptional({ example: '000.000.000-00' })
+  @ApiPropertyOptional({ example: '00000000000' })
   @IsString({ message: 'CPF deve ser um texto.' })
+  @Matches(/^\d{11}$/, {
+    message: 'CPF deve conter exatamente 11 dígitos numéricos.',
+  })
   @IsOptional()
   cpf?: string;
 
