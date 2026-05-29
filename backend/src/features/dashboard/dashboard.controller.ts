@@ -65,11 +65,12 @@ export class DashboardController {
     @CurrentUser('companyId') companyId: number,
     @Query('doctorId', new ParseIntPipe({ optional: true })) doctorId?: number,
   ): Promise<AppointmentTodayDto[]> {
+    console.log('companyId:', companyId, typeof companyId);
     return this.dashboardService.getAppointmentsToday(companyId, doctorId);
   }
 
   @Get('next-patient/:doctorId')
-  @Roles('medico')
+  @Roles('admin', 'medico', 'atendimento')
   @ApiOperation({ summary: 'Próximo paciente do médico' })
   @ApiParam({ name: 'doctorId', type: Number, description: 'ID do médico' })
   @ApiResponse({ status: HttpStatus.OK, type: NextPatientDto, nullable: true })
@@ -86,7 +87,7 @@ export class DashboardController {
   }
 
   @Get('appointments-chart')
-  @Roles('admin', 'atendimento')
+  @Roles('admin', 'medico', 'atendimento')
   @ApiOperation({ summary: 'Dados do gráfico de consultas por mês' })
   @ApiQuery({
     name: 'year',
@@ -108,7 +109,7 @@ export class DashboardController {
   }
 
   @Get('chatbot-stats')
-  @Roles('admin', 'atendimento')
+  @Roles('admin', 'medico', 'atendimento')
   @ApiOperation({ summary: 'Estatísticas de automação do chatbot' })
   @ApiResponse({ status: HttpStatus.OK, type: ChatbotStatsDto })
   @ApiResponse({

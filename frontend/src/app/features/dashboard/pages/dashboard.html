@@ -323,7 +323,7 @@
             Próximas Consultas
           }
         </p>
-        <p class="text-[11px] text-(--color-text-muted)">Agendadas para hoje, 24 de Agosto</p>
+        <p class="text-[11px] text-(--color-text-muted)">Agendadas para hoje, {{ today }}</p>
       </div>
       <a
         routerLink="/dashboard/agenda"
@@ -362,11 +362,6 @@
             class="text-left text-[10px] font-medium text-(--color-text-muted) uppercase tracking-wider pb-2.5"
           >
             Status
-          </th>
-          <th
-            class="text-left text-[10px] font-medium text-(--color-text-muted) uppercase tracking-wider pb-2.5"
-          >
-            Ações
           </th>
         </tr>
       </thead>
@@ -416,17 +411,6 @@
                 }"
                 >{{ appt.status }}</span
               >
-            </td>
-            <td class="py-3">
-              <button
-                class="w-6 h-6 flex items-center justify-center text-(--color-text-muted) hover:text-(--color-text-primary) transition-colors"
-              >
-                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                  <circle cx="12" cy="5" r="1.5" />
-                  <circle cx="12" cy="12" r="1.5" />
-                  <circle cx="12" cy="19" r="1.5" />
-                </svg>
-              </button>
             </td>
           </tr>
         }

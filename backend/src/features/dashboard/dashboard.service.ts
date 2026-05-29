@@ -16,25 +16,21 @@ export class DashboardService {
   private todayRange(): { gte: Date; lte: Date } {
     const now = new Date();
     const gte = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate(),
-      0,
-      0,
-      0,
+      Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0),
     );
     const lte = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate(),
-      23,
-      59,
-      59,
-      999,
+      Date.UTC(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+        23,
+        59,
+        59,
+        999,
+      ),
     );
     return { gte, lte };
   }
-
   private monthRange(year: number, month: number): { gte: Date; lte: Date } {
     const gte = new Date(year, month, 1);
     const lte = new Date(year, month + 1, 0, 23, 59, 59, 999);
@@ -154,6 +150,8 @@ export class DashboardService {
     doctorId?: number,
   ): Promise<AppointmentTodayDto[]> {
     const today = this.todayRange();
+    console.log('today range:', today);
+    console.log('companyId:', companyId);
 
     const appointments = await this.prisma.client.appointment.findMany({
       where: {

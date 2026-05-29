@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { forkJoin } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -26,6 +26,8 @@ export class Dashboard implements OnInit {
   private authService = inject(AuthService);
   private dashboardService = inject(DashboardService);
   private notify = inject(NotificationService);
+  private cdr = inject(ChangeDetectorRef);
+  today = new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' });
 
   role: Role = 'admin';
   currentUserId = 0;
@@ -92,6 +94,7 @@ export class Dashboard implements OnInit {
         this.nextPatient = data.nextPatient ?? null;
         this.chatbotStats = data.chatbot ?? this.chatbotStats;
         this.pageLoading.set(false);
+        this.cdr.detectChanges();
       },
       error: (err: HttpErrorResponse) => {
         this.notify.error(this.getErrorMessage(err, 'Erro ao carregar dashboard'));
