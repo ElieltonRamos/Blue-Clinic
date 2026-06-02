@@ -192,7 +192,7 @@
                 <div>
                   <p class="text-sm font-bold text-(--color-text-primary)">{{ item.title }}</p>
                   <p class="text-xs text-(--color-text-secondary)">
-                    {{ item.date }} • {{ item.doctor }}
+                    {{ formatDate(item.date) }} • {{ item.doctor }}
                   </p>
                 </div>
               </div>
@@ -246,6 +246,7 @@
 
         <div class="mt-8 pt-6 border-t border-(--color-border)">
           <button
+            (click)="openAppointmentModal()"
             class="w-full bg-primary-dark text-(--color-text-inverse) font-bold py-3 rounded-lg text-sm flex items-center justify-center gap-2 hover:brightness-110 transition-all active:scale-95"
           >
             <span>🩺</span>
@@ -292,4 +293,11 @@
   [entity]="editPatient()"
   (close)="showEditModal.set(false)"
   (save)="onUpdatePatient($event)"
+/>
+
+<app-create-appointment-modal
+  [isOpen]="showAppointmentModal()"
+  [prefillPatientId]="selectedDetail()?.id ?? null"
+  (close)="showAppointmentModal.set(false)"
+  (appointmentCreated)="onAppointmentCreated($event)"
 />

@@ -85,7 +85,7 @@ export class DoctorsController {
   }
 
   @Put(':id')
-  @Roles('admin', 'atendimento')
+  @Roles('admin', 'atendimento', 'medico')
   @ApiOperation({ summary: 'Atualizar médico' })
   @ApiParam({ name: 'id', type: Number })
   @ApiResponse({ status: 200, type: DoctorResponseDto })
@@ -112,7 +112,7 @@ export class DoctorsController {
   // ── Schedule ───────────────────────────────────────────────────────────────
 
   @Post(':id/schedules')
-  @Roles('admin', 'atendimento')
+  @Roles('admin', 'atendimento', 'medico')
   @ApiOperation({ summary: 'Adicionar horário ao médico' })
   @ApiParam({ name: 'id', type: Number })
   @ApiResponse({ status: 201, type: DoctorScheduleResponseDto })
@@ -141,7 +141,7 @@ export class DoctorsController {
   }
 
   @Put(':id/schedules/:scheduleId')
-  @Roles('admin', 'atendimento')
+  @Roles('admin', 'atendimento', 'medico')
   @ApiOperation({ summary: 'Atualizar horário do médico' })
   @ApiParam({ name: 'id', type: Number })
   @ApiParam({ name: 'scheduleId', type: Number })
@@ -160,7 +160,7 @@ export class DoctorsController {
   }
 
   @Delete(':id/schedules/:scheduleId')
-  @Roles('admin', 'atendimento')
+  @Roles('admin', 'atendimento', 'medico')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Remover horário do médico' })
   @ApiParam({ name: 'id', type: Number })
@@ -177,7 +177,7 @@ export class DoctorsController {
   // ── Commissions ────────────────────────────────────────────────────────────
 
   @Post(':id/commissions')
-  @Roles('admin')
+  @Roles('admin', 'medico', 'atendimento')
   @ApiOperation({ summary: 'Adicionar comissão ao médico' })
   @ApiParam({ name: 'id', type: Number })
   @ApiResponse({ status: 201, type: CommissionResponseDto })
@@ -209,7 +209,7 @@ export class DoctorsController {
   }
 
   @Put(':id/commissions/:commissionId')
-  @Roles('admin')
+  @Roles('admin', 'atendimento', 'medico')
   @ApiOperation({ summary: 'Atualizar comissão do médico' })
   @ApiParam({ name: 'id', type: Number })
   @ApiParam({ name: 'commissionId', type: Number })
@@ -224,7 +224,7 @@ export class DoctorsController {
   }
 
   @Delete(':id/commissions/:commissionId')
-  @Roles('admin')
+  @Roles('admin', 'atendimento', 'medico')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Remover comissão do médico' })
   @ApiParam({ name: 'id', type: Number })

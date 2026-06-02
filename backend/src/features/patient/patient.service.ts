@@ -29,6 +29,7 @@ const PATIENT_DETAIL_INCLUDE = {
         select: { title: true, notes: true, active: true },
       },
       doctor: { select: { name: true } },
+      appointmentType: { select: { name: true } },
     },
     orderBy: { date: 'desc' as const },
   },

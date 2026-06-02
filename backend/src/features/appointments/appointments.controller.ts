@@ -91,7 +91,7 @@ export class AppointmentsController {
   }
 
   @Post('blocked-slots')
-  @Roles('admin', 'atendimento')
+  @Roles('admin', 'atendimento', 'medico')
   @ApiOperation({ summary: 'Criar slot bloqueado' })
   @ApiResponse({ status: HttpStatus.CREATED, type: BlockedSlotResponseDto })
   @ApiResponse({
@@ -106,7 +106,7 @@ export class AppointmentsController {
   }
 
   @Put('blocked-slots/:id')
-  @Roles('admin', 'atendimento')
+  @Roles('admin', 'atendimento', 'medico')
   @ApiOperation({ summary: 'Atualizar slot bloqueado' })
   @ApiParam({ name: 'id', type: Number })
   @ApiResponse({ status: HttpStatus.OK, type: BlockedSlotResponseDto })
@@ -123,7 +123,7 @@ export class AppointmentsController {
   }
 
   @Delete('blocked-slots/:id')
-  @Roles('admin', 'atendimento')
+  @Roles('admin', 'atendimento', 'medico')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Remover slot bloqueado' })
   @ApiParam({ name: 'id', type: Number })
@@ -140,7 +140,7 @@ export class AppointmentsController {
   }
 
   @Get('auto-confirmation')
-  @Roles('admin', 'atendimento')
+  @Roles('admin', 'atendimento', 'medico')
   @ApiOperation({ summary: 'Estatísticas de confirmação automática' })
   @ApiQuery({ name: 'month', required: true, example: '2025-06' })
   @ApiResponse({ status: HttpStatus.OK, type: AutoConfirmationDto })
@@ -200,7 +200,7 @@ export class AppointmentsController {
   }
 
   @Patch(':id')
-  @Roles('admin', 'atendimento')
+  @Roles('admin', 'atendimento', 'medico')
   @ApiOperation({ summary: 'Atualizar agendamento' })
   @ApiParam({ name: 'id', type: Number })
   @ApiResponse({ status: HttpStatus.OK, type: AppointmentResponseDto })
@@ -217,7 +217,7 @@ export class AppointmentsController {
   }
 
   @Patch(':id/status')
-  @Roles('admin', 'atendimento')
+  @Roles('admin', 'atendimento', 'medico')
   @ApiOperation({ summary: 'Atualizar status do agendamento' })
   @ApiParam({ name: 'id', type: Number })
   @ApiResponse({ status: HttpStatus.OK, type: AppointmentResponseDto })

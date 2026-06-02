@@ -20,6 +20,8 @@ import { FormField, ModalEditEntity } from '../../../shared/modal-edit-entity/mo
 import { NotificationService } from '../../../shared/toastr/notification.service';
 import { PaginatorComponent } from '../../../shared/paginator/paginator.component';
 import { environment } from '../../../core/services/environment';
+import { AppointmentResponse } from '../../../shared/create-appointment-modal/types/create-appointment.types';
+import { CreateAppointmentModal } from "../../../shared/create-appointment-modal/pages/create-appointment-modal";
 
 const AVATAR_COLORS = [
   'bg-primary text-btn-primary-text',
@@ -32,7 +34,7 @@ const ITEMS_PER_PAGE = 100;
 @Component({
   selector: 'app-patients',
   standalone: true,
-  imports: [CommonModule, FormsModule, ModalEditEntity, PaginatorComponent],
+  imports: [CommonModule, FormsModule, ModalEditEntity, PaginatorComponent, CreateAppointmentModal],
   templateUrl: './patients.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -54,6 +56,7 @@ export class Patients implements OnInit {
   newPatient = signal<Partial<CreatePatientRequest>>({});
 
   showEditModal = signal(false);
+  showAppointmentModal = signal(false);
   editPatient = signal<Partial<UpdatePatientRequest>>({});
 
   patientFields: FormField[] = [
@@ -99,6 +102,16 @@ export class Patients implements OnInit {
         this.notification.error(this.getErrorMessage(err, 'Erro ao carregar pacientes'));
       },
     });
+  }
+
+  openAppointmentModal(): void {
+    this.showAppointmentModal.set(true);
+  }
+
+  onAppointmentCreated(appointment: AppointmentResponse): void {
+    this.showAppointmentModal.set(false);
+    this.notification.success('Agendamento criado com sucesso.');
+    this.selectPatient(this.selectedDetail()!.id); // recarrega o detalhe para atualizar nextAppointment
   }
 
   onSearch(): void {
