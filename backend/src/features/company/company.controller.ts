@@ -17,6 +17,7 @@ import { RolesGuard } from '../../core/guards/roles.guard.js';
 import { CurrentUser } from '../../core/decorators/current-user.decorator.js';
 import { UpdateCompanyDto } from './dto/update-company.dto.js';
 import { CompanyService } from './company.service.js';
+import { UpdateIntegrationDto } from './dto/update-integration.dto.js';
 
 @ApiTags('company')
 @ApiBearerAuth()
@@ -47,8 +48,17 @@ export class CompanyController {
   @Get('integration')
   @ApiOperation({ summary: 'Buscar configuração WhatsApp' })
   @ApiResponse({ status: HttpStatus.OK })
-  @ApiResponse({ status: HttpStatus.NOT_FOUND })
   getIntegration(@CurrentUser('companyId') companyId: number) {
     return this.companyService.getIntegration(companyId);
+  }
+
+  @Patch('integration')
+  @ApiOperation({ summary: 'Criar ou atualizar configuração WhatsApp' })
+  @ApiResponse({ status: HttpStatus.OK })
+  upsertIntegration(
+    @CurrentUser('companyId') companyId: number,
+    @Body() dto: UpdateIntegrationDto,
+  ) {
+    return this.companyService.upsertIntegration(companyId, dto);
   }
 }

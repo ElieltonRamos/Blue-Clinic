@@ -9,6 +9,7 @@ import {
   IntegrationStatus,
   NewMemberForm,
   TeamMember,
+  UpsertIntegrationDto,
   UserLevel,
 } from '../types/settings.types';
 import { NotificationService } from '../../../shared/toastr/notification.service';
@@ -44,6 +45,21 @@ export class Settings implements OnInit {
   editMember = signal<Partial<NewMemberForm & { active: string }>>({});
   editMemberId = signal<number | null>(null);
 
+  integrationForm = signal<UpsertIntegrationDto>({});
+  integrationSaved = signal(false);
+
+  integrationToggles: {
+    key: keyof Pick<
+      UpsertIntegrationDto,
+      'botEnabled' | 'autoConfirm' | 'autoReminder' | 'humanFallback'
+    >;
+    label: string;
+  }[] = [
+    { key: 'botEnabled', label: 'Bot ativo' },
+    { key: 'autoConfirm', label: 'Confirmação automática' },
+    { key: 'autoReminder', label: 'Lembrete automático' },
+    { key: 'humanFallback', label: 'Fallback humano' },
+  ];
   private originalCompany: CompanyData | null = null;
 
   // memberCreateFields vai precisar de name e specialty condicionais ao role medico
@@ -141,13 +157,21 @@ export class Settings implements OnInit {
 
   private loadIntegration(): void {
     this.settingsService.getIntegration().subscribe({
-      next: (integration) => this.integration.set(integration),
-      error: (err: HttpErrorResponse) => {
-        if (err?.status === 404) {
-          this.integration.set(null);
-        } else {
-          this.notification.error(this.getErrorMessage(err, 'Erro ao carregar integração.'));
+      next: (integration) => {
+        this.integration.set(integration);
+        if (integration) {
+          this.integrationForm.set({
+            phoneNumberId: integration.phoneNumberId ?? undefined,
+            botEnabled: integration.botEnabled,
+            autoConfirm: integration.autoConfirm,
+            autoReminder: integration.autoReminder,
+            reminderHours: integration.reminderHours,
+            humanFallback: integration.humanFallback,
+          });
         }
+      },
+      error: (err: HttpErrorResponse) => {
+        this.notification.error(this.getErrorMessage(err, 'Erro ao carregar integração.'));
       },
     });
   }
@@ -167,6 +191,34 @@ export class Settings implements OnInit {
   openCreateModal(): void {
     this.newMember.set({ role: 'atendimento' });
     this.showCreateModal.set(true);
+  }
+
+  saveIntegration(): void {
+    const dto = this.integrationForm();
+    if (!Object.keys(dto).length) return;
+
+    this.settingsService.upsertIntegration(dto).subscribe({
+      next: (updated) => {
+        this.integration.set(updated);
+        this.integrationForm.update((f) => ({ ...f, accessToken: undefined }));
+        this.integrationSaved.set(true);
+        this.notification.success('Integração salva com sucesso.');
+        setTimeout(() => this.integrationSaved.set(false), 2000);
+      },
+      error: (err: HttpErrorResponse) => {
+        this.notification.error(this.getErrorMessage(err, 'Erro ao salvar integração.'));
+      },
+    });
+  }
+
+  updateIntegrationToggle(
+    key: keyof Pick<
+      UpsertIntegrationDto,
+      'botEnabled' | 'autoConfirm' | 'autoReminder' | 'humanFallback'
+    >,
+    value: boolean,
+  ): void {
+    this.integrationForm.update((f) => ({ ...f, [key]: value }));
   }
 
   onSaveMember(entity: Partial<NewMemberForm>): void {

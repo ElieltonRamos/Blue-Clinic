@@ -103,8 +103,9 @@ model Company {
   whatsappConfig   WhatsappConfig?
   appointmentTypes AppointmentType[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  conversations Conversation[]
 
   @@map("company")
 }
@@ -355,7 +356,8 @@ model WhatsappConfig {
   id            Int     @id @default(autoincrement())
   companyId     Int     @unique
   instanceId    String
-  apiToken      String
+  phoneNumberId String?
+  accessToken   String? @db.Text
   webhookUrl    String?
   botEnabled    Boolean @default(true)
   autoConfirm   Boolean @default(false)
@@ -373,6 +375,8 @@ model WhatsappConfig {
 
 model Conversation {
   id            Int                @id @default(autoincrement())
+  companyId     Int
+  company       Company            @relation(fields: [companyId], references: [id])
   patientId     Int?
   assignedToId  Int?
   phone         String
@@ -380,6 +384,8 @@ model Conversation {
   unread        Int                @default(0)
   lastMessage   String?
   lastMessageAt DateTime?
+  botStep       String?
+  botData       Json?
 
   patient    Patient?      @relation(fields: [patientId], references: [id])
   assignedTo User?         @relation("ConversationAssignedTo", fields: [assignedToId], references: [id])

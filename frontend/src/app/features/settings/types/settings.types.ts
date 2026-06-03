@@ -1,4 +1,4 @@
-import { Role } from "../../dashboard/types/dashboard.types";
+import { Role } from '../../dashboard/types/dashboard.types';
 
 export type UserLevel = Role;
 
@@ -47,10 +47,20 @@ export interface NewMemberForm {
 
 export interface IntegrationStatus {
   instanceId: string;
+  phoneNumberId: string | null;
   botEnabled: boolean;
   autoConfirm: boolean;
   autoReminder: boolean;
   reminderHours: number;
   humanFallback: boolean;
-  syncInfo?: string;
+}
+
+export interface UpsertIntegrationDto {
+  phoneNumberId?: string;
+  accessToken?: string;
+  botEnabled?: boolean;
+  autoConfirm?: boolean;
+  autoReminder?: boolean;
+  reminderHours?: number;
+  humanFallback?: boolean;
 }

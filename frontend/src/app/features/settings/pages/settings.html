@@ -275,9 +275,77 @@
           </div>
         }
       </div>
+
       @if (integration(); as integ) {
         <p class="text-[11px] text-(--color-text-muted)">Instance: {{ integ.instanceId }}</p>
       }
+
+      <div class="grid grid-cols-2 gap-3 pt-1">
+        <div class="flex flex-col gap-1">
+          <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)"
+            >Phone Number ID</label
+          >
+          <input
+            [ngModel]="integrationForm().phoneNumberId"
+            (ngModelChange)="integrationForm.update(f => ({ ...f, phoneNumberId: $event }))"
+            type="text"
+            placeholder="Ex: 123456789"
+            class="bg-bg-card border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
+          />
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)"
+            >Access Token</label
+          >
+          <input
+            [ngModel]="integrationForm().accessToken"
+            (ngModelChange)="integrationForm.update(f => ({ ...f, accessToken: $event }))"
+            type="password"
+            placeholder="••••••••"
+            class="bg-bg-card border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
+          />
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)"
+            >Horas p/ lembrete</label
+          >
+          <input
+            [ngModel]="integrationForm().reminderHours"
+            (ngModelChange)="integrationForm.update(f => ({ ...f, reminderHours: +$event }))"
+            type="number"
+            min="1"
+            class="bg-bg-card border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
+          />
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2 pt-1">
+        @for (toggle of integrationToggles; track toggle.key) {
+          <label
+            class="flex items-center justify-between px-3 py-2 rounded-lg border border-(--color-border) bg-bg-card cursor-pointer"
+          >
+            <span class="text-[12px] text-(--color-text-primary)">{{ toggle.label }}</span>
+            <input
+              type="checkbox"
+              [ngModel]="integrationForm()[toggle.key]"
+              (ngModelChange)="updateIntegrationToggle(toggle.key, $event)"
+              class="accent-(--color-primary)"
+            />
+          </label>
+        }
+      </div>
+
+      <div class="flex justify-end mt-1">
+        @if (integrationSaved()) {
+          <span class="text-[11px] text-success flex items-center gap-1 mr-3">✓ Salvo</span>
+        }
+        <button
+          (click)="saveIntegration()"
+          class="px-4 py-2 rounded-lg bg-(--color-primary) text-(--color-text-inverse) text-[12px] font-medium hover:bg-(--color-primary-hover) transition-colors"
+        >
+          Salvar integração
+        </button>
+      </div>
     </div>
   </div>
 

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-return */
 import {
   Controller,
   Get,
@@ -9,9 +8,13 @@ import {
   HttpCode,
 } from '@nestjs/common';
 import type { Response } from 'express';
+import { WhatssapService } from './whatssap.service';
+import { CurrentUser } from '../../core/decorators/current-user.decorator';
 
 @Controller('whatssap')
 export class WhatssapController {
+  constructor(private readonly whatssapService: WhatssapService) {}
+
   @Get('webhook')
   verifyWebhook(
     @Query('hub.mode') mode: string,
@@ -31,30 +34,13 @@ export class WhatssapController {
 
   @Post('webhook')
   @HttpCode(200)
-  receiveWebhook(@Body() body: any) {
-    console.log('WhatsApp webhook:', JSON.stringify(body, null, 2));
+  async receiveWebhook(@Body() body: any) {
+    await this.whatssapService.processWebhook(body);
     return 'OK';
   }
 
   @Post('test-send')
-  async testSend() {
-    const response = await fetch(
-      `https://graph.facebook.com/v25.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`,
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${process.env.WHATSAPP_ACCESS_TOKEN}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          messaging_product: 'whatsapp',
-          to: '553888663580',
-          type: 'text',
-          text: { body: 'Teste de envio pelo NestJS 🩺' },
-        }),
-      },
-    );
-
-    return response.json();
+  async testSend(@CurrentUser('companyId') companyId: number) {
+    return this.whatssapService.testSend(companyId);
   }
 }

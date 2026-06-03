@@ -7,6 +7,7 @@ import {
   TeamMember,
   CreateMemberRequest,
   UserLevel,
+  UpsertIntegrationDto,
 } from '../types/settings.types';
 
 @Injectable({
@@ -45,5 +46,9 @@ export class SettingsService {
 
   updateMember(id: number, dto: Partial<CreateMemberRequest> & { active?: boolean }) {
     return this.http.patch<TeamMember>(`${this.apiUrl}/users/${id}`, dto);
+  }
+
+  upsertIntegration(dto: UpsertIntegrationDto) {
+    return this.http.patch<IntegrationStatus>(`${this.apiUrl}/company/integration`, dto);
   }
 }
