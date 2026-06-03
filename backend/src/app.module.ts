@@ -10,6 +10,7 @@ import { CompanyModule } from './features/company/company.module';
 import { FinanceModule } from './features/financial/finance.module';
 import { ReportsModule } from './features/reports/reports.module';
 import { DashboardModule } from './features/dashboard/dashboard.module';
+import { WhatssapModule } from './features/whatssap/whatssap.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { DashboardModule } from './features/dashboard/dashboard.module';
     FinanceModule,
     ReportsModule,
     DashboardModule,
+    WhatssapModule,
   ],
   controllers: [AppController],
   providers: [AppService],
