@@ -3,12 +3,16 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../core/database/prisma.service.js';
+import { BotService } from './bot.service.js';
 
 @Injectable()
 export class WhatssapService {
   private readonly logger = new Logger(WhatssapService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly botService: BotService,
+  ) {}
 
   async sendText(
     to: string,
@@ -16,26 +20,30 @@ export class WhatssapService {
     accessToken: string,
     phoneNumberId: string,
   ): Promise<void> {
-    const response = await fetch(
-      `https://graph.facebook.com/v25.0/${phoneNumberId}/messages`,
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
+    try {
+      const response = await fetch(
+        `https://graph.facebook.com/v25.0/${phoneNumberId}/messages`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            messaging_product: 'whatsapp',
+            to,
+            type: 'text',
+            text: { body: message },
+          }),
         },
-        body: JSON.stringify({
-          messaging_product: 'whatsapp',
-          to,
-          type: 'text',
-          text: { body: message },
-        }),
-      },
-    );
+      );
 
-    if (!response.ok) {
-      const error = await response.json();
-      this.logger.error('Erro ao enviar mensagem WhatsApp', error);
+      if (!response.ok) {
+        const error = await response.json();
+        this.logger.error('Erro ao enviar mensagem WhatsApp', error);
+      }
+    } catch (err) {
+      this.logger.error('Falha ao conectar com a API do WhatsApp', err);
     }
   }
 
@@ -135,12 +143,12 @@ export class WhatssapService {
     accessToken: string,
     phoneNumberId: string,
   ): Promise<void> {
-    // placeholder — implementar máquina de estados
-    await this.sendText(
+    await this.botService.handle(
+      conversationId,
+      companyId,
       phone,
-      'Olá! Bot em construção 🚧',
-      accessToken,
-      phoneNumberId,
+      text,
+      (msg) => this.sendText(phone, msg, accessToken, phoneNumberId),
     );
   }
 
