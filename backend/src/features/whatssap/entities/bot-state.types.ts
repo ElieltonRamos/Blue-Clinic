@@ -25,3 +25,5 @@ export interface BotData {
   endTime?: string;
   cancelAppointmentId?: number;
 }
+
+export type SendFn = (msg: string) => Promise<void>;
