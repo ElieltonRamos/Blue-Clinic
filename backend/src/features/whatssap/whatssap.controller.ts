@@ -6,10 +6,12 @@ import {
   Query,
   Res,
   HttpCode,
+  UseGuards,
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { WhatssapService } from './whatssap.service';
 import { CurrentUser } from '../../core/decorators/current-user.decorator';
+import { JwtAuthGuard } from '../../core/guards/jwt-auth.guard';
 
 @Controller('whatssap')
 export class WhatssapController {
@@ -40,6 +42,7 @@ export class WhatssapController {
   }
 
   @Post('test-send')
+  @UseGuards(JwtAuthGuard)
   async testSend(@CurrentUser('companyId') companyId: number) {
     return this.whatssapService.testSend(companyId);
   }
