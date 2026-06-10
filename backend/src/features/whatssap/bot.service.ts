@@ -3,7 +3,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../core/database/prisma.service.js';
 import { BotData, BotStep, SendFn } from './entities/bot-state.types.js';
-import { handleMenu } from './handlers/menu.handler.js';
+import { handleMenu, MENU_TEXT } from './handlers/menu.handler.js';
 import {
   handleRegisterName,
   handleRegisterCpf,
@@ -17,7 +17,7 @@ import {
   handleSelectAppointmentType,
 } from './handlers/appointment-type.handler.js';
 import { askDoctor, handleSelectDoctor } from './handlers/doctor.handler.js';
-import { handleSelectDate } from './handlers/date.handler.js';
+import { askDate, handleSelectDate } from './handlers/date.handler.js';
 import { askSlot, handleSelectSlot } from './handlers/slot.handler.js';
 import { handleConfirmAppointment } from './handlers/confirm.handler.js';
 import {
@@ -46,6 +46,36 @@ export class BotService {
 
     const step = (conversation.botStep ?? 'MENU') as BotStep;
     const data = (conversation.botData ?? {}) as BotData;
+    const normalized = text.trim().toLowerCase();
+
+    // Interceptação global — exceto quando já está no MENU/IDLE
+    if (step !== 'MENU' && step !== 'IDLE') {
+      if (
+        ['menu', 'inicio', 'início', 'voltar', 'cancelar'].includes(normalized)
+      ) {
+        await this.updateConversation(conversationId, 'MENU', { phone });
+        await sendFn(`Voltando ao menu principal...\n\n${MENU_TEXT}`);
+        return;
+      }
+
+      if (
+        [
+          'atendente',
+          'humano',
+          'ajuda',
+          'help',
+          'falar com alguem',
+          'falar com alguém',
+        ].includes(normalized)
+      ) {
+        await this.prisma.client.conversation.update({
+          where: { id: conversationId },
+          data: { status: 'waiting', botStep: 'IDLE', botData: {} },
+        });
+        await sendFn('Aguarde, em breve um atendente irá te responder. 😊');
+        return;
+      }
+    }
 
     await this.dispatch(
       step,
@@ -132,6 +162,7 @@ export class BotService {
           sendFn,
           p,
           update,
+          (d, cId, cmpId, sf) => askDate(d, cId, cmpId, sf, p, update),
         );
       case 'SELECT_DATE':
         return handleSelectDate(

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-call */
 import { PrismaService } from '../../../core/database/prisma.service.js';
 import { BotData, BotStep, SendFn } from '../entities/bot-state.types.js';
 
@@ -35,10 +34,15 @@ export async function handleMenu(
   const option = text.trim();
 
   if (!['1', '2', '3', '4'].includes(option)) {
+    const company = await prisma.client.company.findUnique({
+      where: { id: companyId },
+      select: { tradeName: true },
+    });
+
     await sendFn(
-      `Olá! 👋 Bem-vindo à nossa clínica.\n\nComo posso ajudar?\n\n${MENU_TEXT}`,
+      `Olá! 👋 Bem-vindo à *${company?.tradeName ?? 'nossa clínica'}*.\n\nComo posso ajudar?\n\n${MENU_TEXT}`,
     );
-    await updateConversation(conversationId, 'MENU', {});
+    await updateConversation(conversationId, 'MENU', { phone });
     return;
   }
 
@@ -67,12 +71,13 @@ export async function handleMenu(
     await sendFn(
       'Para agendar, preciso de alguns dados.\n\nQual é o seu *nome completo*?',
     );
-    await updateConversation(conversationId, 'REGISTER_NAME', {});
+    await updateConversation(conversationId, 'REGISTER_NAME', { phone });
     return;
   }
 
   await updateConversation(conversationId, 'SELECT_SPECIALTY', {
     patientId: patient.id,
+    phone,
   });
   return askSpecialty(companyId, sendFn);
 }

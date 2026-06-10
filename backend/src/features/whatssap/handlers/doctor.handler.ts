@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-call */
 import { PrismaService } from '../../../core/database/prisma.service.js';
 import { BotData, BotStep, SendFn } from '../entities/bot-state.types.js';
 
@@ -33,6 +32,12 @@ export async function handleSelectDoctor(
     step: BotStep,
     data: BotData,
   ) => Promise<void>,
+  askDate: (
+    data: BotData,
+    conversationId: number,
+    companyId: number,
+    sendFn: SendFn,
+  ) => Promise<void>,
 ): Promise<void> {
   const doctors = await prisma.client.doctor.findMany({
     where: { companyId, specialty: data.specialty ?? '', active: true },
@@ -45,12 +50,11 @@ export async function handleSelectDoctor(
   }
 
   const doctor = doctors[idx];
-  await updateConversation(conversationId, 'SELECT_DATE', {
+  const updatedData: BotData = {
     ...data,
     doctorId: doctor.id,
     doctorName: doctor.name,
-  });
-  await sendFn(
-    'Informe a data desejada no formato *DD/MM/AAAA*:\n\n_Ex: 15/07/2026_',
-  );
+  };
+  await updateConversation(conversationId, 'SELECT_DATE', updatedData);
+  return askDate(updatedData, conversationId, companyId, sendFn);
 }

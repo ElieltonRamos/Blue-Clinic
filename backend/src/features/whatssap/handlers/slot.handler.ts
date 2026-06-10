@@ -1,7 +1,25 @@
-/* eslint-disable @typescript-eslint/no-unsafe-call */
 import { PrismaService } from '../../../core/database/prisma.service.js';
 import { BotData, BotStep, SendFn } from '../entities/bot-state.types.js';
 import { generateSlots, timeToMin } from '../bot-helpers.js';
+
+const DIGIT_EMOJI: Record<string, string> = {
+  '0': '0️⃣',
+  '1': '1️⃣',
+  '2': '2️⃣',
+  '3': '3️⃣',
+  '4': '4️⃣',
+  '5': '5️⃣',
+  '6': '6️⃣',
+  '7': '7️⃣',
+  '8': '8️⃣',
+  '9': '9️⃣',
+};
+
+const toDigitEmoji = (n: number): string =>
+  String(n)
+    .split('')
+    .map((d) => DIGIT_EMOJI[d])
+    .join('');
 
 export async function getAvailableSlots(
   doctorId: number,
@@ -96,8 +114,9 @@ export async function askSlot(
   }
 
   const list = slots
-    .map((s, i) => `${i + 1}️⃣ ${s.startTime} – ${s.endTime}`)
+    .map((s, i) => `${toDigitEmoji(i + 1)} ${s.startTime} – ${s.endTime}`)
     .join('\n');
+
   await sendFn(`Horários disponíveis:\n\n${list}`);
 }
 

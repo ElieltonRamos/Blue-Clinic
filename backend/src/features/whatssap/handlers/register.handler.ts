@@ -1,6 +1,72 @@
-/* eslint-disable @typescript-eslint/no-unsafe-call */
 import { PrismaService } from '../../../core/database/prisma.service.js';
 import { BotData, BotStep, SendFn } from '../entities/bot-state.types.js';
+
+const BLACKLIST = [
+  'teste',
+  'admin',
+  'bot',
+  'fulano',
+  'ninguem',
+  'nenhum',
+  'anonimo',
+  'desconhecido',
+  'qualquer',
+  'alguem',
+  'ningue',
+  'porra',
+  'merda',
+  'caralho',
+  'puta',
+  'viado',
+  'buceta',
+  'cu',
+  'cuzao',
+  'fdp',
+  'filhadaputa',
+  'filhodaputa',
+  'vai tomar',
+  'vtnc',
+  'vsf',
+  'pinto',
+  'pau',
+  'rola',
+  'xota',
+  'xoxota',
+  'xereca',
+  'piroca',
+  'vagabunda',
+  'vagabundo',
+  'prostituta',
+  'traveco',
+  'bicha',
+  'idiota',
+  'imbecil',
+  'cretino',
+  'babaca',
+  'otario',
+  'otária',
+  'lixo',
+  'lixao',
+  'burro',
+  'burra',
+  'estupido',
+  'estupida',
+];
+
+const isValidFullName = (name: string): boolean => {
+  const cleaned = name.trim();
+
+  if (cleaned.length < 5 || cleaned.length > 100) return false;
+  if (!/^[a-zA-ZÀ-ÿ\s'-]+$/.test(cleaned)) return false;
+
+  const words = cleaned.split(/\s+/).filter((w) => w.length >= 2);
+  if (words.length < 2) return false;
+
+  const lower = cleaned.toLowerCase();
+  if (BLACKLIST.some((w) => lower.includes(w))) return false;
+
+  return true;
+};
 
 export async function handleRegisterName(
   text: string,
@@ -13,14 +79,17 @@ export async function handleRegisterName(
     data: BotData,
   ) => Promise<void>,
 ): Promise<void> {
-  if (text.length < 3) {
-    await sendFn('Por favor, informe seu nome completo.');
+  if (!isValidFullName(text)) {
+    await sendFn(
+      'Por favor, informe seu nome completo e real (ex: João Silva).',
+    );
     return;
   }
+
   await sendFn('Agora informe seu *CPF* (somente números):');
   await updateConversation(conversationId, 'REGISTER_CPF', {
     ...data,
-    name: text,
+    name: text.trim(),
   });
 }
 
@@ -56,6 +125,7 @@ export async function handleRegisterCpf(
         companyId,
         name: data.name!,
         cpf,
+        phone: data.phone,
         status: 'Ativo',
         whatsappActive: true,
       },
@@ -68,8 +138,10 @@ export async function handleRegisterCpf(
   });
 
   await updateConversation(conversationId, 'SELECT_SPECIALTY', {
+    ...data,
     patientId: patient.id,
   });
+
   await sendFn(`Cadastro realizado! ✅\n\nOlá, *${patient.name}*!`);
   return askSpecialty(companyId, sendFn);
 }

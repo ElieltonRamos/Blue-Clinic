@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Injectable, Logger } from '@nestjs/common';
@@ -20,8 +19,10 @@ export class WhatssapService {
     accessToken: string,
     phoneNumberId: string,
   ): Promise<void> {
+    let response: Response;
+
     try {
-      const response = await fetch(
+      response = await fetch(
         `https://graph.facebook.com/v25.0/${phoneNumberId}/messages`,
         {
           method: 'POST',
@@ -35,15 +36,22 @@ export class WhatssapService {
             type: 'text',
             text: { body: message },
           }),
+          signal: AbortSignal.timeout(10000),
         },
       );
+    } catch (err: any) {
+      const code = err?.cause?.code ?? err?.code ?? 'UNKNOWN';
+      this.logger.error(`Falha de rede ao enviar WhatsApp [${code}]: ${to}`);
+      throw new Error(`WhatsApp network error: ${code}`);
+    }
 
-      if (!response.ok) {
-        const error = await response.json();
-        this.logger.error('Erro ao enviar mensagem WhatsApp', error);
-      }
-    } catch (err) {
-      this.logger.error('Falha ao conectar com a API do WhatsApp', err);
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      this.logger.error(
+        `Erro HTTP ${response.status} ao enviar WhatsApp`,
+        error,
+      );
+      throw new Error(`WhatsApp HTTP error: ${response.status}`);
     }
   }
 
@@ -143,13 +151,19 @@ export class WhatssapService {
     accessToken: string,
     phoneNumberId: string,
   ): Promise<void> {
-    await this.botService.handle(
-      conversationId,
-      companyId,
-      phone,
-      text,
-      (msg) => this.sendText(phone, msg, accessToken, phoneNumberId),
-    );
+    try {
+      await this.botService.handle(
+        conversationId,
+        companyId,
+        phone,
+        text,
+        (msg) => this.sendText(phone, msg, accessToken, phoneNumberId),
+      );
+    } catch (err) {
+      this.logger.error(
+        `Erro ao processar bot [conversation ${conversationId}]: ${(err as Error).message}`,
+      );
+    }
   }
 
   async testSend(
