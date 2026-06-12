@@ -29,10 +29,7 @@ export class CompanyService {
         id: true,
         phoneNumberId: true,
         botEnabled: true,
-        autoConfirm: true,
         autoReminder: true,
-        reminderHours: true,
-        humanFallback: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -45,24 +42,17 @@ export class CompanyService {
       phoneNumberId?: string;
       accessToken?: string;
       botEnabled?: boolean;
-      autoConfirm?: boolean;
       autoReminder?: boolean;
-      reminderHours?: number;
-      humanFallback?: boolean;
     },
   ) {
     await this.prisma.client.whatsappConfig.upsert({
       where: { companyId },
       create: {
         companyId,
-        instanceId: `company_${companyId}`,
         phoneNumberId: dto.phoneNumberId,
         accessToken: dto.accessToken,
         botEnabled: dto.botEnabled ?? true,
-        autoConfirm: dto.autoConfirm ?? false,
         autoReminder: dto.autoReminder ?? true,
-        reminderHours: dto.reminderHours ?? 24,
-        humanFallback: dto.humanFallback ?? true,
       },
       update: {
         ...(dto.phoneNumberId !== undefined && {
@@ -70,15 +60,8 @@ export class CompanyService {
         }),
         ...(dto.accessToken !== undefined && { accessToken: dto.accessToken }),
         ...(dto.botEnabled !== undefined && { botEnabled: dto.botEnabled }),
-        ...(dto.autoConfirm !== undefined && { autoConfirm: dto.autoConfirm }),
         ...(dto.autoReminder !== undefined && {
           autoReminder: dto.autoReminder,
-        }),
-        ...(dto.reminderHours !== undefined && {
-          reminderHours: dto.reminderHours,
-        }),
-        ...(dto.humanFallback !== undefined && {
-          humanFallback: dto.humanFallback,
         }),
       },
     });

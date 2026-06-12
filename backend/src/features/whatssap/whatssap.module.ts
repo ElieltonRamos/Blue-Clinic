@@ -3,9 +3,10 @@ import { WhatssapService } from './whatssap.service';
 import { WhatssapController } from './whatssap.controller';
 import { PrismaService } from '../../core/database/prisma.service.js';
 import { BotService } from './bot.service';
+import { ReminderJob } from './reminder.job';
 
 @Module({
   controllers: [WhatssapController],
-  providers: [WhatssapService, PrismaService, BotService],
+  providers: [WhatssapService, PrismaService, BotService, ReminderJob],
 })
 export class WhatssapModule {}

@@ -13,6 +13,44 @@ export class WhatssapService {
     private readonly botService: BotService,
   ) {}
 
+  async sendTemplate(
+    to: string,
+    templateName: string,
+    components: object[],
+    accessToken: string,
+    phoneNumberId: string,
+  ): Promise<void> {
+    try {
+      const response = await fetch(
+        `https://graph.facebook.com/v25.0/${phoneNumberId}/messages`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            messaging_product: 'whatsapp',
+            to,
+            type: 'template',
+            template: {
+              name: templateName,
+              language: { code: 'pt_BR' },
+              components,
+            },
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        this.logger.error('Erro ao enviar template WhatsApp', error);
+      }
+    } catch (err) {
+      this.logger.error('Falha ao conectar com a API do WhatsApp', err);
+    }
+  }
+
   async sendText(
     to: string,
     message: string,
@@ -93,6 +131,8 @@ export class WhatssapService {
       const patient = await this.prisma.client.patient.findFirst({
         where: { companyId, phone: { contains: phone.slice(-8) } },
       });
+
+      if (patient?.blocked) return;
 
       conversation = await this.prisma.client.conversation.create({
         data: {

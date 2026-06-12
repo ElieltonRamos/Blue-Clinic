@@ -49,16 +49,11 @@ export class Settings implements OnInit {
   integrationSaved = signal(false);
 
   integrationToggles: {
-    key: keyof Pick<
-      UpsertIntegrationDto,
-      'botEnabled' | 'autoConfirm' | 'autoReminder' | 'humanFallback'
-    >;
+    key: keyof Pick<UpsertIntegrationDto, 'botEnabled' | 'autoReminder'>;
     label: string;
   }[] = [
     { key: 'botEnabled', label: 'Bot ativo' },
-    { key: 'autoConfirm', label: 'Confirmação automática' },
     { key: 'autoReminder', label: 'Lembrete automático' },
-    { key: 'humanFallback', label: 'Fallback humano' },
   ];
   private originalCompany: CompanyData | null = null;
 
@@ -163,10 +158,7 @@ export class Settings implements OnInit {
           this.integrationForm.set({
             phoneNumberId: integration.phoneNumberId ?? undefined,
             botEnabled: integration.botEnabled,
-            autoConfirm: integration.autoConfirm,
             autoReminder: integration.autoReminder,
-            reminderHours: integration.reminderHours,
-            humanFallback: integration.humanFallback,
           });
         }
       },
@@ -212,10 +204,7 @@ export class Settings implements OnInit {
   }
 
   updateIntegrationToggle(
-    key: keyof Pick<
-      UpsertIntegrationDto,
-      'botEnabled' | 'autoConfirm' | 'autoReminder' | 'humanFallback'
-    >,
+    key: keyof Pick<UpsertIntegrationDto, 'botEnabled' | 'autoReminder'>,
     value: boolean,
   ): void {
     this.integrationForm.update((f) => ({ ...f, [key]: value }));

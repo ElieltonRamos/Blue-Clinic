@@ -46,21 +46,17 @@ export interface NewMemberForm {
 }
 
 export interface IntegrationStatus {
-  instanceId: string;
+  id: number;
   phoneNumberId: string | null;
   botEnabled: boolean;
-  autoConfirm: boolean;
   autoReminder: boolean;
-  reminderHours: number;
-  humanFallback: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface UpsertIntegrationDto {
   phoneNumberId?: string;
   accessToken?: string;
   botEnabled?: boolean;
-  autoConfirm?: boolean;
   autoReminder?: boolean;
-  reminderHours?: number;
-  humanFallback?: boolean;
 }

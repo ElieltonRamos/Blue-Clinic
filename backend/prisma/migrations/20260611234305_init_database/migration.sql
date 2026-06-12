@@ -142,6 +142,7 @@ CREATE TABLE `appointment` (
     `cancellationReason` TEXT NULL,
     `origin` ENUM('whatsapp', 'telefone', 'presencial') NULL,
     `rating` DECIMAL(3, 2) NULL,
+    `reminderSent` BOOLEAN NOT NULL DEFAULT false,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
 
@@ -227,14 +228,10 @@ CREATE TABLE `expense` (
 CREATE TABLE `whatsapp_config` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `companyId` INTEGER NOT NULL,
-    `instanceId` VARCHAR(191) NOT NULL,
-    `apiToken` VARCHAR(191) NOT NULL,
-    `webhookUrl` VARCHAR(191) NULL,
+    `phoneNumberId` VARCHAR(191) NULL,
+    `accessToken` TEXT NULL,
     `botEnabled` BOOLEAN NOT NULL DEFAULT true,
-    `autoConfirm` BOOLEAN NOT NULL DEFAULT false,
     `autoReminder` BOOLEAN NOT NULL DEFAULT true,
-    `reminderHours` INTEGER NOT NULL DEFAULT 24,
-    `humanFallback` BOOLEAN NOT NULL DEFAULT true,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
 
@@ -245,6 +242,7 @@ CREATE TABLE `whatsapp_config` (
 -- CreateTable
 CREATE TABLE `conversation` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `companyId` INTEGER NOT NULL,
     `patientId` INTEGER NULL,
     `assignedToId` INTEGER NULL,
     `phone` VARCHAR(191) NOT NULL,
@@ -252,6 +250,8 @@ CREATE TABLE `conversation` (
     `unread` INTEGER NOT NULL DEFAULT 0,
     `lastMessage` VARCHAR(191) NULL,
     `lastMessageAt` DATETIME(3) NULL,
+    `botStep` VARCHAR(191) NULL,
+    `botData` JSON NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
 
@@ -332,6 +332,9 @@ ALTER TABLE `expense` ADD CONSTRAINT `expense_registeredById_fkey` FOREIGN KEY (
 
 -- AddForeignKey
 ALTER TABLE `whatsapp_config` ADD CONSTRAINT `whatsapp_config_companyId_fkey` FOREIGN KEY (`companyId`) REFERENCES `company`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `conversation` ADD CONSTRAINT `conversation_companyId_fkey` FOREIGN KEY (`companyId`) REFERENCES `company`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `conversation` ADD CONSTRAINT `conversation_patientId_fkey` FOREIGN KEY (`patientId`) REFERENCES `patient`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;

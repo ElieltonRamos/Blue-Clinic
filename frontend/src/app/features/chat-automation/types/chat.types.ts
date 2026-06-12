@@ -1,35 +1,36 @@
 export type ConversationStatus = 'bot' | 'human' | 'waiting';
+export type MessageSender = 'patient' | 'bot' | 'human';
 
 export interface Conversation {
-  id: string;
-  patientName: string;
-  patientAvatar: string;
-  lastMessage: string;
-  time: string;
+  id: number;
+  phone: string;
+  patientName: string | null;
+  lastMessage: string | null;
+  lastMessageAt: string | null;
   status: ConversationStatus;
-  unread?: number;
-}
-
-export type MessageSender = 'patient' | 'bot';
-
-export interface TimeSlot {
-  label: string;
+  unread: number;
 }
 
 export interface ChatMessage {
-  id: string;
+  id: number;
   sender: MessageSender;
   text: string;
-  time: string;
-  slots?: TimeSlot[];
+  sentAt: string;
 }
 
 export interface PatientInfo {
-  id: string;
+  id: number;
   name: string;
-  since: string;
-  avatarUrl: string;
-  lastVisit: string;
-  paymentStatus: 'Em dia' | 'Pendente' | 'Atrasado';
-  plan: string;
+  phone: string;
+  memberSince: string;
+  lastVisit: string | null;
+  blocked: boolean;
+}
+
+export interface ConversationStatusUpdate {
+  status: ConversationStatus;
+}
+
+export interface SendMessageDto {
+  text: string;
 }

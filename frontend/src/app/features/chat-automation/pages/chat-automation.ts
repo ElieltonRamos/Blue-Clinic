@@ -1,8 +1,17 @@
-import { Component, inject, OnInit } from '@angular/core';
+import {
+  Component,
+  inject,
+  OnInit,
+  signal,
+  computed,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { HttpErrorResponse } from '@angular/common/http';
 import { ChatService } from '../services/chat.service';
 import { ChatMessage, Conversation, ConversationStatus, PatientInfo } from '../types/chat.types';
+import { NotificationService } from '../../../shared/toastr/notification.service';
 
 type FilterTab = 'todas' | 'aguardando';
 
@@ -10,66 +19,109 @@ type FilterTab = 'todas' | 'aguardando';
   selector: 'app-chat',
   standalone: true,
   imports: [CommonModule, FormsModule],
-  providers: [ChatService],
   templateUrl: './chat-automation.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ChatAutomation implements OnInit {
   private chatService = inject(ChatService);
+  private notification = inject(NotificationService);
 
-  allConversations: Conversation[] = [];
-  activeConversationId = 'beatriz-mendonca';
-  messages: ChatMessage[] = [];
-  patient!: PatientInfo;
-  filterTab: FilterTab = 'todas';
-  newMessage = '';
-  showQuickActions = false;
+  allConversations = signal<Conversation[]>([]);
+  activeConversationId = signal<number | null>(null);
+  messages = signal<ChatMessage[]>([]);
+  patient = signal<PatientInfo | null>(null);
+  filterTab = signal<FilterTab>('todas');
+  newMessage = signal('');
+
+  conversations = computed(() => {
+    if (this.filterTab() === 'aguardando') {
+      return this.allConversations().filter((c) => c.status === 'waiting');
+    }
+    return this.allConversations();
+  });
+
+  activeConversation = computed(() =>
+    this.allConversations().find((c) => c.id === this.activeConversationId()),
+  );
+
+  isBotActive = computed(() => this.activeConversation()?.status === 'bot');
 
   ngOnInit(): void {
-    this.allConversations = this.chatService.getConversations();
-    this.selectConversation(this.activeConversationId);
+    this.loadConversations();
   }
 
-  get conversations(): Conversation[] {
-    if (this.filterTab === 'aguardando') {
-      return this.allConversations.filter((c) => c.status === 'waiting');
-    }
-    return this.allConversations;
+  private loadConversations(): void {
+    this.chatService.getConversations().subscribe({
+      next: (list) => {
+        this.allConversations.set(list);
+        if (list.length) this.selectConversation(list[0].id);
+      },
+      error: (err: HttpErrorResponse) => {
+        this.notification.error('Erro ao carregar conversas.');
+      },
+    });
   }
 
-  get activeConversation(): Conversation | undefined {
-    return this.allConversations.find((c) => c.id === this.activeConversationId);
-  }
+  selectConversation(id: number): void {
+    this.activeConversationId.set(id);
+    this.messages.set([]);
+    this.patient.set(null);
 
-  get isBotActive(): boolean {
-    return this.activeConversation?.status === 'bot';
-  }
+    this.chatService.getMessages(id).subscribe({
+      next: (msgs) => this.messages.set(msgs),
+      error: () => this.notification.error('Erro ao carregar mensagens.'),
+    });
 
-  selectConversation(id: string): void {
-    this.activeConversationId = id;
-    this.messages = this.chatService.getMessages(id);
-    this.patient = this.chatService.getPatient(id);
-    this.showQuickActions = false;
+    this.chatService.getPatient(id).subscribe({
+      next: (p) => this.patient.set(p),
+      error: () => this.notification.error('Erro ao carregar dados do paciente.'),
+    });
   }
 
   setFilter(tab: FilterTab): void {
-    this.filterTab = tab;
+    this.filterTab.set(tab);
   }
 
   takeControl(): void {
-    const conv = this.allConversations.find((c) => c.id === this.activeConversationId);
-    if (conv) conv.status = 'human';
+    const id = this.activeConversationId();
+    if (!id) return;
+
+    const status = this.isBotActive() ? 'human' : 'bot';
+    this.chatService.updateStatus(id, { status }).subscribe({
+      next: (updated) => {
+        this.allConversations.update((list) =>
+          list.map((c) => (c.id === updated.id ? { ...c, status: updated.status } : c)),
+        );
+      },
+      error: () => this.notification.error('Erro ao atualizar status da conversa.'),
+    });
   }
 
   sendMessage(): void {
-    const text = this.newMessage.trim();
-    if (!text) return;
-    this.messages.push({
-      id: Date.now().toString(),
-      sender: 'patient',
-      text,
-      time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+    const text = this.newMessage().trim();
+    const id = this.activeConversationId();
+    if (!text || !id) return;
+
+    this.chatService.sendMessage(id, { text }).subscribe({
+      next: (msg) => {
+        this.messages.update((list) => [...list, msg]);
+        this.newMessage.set('');
+      },
+      error: () => this.notification.error('Erro ao enviar mensagem.'),
     });
-    this.newMessage = '';
+  }
+
+  blockContact(): void {
+    const id = this.activeConversationId();
+    if (!id) return;
+
+    this.chatService.blockContact(id).subscribe({
+      next: (updated) => {
+        this.patient.set(updated);
+        this.notification.success('Contato bloqueado.');
+      },
+      error: () => this.notification.error('Erro ao bloquear contato.'),
+    });
   }
 
   statusLabel(status: ConversationStatus): string {
@@ -81,14 +133,6 @@ export class ChatAutomation implements OnInit {
       bot: 'bg-success-subtle text-success',
       human: 'bg-primary-subtle text-primary-text',
       waiting: 'bg-warning-subtle text-warning',
-    }[status];
-  }
-
-  paymentClass(status: PatientInfo['paymentStatus']): string {
-    return {
-      'Em dia': 'bg-success-subtle text-success',
-      Pendente: 'bg-warning-subtle text-warning',
-      Atrasado: 'bg-danger-subtle text-(--color-danger)',
     }[status];
   }
 }

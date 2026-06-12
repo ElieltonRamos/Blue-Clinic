@@ -209,6 +209,7 @@ model Patient {
   whatsappActive Boolean       @default(false)
   lgpdConsent    Boolean       @default(false)
   memberSince    DateTime      @default(now())
+  blocked        Boolean       @default(false)
 
   company       Company           @relation(fields: [companyId], references: [id])
   appointments  Appointment[]
@@ -253,6 +254,7 @@ model Appointment {
   cancellationReason String?            @db.Text
   origin             AppointmentOrigin?
   rating             Decimal?           @db.Decimal(3, 2)
+  reminderSent       Boolean            @default(false)
 
   doctor          Doctor           @relation(fields: [doctorId], references: [id])
   patient         Patient          @relation(fields: [patientId], references: [id])
@@ -355,15 +357,10 @@ model Expense {
 model WhatsappConfig {
   id            Int     @id @default(autoincrement())
   companyId     Int     @unique
-  instanceId    String
   phoneNumberId String?
   accessToken   String? @db.Text
-  webhookUrl    String?
   botEnabled    Boolean @default(true)
-  autoConfirm   Boolean @default(false)
   autoReminder  Boolean @default(true)
-  reminderHours Int     @default(24)
-  humanFallback Boolean @default(true)
 
   company Company @relation(fields: [companyId], references: [id])
 
