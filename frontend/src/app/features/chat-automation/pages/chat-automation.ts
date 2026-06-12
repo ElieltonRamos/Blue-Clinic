@@ -2,16 +2,20 @@ import {
   Component,
   inject,
   OnInit,
+  OnDestroy,
   signal,
   computed,
   ChangeDetectionStrategy,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { forkJoin, Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChatService } from '../services/chat.service';
 import { ChatMessage, Conversation, ConversationStatus, PatientInfo } from '../types/chat.types';
 import { NotificationService } from '../../../shared/toastr/notification.service';
+import { ChatSocketService } from '../../../core/services/chat-socket.service';
 
 type FilterTab = 'todas' | 'aguardando';
 
@@ -22,9 +26,11 @@ type FilterTab = 'todas' | 'aguardando';
   templateUrl: './chat-automation.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ChatAutomation implements OnInit {
+export class ChatAutomation implements OnInit, OnDestroy {
   private chatService = inject(ChatService);
+  private socketService = inject(ChatSocketService);
   private notification = inject(NotificationService);
+  private destroy$ = new Subject<void>();
 
   allConversations = signal<Conversation[]>([]);
   activeConversationId = signal<number | null>(null);
@@ -33,12 +39,11 @@ export class ChatAutomation implements OnInit {
   filterTab = signal<FilterTab>('todas');
   newMessage = signal('');
 
-  conversations = computed(() => {
-    if (this.filterTab() === 'aguardando') {
-      return this.allConversations().filter((c) => c.status === 'waiting');
-    }
-    return this.allConversations();
-  });
+  conversations = computed(() =>
+    this.filterTab() === 'aguardando'
+      ? this.allConversations().filter((c) => c.status === 'waiting')
+      : this.allConversations(),
+  );
 
   activeConversation = computed(() =>
     this.allConversations().find((c) => c.id === this.activeConversationId()),
@@ -48,33 +53,65 @@ export class ChatAutomation implements OnInit {
 
   ngOnInit(): void {
     this.loadConversations();
+    this.listenSocket();
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   private loadConversations(): void {
     this.chatService.getConversations().subscribe({
       next: (list) => {
         this.allConversations.set(list);
+        // companyId vem do token; ajuste conforme seu CurrentUser
+        const companyId = list[0]?.id; // <- substitua pelo companyId real
+        if (companyId) this.socketService.joinCompany(companyId);
         if (list.length) this.selectConversation(list[0].id);
       },
-      error: (err: HttpErrorResponse) => {
-        this.notification.error('Erro ao carregar conversas.');
-      },
+      error: () => this.notification.error('Erro ao carregar conversas.'),
     });
   }
 
+  private listenSocket(): void {
+    this.socketService
+      .onNewMessage()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((msg) => {
+        if (msg.conversationId === this.activeConversationId()) {
+          this.messages.update((list) => [...list, msg]);
+        }
+      });
+
+    this.socketService
+      .onConversationUpdated()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((updated) => {
+        this.allConversations.update((list) =>
+          list.map((c) => (c.id === updated.id ? updated : c)),
+        );
+      });
+  }
+
   selectConversation(id: number): void {
+    const prev = this.activeConversationId();
+    if (prev) this.socketService.leaveConversation(prev);
+
     this.activeConversationId.set(id);
     this.messages.set([]);
     this.patient.set(null);
+    this.socketService.joinConversation(id);
 
-    this.chatService.getMessages(id).subscribe({
-      next: (msgs) => this.messages.set(msgs),
-      error: () => this.notification.error('Erro ao carregar mensagens.'),
-    });
-
-    this.chatService.getPatient(id).subscribe({
-      next: (p) => this.patient.set(p),
-      error: () => this.notification.error('Erro ao carregar dados do paciente.'),
+    forkJoin({
+      msgs: this.chatService.getMessages(id),
+      patient: this.chatService.getPatient(id),
+    }).subscribe({
+      next: ({ msgs, patient }) => {
+        this.messages.set(msgs);
+        this.patient.set(patient);
+      },
+      error: () => this.notification.error('Erro ao carregar conversa.'),
     });
   }
 
@@ -85,14 +122,8 @@ export class ChatAutomation implements OnInit {
   takeControl(): void {
     const id = this.activeConversationId();
     if (!id) return;
-
     const status = this.isBotActive() ? 'human' : 'bot';
     this.chatService.updateStatus(id, { status }).subscribe({
-      next: (updated) => {
-        this.allConversations.update((list) =>
-          list.map((c) => (c.id === updated.id ? { ...c, status: updated.status } : c)),
-        );
-      },
       error: () => this.notification.error('Erro ao atualizar status da conversa.'),
     });
   }
@@ -101,12 +132,8 @@ export class ChatAutomation implements OnInit {
     const text = this.newMessage().trim();
     const id = this.activeConversationId();
     if (!text || !id) return;
-
     this.chatService.sendMessage(id, { text }).subscribe({
-      next: (msg) => {
-        this.messages.update((list) => [...list, msg]);
-        this.newMessage.set('');
-      },
+      next: () => this.newMessage.set(''),
       error: () => this.notification.error('Erro ao enviar mensagem.'),
     });
   }
@@ -114,7 +141,6 @@ export class ChatAutomation implements OnInit {
   blockContact(): void {
     const id = this.activeConversationId();
     if (!id) return;
-
     this.chatService.blockContact(id).subscribe({
       next: (updated) => {
         this.patient.set(updated);

@@ -6,12 +6,14 @@ import { MessageSender } from '../../../../generated/prisma/client.js';
 
 export class ChatMessageResponseDto {
   @ApiProperty() id: number;
+  @ApiProperty() conversationId: number;
   @ApiProperty({ enum: MessageSender }) sender: MessageSender;
   @ApiProperty() text: string;
   @ApiProperty() sentAt: Date;
 
   constructor(msg: any) {
     this.id = msg.id;
+    this.conversationId = msg.conversationId;
     this.sender = msg.sender;
     this.text = msg.text;
     this.sentAt = msg.sentAt;

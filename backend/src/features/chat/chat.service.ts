@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../core/database/prisma.service.js';
 import { ConversationStatus } from '../../../generated/prisma/client.js';
@@ -7,12 +5,14 @@ import { ConversationResponseDto } from './dto/conversation-response.dto.js';
 import { ChatMessageResponseDto } from './dto/chat-message-response.dto.js';
 import { PatientInfoResponseDto } from './dto/patient-info-response.dto.js';
 import { WhatssapService } from '../whatssap/whatssap.service.js';
+import { ChatGateway } from './chat.gateway.js';
 
 @Injectable()
 export class ChatService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly whatsapp: WhatssapService,
+    private readonly gateway: ChatGateway,
   ) {}
 
   async getConversations(
@@ -96,7 +96,9 @@ export class ChatService {
       data: { status },
       include: { patient: { select: { name: true } } },
     });
-    return new ConversationResponseDto(updated);
+    const dto = new ConversationResponseDto(updated);
+    this.gateway.emitConversationUpdated(companyId, dto);
+    return dto;
   }
 
   async sendMessage(
@@ -106,25 +108,24 @@ export class ChatService {
   ): Promise<ChatMessageResponseDto> {
     const conversation = await this.findConversation(companyId, conversationId);
 
-    const config = await this.prisma.client.whatsappConfig.findUnique({
-      where: { companyId },
-      select: { accessToken: true, phoneNumberId: true },
-    });
+    await this.trySendWhatsapp(companyId, conversation.phone, text);
 
-    if (config?.accessToken && config?.phoneNumberId) {
-      await this.whatsapp.sendText(
-        conversation.phone,
-        text,
-        config.accessToken,
-        config.phoneNumberId,
-      );
-    }
+    const [message] = await this.prisma.client.$transaction([
+      this.prisma.client.chatMessage.create({
+        data: { conversationId, sender: 'human', text, read: true },
+      }),
+      this.prisma.client.conversation.update({
+        where: { id: conversationId },
+        data: {
+          lastMessage: text,
+          lastMessageAt: new Date(),
+        },
+      }),
+    ]);
 
-    const message = await this.prisma.client.chatMessage.create({
-      data: { conversationId, sender: 'human', text, read: true },
-    });
-
-    return new ChatMessageResponseDto(message);
+    const dto = new ChatMessageResponseDto(message);
+    this.gateway.emitNewMessage(companyId, conversationId, dto);
+    return dto;
   }
 
   async blockContact(
@@ -148,6 +149,26 @@ export class ChatService {
     });
 
     return new PatientInfoResponseDto({ ...patient, lastVisit: null });
+  }
+
+  private async trySendWhatsapp(
+    companyId: number,
+    phone: string,
+    text: string,
+  ): Promise<void> {
+    const config = await this.prisma.client.whatsappConfig.findUnique({
+      where: { companyId },
+      select: { accessToken: true, phoneNumberId: true },
+    });
+
+    if (config?.accessToken && config?.phoneNumberId) {
+      await this.whatsapp.sendText(
+        phone,
+        text,
+        config.accessToken,
+        config.phoneNumberId,
+      );
+    }
   }
 
   private async findConversation(companyId: number, conversationId: number) {

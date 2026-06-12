@@ -3,6 +3,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../core/database/prisma.service.js';
 import { BotService } from './bot.service.js';
+import { ChatGateway } from '../chat/chat.gateway.js';
+import { ChatMessageResponseDto } from '../chat/dto/chat-message-response.dto.js';
+import { ConversationResponseDto } from '../chat/dto/conversation-response.dto.js';
 
 @Injectable()
 export class WhatssapService {
@@ -11,6 +14,7 @@ export class WhatssapService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly botService: BotService,
+    private readonly gateway: ChatGateway,
   ) {}
 
   async sendTemplate(
@@ -107,10 +111,10 @@ export class WhatssapService {
     const phone = msg.from as string;
     const text = msg.text.body as string;
 
-    // Resolve company pelo phoneNumberId
     const config = await this.prisma.client.whatsappConfig.findFirst({
       where: { phoneNumberId },
     });
+
     if (!config) {
       this.logger.warn(
         `Nenhuma empresa encontrada para phoneNumberId ${phoneNumberId}`,
@@ -122,7 +126,6 @@ export class WhatssapService {
 
     const { companyId, accessToken, botEnabled } = config;
 
-    // Busca ou cria conversa
     let conversation = await this.prisma.client.conversation.findFirst({
       where: { phone, companyId },
     });
@@ -146,7 +149,7 @@ export class WhatssapService {
         },
       });
     } else {
-      await this.prisma.client.conversation.update({
+      conversation = await this.prisma.client.conversation.update({
         where: { id: conversation.id },
         data: {
           lastMessage: text,
@@ -156,8 +159,19 @@ export class WhatssapService {
       });
     }
 
-    // Salva a mensagem
-    await this.prisma.client.chatMessage.create({
+    const updatedConv = await this.prisma.client.conversation.findUnique({
+      where: { id: conversation.id },
+      include: { patient: { select: { name: true } } },
+    });
+
+    if (updatedConv) {
+      this.gateway.emitConversationUpdated(
+        companyId,
+        new ConversationResponseDto(updatedConv),
+      );
+    }
+
+    const savedMessage = await this.prisma.client.chatMessage.create({
       data: {
         conversationId: conversation.id,
         sender: 'patient',
@@ -166,11 +180,16 @@ export class WhatssapService {
       },
     });
 
+    this.gateway.emitNewMessage(
+      companyId,
+      conversation.id,
+      new ChatMessageResponseDto(savedMessage),
+    );
+
     this.logger.log(
       `Mensagem recebida de ${phone} (company ${companyId}): ${text}`,
     );
 
-    // Responde via bot se habilitado
     if (botEnabled && accessToken && conversation.status === 'bot') {
       await this.handleBot(
         conversation.id,
@@ -199,14 +218,16 @@ export class WhatssapService {
         text,
         async (msg) => {
           await this.sendText(phone, msg, accessToken, phoneNumberId);
-          await this.prisma.client.chatMessage.create({
-            data: {
-              conversationId,
-              sender: 'bot',
-              text: msg,
-              read: true,
-            },
+
+          const saved = await this.prisma.client.chatMessage.create({
+            data: { conversationId, sender: 'bot', text: msg, read: true },
           });
+
+          this.gateway.emitNewMessage(
+            companyId,
+            conversationId,
+            new ChatMessageResponseDto(saved),
+          );
         },
       );
     } catch (err) {
@@ -223,9 +244,11 @@ export class WhatssapService {
       where: { companyId },
       select: { accessToken: true, phoneNumberId: true },
     });
+
     if (!config?.accessToken || !config?.phoneNumberId) {
       return { error: 'WhatsApp não configurado' };
     }
+
     await this.sendText(
       '553888663580',
       'Teste 🩺',

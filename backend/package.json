@@ -1,6 +1,6 @@
 {
   "name": "backend",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "description": "",
   "author": "",
   "private": true,
@@ -32,6 +32,7 @@
     "@nestjs/common": "^11.0.1",
     "@nestjs/core": "^11.0.1",
     "@nestjs/jwt": "^11.0.2",
+    "@nestjs/mapped-types": "*",
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/platform-socket.io": "^11.1.26",
     "@nestjs/schedule": "^6.1.3",

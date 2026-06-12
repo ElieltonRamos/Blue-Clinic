@@ -13,6 +13,7 @@ export interface Conversation {
 
 export interface ChatMessage {
   id: number;
+  conversationId: number;
   sender: MessageSender;
   text: string;
   sentAt: string;
