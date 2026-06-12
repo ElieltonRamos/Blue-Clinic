@@ -17,6 +17,8 @@ export interface ChatMessage {
   sender: MessageSender;
   text: string;
   sentAt: string;
+  senderName?: string | null;
+  senderRole?: string | null;
 }
 
 export interface PatientInfo {

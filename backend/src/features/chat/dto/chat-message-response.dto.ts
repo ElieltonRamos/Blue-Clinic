@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 // dto/chat-message-response.dto.ts
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { MessageSender } from '../../../../generated/prisma/client.js';
 
 export class ChatMessageResponseDto {
@@ -10,6 +10,8 @@ export class ChatMessageResponseDto {
   @ApiProperty({ enum: MessageSender }) sender: MessageSender;
   @ApiProperty() text: string;
   @ApiProperty() sentAt: Date;
+  @ApiPropertyOptional() senderName: string | null;
+  @ApiPropertyOptional() senderRole: string | null;
 
   constructor(msg: any) {
     this.id = msg.id;
@@ -17,5 +19,7 @@ export class ChatMessageResponseDto {
     this.sender = msg.sender;
     this.text = msg.text;
     this.sentAt = msg.sentAt;
+    this.senderName = msg.senderName ?? null;
+    this.senderRole = msg.senderRole ?? null;
   }
 }

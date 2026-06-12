@@ -401,6 +401,8 @@ model ChatMessage {
   text           String        @db.Text
   sentAt         DateTime      @default(now())
   read           Boolean       @default(false)
+  senderName     String?
+  senderRole     String?
 
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 

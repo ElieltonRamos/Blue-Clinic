@@ -35,6 +35,14 @@ import { PatientInfoResponseDto } from './dto/patient-info-response.dto.js';
 export class ChatController {
   constructor(private readonly chatService: ChatService) {}
 
+  @Patch(':id/read')
+  markAsRead(
+    @CurrentUser('companyId') companyId: number,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    return this.chatService.markAsRead(companyId, id);
+  }
+
   @Get()
   @ApiOperation({ summary: 'Listar conversas' })
   @ApiResponse({ status: HttpStatus.OK, type: [ConversationResponseDto] })
@@ -102,9 +110,17 @@ export class ChatController {
   sendMessage(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser('companyId') companyId: number,
+    @CurrentUser('username') username: string,
+    @CurrentUser('role') role: string,
     @Body() dto: SendMessageDto,
   ) {
-    return this.chatService.sendMessage(companyId, id, dto.text);
+    return this.chatService.sendMessage(
+      companyId,
+      id,
+      dto.text,
+      username,
+      role,
+    );
   }
 
   @Patch(':id/block')
@@ -119,6 +135,6 @@ export class ChatController {
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser('companyId') companyId: number,
   ) {
-    return this.chatService.blockContact(companyId, id);
+    return this.chatService.toggleBlock(companyId, id);
   }
 }

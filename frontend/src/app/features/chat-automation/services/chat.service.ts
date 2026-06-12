@@ -8,6 +8,7 @@ import {
   ConversationStatusUpdate,
   SendMessageDto,
 } from '../types/chat.types';
+import { Observable } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',
@@ -53,5 +54,9 @@ export class ChatService {
       `${this.apiUrl}/chat/conversations/${conversationId}/block`,
       {},
     );
+  }
+
+  markAsRead(conversationId: number): Observable<void> {
+    return this.http.patch<void>(`${this.apiUrl}/chat/conversations/${conversationId}/read`, {});
   }
 }

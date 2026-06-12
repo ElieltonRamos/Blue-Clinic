@@ -128,6 +128,7 @@ export class WhatssapService {
 
     let conversation = await this.prisma.client.conversation.findFirst({
       where: { phone, companyId },
+      include: { patient: { select: { blocked: true } } },
     });
 
     if (!conversation) {
@@ -147,8 +148,11 @@ export class WhatssapService {
           lastMessageAt: new Date(),
           unread: 1,
         },
+        include: { patient: { select: { blocked: true } } },
       });
     } else {
+      if (conversation.patient?.blocked) return;
+
       conversation = await this.prisma.client.conversation.update({
         where: { id: conversation.id },
         data: {
@@ -156,6 +160,7 @@ export class WhatssapService {
           lastMessageAt: new Date(),
           unread: { increment: 1 },
         },
+        include: { patient: { select: { blocked: true } } },
       });
     }
 

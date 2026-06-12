@@ -3,6 +3,9 @@ import {
   inject,
   OnInit,
   OnDestroy,
+  AfterViewChecked,
+  ViewChild,
+  ElementRef,
   signal,
   computed,
   ChangeDetectionStrategy,
@@ -11,11 +14,11 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { forkJoin, Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
-import { HttpErrorResponse } from '@angular/common/http';
 import { ChatService } from '../services/chat.service';
 import { ChatMessage, Conversation, ConversationStatus, PatientInfo } from '../types/chat.types';
 import { NotificationService } from '../../../shared/toastr/notification.service';
 import { ChatSocketService } from '../../../core/services/chat-socket.service';
+import { AuthService } from '../../../core/services/auth.service';
 
 type FilterTab = 'todas' | 'aguardando';
 
@@ -26,11 +29,15 @@ type FilterTab = 'todas' | 'aguardando';
   templateUrl: './chat-automation.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ChatAutomation implements OnInit, OnDestroy {
+export class ChatAutomation implements OnInit, OnDestroy, AfterViewChecked {
+  @ViewChild('messagesContainer') private messagesContainer!: ElementRef<HTMLDivElement>;
+
   private chatService = inject(ChatService);
   private socketService = inject(ChatSocketService);
   private notification = inject(NotificationService);
   private destroy$ = new Subject<void>();
+  private shouldScroll = false;
+  private authService = inject(AuthService);
 
   allConversations = signal<Conversation[]>([]);
   activeConversationId = signal<number | null>(null);
@@ -38,10 +45,11 @@ export class ChatAutomation implements OnInit, OnDestroy {
   patient = signal<PatientInfo | null>(null);
   filterTab = signal<FilterTab>('todas');
   newMessage = signal('');
+  isSending = signal(false);
 
   conversations = computed(() =>
     this.filterTab() === 'aguardando'
-      ? this.allConversations().filter((c) => c.status === 'waiting')
+      ? this.allConversations().filter((c) => c.unread > 0)
       : this.allConversations(),
   );
 
@@ -61,12 +69,23 @@ export class ChatAutomation implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
+  ngAfterViewChecked(): void {
+    if (this.shouldScroll) {
+      this.scrollToBottom();
+      this.shouldScroll = false;
+    }
+  }
+
+  private scrollToBottom(): void {
+    const el = this.messagesContainer?.nativeElement;
+    if (el) el.scrollTop = el.scrollHeight;
+  }
+
   private loadConversations(): void {
     this.chatService.getConversations().subscribe({
       next: (list) => {
         this.allConversations.set(list);
-        // companyId vem do token; ajuste conforme seu CurrentUser
-        const companyId = list[0]?.id; // <- substitua pelo companyId real
+        const companyId = this.authService.getTokenPayload()?.companyId;
         if (companyId) this.socketService.joinCompany(companyId);
         if (list.length) this.selectConversation(list[0].id);
       },
@@ -81,6 +100,7 @@ export class ChatAutomation implements OnInit, OnDestroy {
       .subscribe((msg) => {
         if (msg.conversationId === this.activeConversationId()) {
           this.messages.update((list) => [...list, msg]);
+          setTimeout(() => this.scrollToBottom());
         }
       });
 
@@ -91,6 +111,9 @@ export class ChatAutomation implements OnInit, OnDestroy {
         this.allConversations.update((list) =>
           list.map((c) => (c.id === updated.id ? updated : c)),
         );
+        if (updated.id !== this.activeConversationId() && updated.unread > 0) {
+          this.notification.info(`Nova mensagem de ${updated.patientName ?? updated.phone}`);
+        }
       });
   }
 
@@ -110,6 +133,8 @@ export class ChatAutomation implements OnInit, OnDestroy {
       next: ({ msgs, patient }) => {
         this.messages.set(msgs);
         this.patient.set(patient);
+        this.chatService.markAsRead(id).subscribe();
+        setTimeout(() => this.scrollToBottom());
       },
       error: () => this.notification.error('Erro ao carregar conversa.'),
     });
@@ -131,10 +156,18 @@ export class ChatAutomation implements OnInit, OnDestroy {
   sendMessage(): void {
     const text = this.newMessage().trim();
     const id = this.activeConversationId();
-    if (!text || !id) return;
+    if (!text || !id || this.isSending() || this.patient()?.blocked) return;
+
+    this.isSending.set(true);
     this.chatService.sendMessage(id, { text }).subscribe({
-      next: () => this.newMessage.set(''),
-      error: () => this.notification.error('Erro ao enviar mensagem.'),
+      next: () => {
+        this.newMessage.set('');
+        this.isSending.set(false);
+      },
+      error: () => {
+        this.notification.error('Erro ao enviar mensagem.');
+        this.isSending.set(false);
+      },
     });
   }
 
@@ -144,9 +177,9 @@ export class ChatAutomation implements OnInit, OnDestroy {
     this.chatService.blockContact(id).subscribe({
       next: (updated) => {
         this.patient.set(updated);
-        this.notification.success('Contato bloqueado.');
+        this.notification.success(updated.blocked ? 'Contato bloqueado.' : 'Contato desbloqueado.');
       },
-      error: () => this.notification.error('Erro ao bloquear contato.'),
+      error: () => this.notification.error('Erro ao atualizar bloqueio do contato.'),
     });
   }
 

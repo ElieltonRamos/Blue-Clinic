@@ -15,6 +15,31 @@ export class ChatService {
     private readonly gateway: ChatGateway,
   ) {}
 
+  async markAsRead(companyId: number, conversationId: number): Promise<void> {
+    await this.findConversation(companyId, conversationId);
+
+    await this.prisma.client.$transaction([
+      this.prisma.client.chatMessage.updateMany({
+        where: { conversationId, read: false },
+        data: { read: true },
+      }),
+      this.prisma.client.conversation.update({
+        where: { id: conversationId },
+        data: { unread: 0 },
+      }),
+    ]);
+
+    const updated = await this.prisma.client.conversation.findUnique({
+      where: { id: conversationId },
+      include: { patient: { select: { name: true } } },
+    });
+
+    this.gateway.emitConversationUpdated(
+      companyId,
+      new ConversationResponseDto(updated!),
+    );
+  }
+
   async getConversations(
     companyId: number,
     status?: ConversationStatus,
@@ -105,30 +130,48 @@ export class ChatService {
     companyId: number,
     conversationId: number,
     text: string,
+    senderName: string,
+    senderRole: string,
   ): Promise<ChatMessageResponseDto> {
     const conversation = await this.findConversation(companyId, conversationId);
 
-    await this.trySendWhatsapp(companyId, conversation.phone, text);
+    const formattedText = `${senderRole} - ${senderName}\n\n${text}`;
+    await this.trySendWhatsapp(companyId, conversation.phone, formattedText);
 
-    const [message] = await this.prisma.client.$transaction([
-      this.prisma.client.chatMessage.create({
-        data: { conversationId, sender: 'human', text, read: true },
-      }),
-      this.prisma.client.conversation.update({
-        where: { id: conversationId },
-        data: {
-          lastMessage: text,
-          lastMessageAt: new Date(),
-        },
-      }),
-    ]);
+    const [message, updatedConv] = await this.prisma.client.$transaction(
+      async (tx) => {
+        const msg = await tx.chatMessage.create({
+          data: {
+            conversationId,
+            sender: 'human',
+            text,
+            read: true,
+            senderName,
+            senderRole,
+          },
+        });
 
-    const dto = new ChatMessageResponseDto(message);
-    this.gateway.emitNewMessage(companyId, conversationId, dto);
-    return dto;
+        const conv = await tx.conversation.update({
+          where: { id: conversationId },
+          data: { lastMessage: text, lastMessageAt: new Date() },
+          include: { patient: { select: { name: true } } },
+        });
+
+        return [msg, conv];
+      },
+    );
+
+    const msgDto = new ChatMessageResponseDto(message);
+    this.gateway.emitNewMessage(companyId, conversationId, msgDto);
+    this.gateway.emitConversationUpdated(
+      companyId,
+      new ConversationResponseDto(updatedConv),
+    );
+
+    return msgDto;
   }
 
-  async blockContact(
+  async toggleBlock(
     companyId: number,
     conversationId: number,
   ): Promise<PatientInfoResponseDto> {
@@ -136,9 +179,16 @@ export class ChatService {
     if (!conversation.patientId)
       throw new NotFoundException('Paciente não encontrado');
 
+    const current = await this.prisma.client.patient.findUnique({
+      where: { id: conversation.patientId },
+      select: { blocked: true },
+    });
+
+    if (!current) throw new NotFoundException('Paciente não encontrado');
+
     const patient = await this.prisma.client.patient.update({
       where: { id: conversation.patientId },
-      data: { blocked: true },
+      data: { blocked: !current.blocked },
       select: {
         id: true,
         name: true,

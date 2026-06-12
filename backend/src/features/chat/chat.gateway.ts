@@ -41,9 +41,6 @@ export class ChatGateway {
     this.server
       .to(`conversation:${conversationId}`)
       .emit('new_message', message);
-    this.server
-      .to(`company:${companyId}`)
-      .emit('conversation_updated', { conversationId, lastMessage: message });
   }
 
   emitConversationUpdated(companyId: number, conversation: object) {

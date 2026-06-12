@@ -27,7 +27,7 @@ export class NotificationService {
 
   info(message: string, title = 'Informação') {
     this.toastr.info(message, title, {
-      timeOut: 1500,
+      timeOut: 3000,
       progressBar: true,
       positionClass: 'toast-bottom-right',
       toastClass: 'info-toast ngx-toastr'
