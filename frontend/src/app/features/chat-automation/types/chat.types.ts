@@ -19,10 +19,10 @@ export interface ChatMessage {
 }
 
 export interface PatientInfo {
-  id: number;
-  name: string;
-  phone: string;
-  memberSince: string;
+  id: number | null;
+  name: string | null;
+  phone: string | null;
+  memberSince: string | null;
   lastVisit: string | null;
   blocked: boolean;
 }

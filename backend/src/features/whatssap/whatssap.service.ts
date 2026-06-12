@@ -197,7 +197,17 @@ export class WhatssapService {
         companyId,
         phone,
         text,
-        (msg) => this.sendText(phone, msg, accessToken, phoneNumberId),
+        async (msg) => {
+          await this.sendText(phone, msg, accessToken, phoneNumberId);
+          await this.prisma.client.chatMessage.create({
+            data: {
+              conversationId,
+              sender: 'bot',
+              text: msg,
+              read: true,
+            },
+          });
+        },
       );
     } catch (err) {
       this.logger.error(

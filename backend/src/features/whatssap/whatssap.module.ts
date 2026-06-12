@@ -8,5 +8,6 @@ import { ReminderJob } from './reminder.job';
 @Module({
   controllers: [WhatssapController],
   providers: [WhatssapService, PrismaService, BotService, ReminderJob],
+  exports: [WhatssapService],
 })
 export class WhatssapModule {}

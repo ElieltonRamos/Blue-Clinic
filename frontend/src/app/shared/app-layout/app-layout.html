@@ -8,7 +8,7 @@
         <div class="leading-tight">
           <p class="text-[13px] font-semibold text-(--color-text-primary)">Blue Clinic</p>
           <p class="text-[9px] font-light text-(--color-text-muted) uppercase tracking-widest">
-            {{ company.name }}
+            {{ company().name }}
           </p>
         </div>
       </div>
@@ -185,7 +185,7 @@
       class="h-14 shrink-0 flex items-center gap-3 px-5 bg-bg-sidebar border-b border-(--color-border)"
     >
       <span class="text-sm font-semibold text-(--color-text-primary)">
-        {{ currentRouteTitle }}
+        {{ currentRouteTitle() }}
       </span>
 
       <div class="ml-auto flex items-center gap-2">
@@ -193,9 +193,9 @@
         <button
           (click)="toggleTheme()"
           class="w-8 h-8 flex items-center justify-center rounded-lg text-(--color-text-muted) hover:bg-(--color-bg-hover) hover:text-(--color-text-primary) transition-all"
-          [attr.aria-label]="isDark ? 'Ativar tema claro' : 'Ativar tema escuro'"
+          [attr.aria-label]="isDark() ? 'Ativar tema claro' : 'Ativar tema escuro'"
         >
-          @if (isDark) {
+          @if (isDark()) {
             <!-- Sun -->
             <svg
               class="w-4 h-4"
@@ -235,14 +235,14 @@
           <div
             class="w-7 h-7 rounded-md avatar-gradient flex items-center justify-center text-[11px] font-semibold text-(--color-text-inverse)"
           >
-            {{ currentUser.initials }}
+            {{ currentUser().initials }}
           </div>
           <div class="leading-tight">
             <p class="text-[11px] font-medium text-(--color-text-primary)">
-              {{ currentUser.name }}
+              {{ currentUser().name }}
             </p>
             <p class="text-[9px] text-(--color-text-muted) uppercase tracking-wider">
-              {{ currentUser.role }}
+              {{ currentUser().role }}
             </p>
           </div>
         </div>

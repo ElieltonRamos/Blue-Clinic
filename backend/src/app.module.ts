@@ -11,6 +11,7 @@ import { FinanceModule } from './features/financial/finance.module';
 import { ReportsModule } from './features/reports/reports.module';
 import { DashboardModule } from './features/dashboard/dashboard.module';
 import { WhatssapModule } from './features/whatssap/whatssap.module';
+import { ChatModule } from './features/chat/chat.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { WhatssapModule } from './features/whatssap/whatssap.module';
     ReportsModule,
     DashboardModule,
     WhatssapModule,
+    ChatModule,
   ],
   controllers: [AppController],
   providers: [AppService],

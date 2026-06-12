@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, signal } from '@angular/core';
 import { RouterModule, Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { AuthService } from '../../core/services/auth.service';
@@ -17,17 +17,13 @@ interface NavItem {
   standalone: true,
   imports: [RouterModule],
   templateUrl: './app-layout.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AppLayout implements OnInit {
-  company = { name: '' };
-  isDark = true;
-  currentRouteTitle = 'Visão Geral da Clínica';
-
-  currentUser = {
-    initials: '',
-    name: '',
-    role: '',
-  };
+  company = signal({ name: '' });
+  isDark = signal(true);
+  currentRouteTitle = signal('Visão Geral da Clínica');
+  currentUser = signal({ initials: '', name: '', role: '' });
 
   mainNav: NavItem[] = [
     {
@@ -128,28 +124,28 @@ export class AppLayout implements OnInit {
         .filter((item) => item.route !== '/')
         .sort((a, b) => b.route.length - a.route.length)
         .find((item) => url.startsWith(item.route));
-      this.currentRouteTitle = match?.title ?? '';
+      this.currentRouteTitle.set(match?.title ?? '');
     });
   }
 
   ngOnInit(): void {
     const payload = this.auth.getTokenPayload();
     if (payload) {
-      this.currentUser = {
+      this.currentUser.set({
         name: payload.username,
         role: payload.role ?? '',
         initials: payload.username.slice(0, 2).toUpperCase(),
-      };
+      });
     }
 
     this.settings.getCompany().subscribe({
-      next: (company) => (this.company.name = company.tradeName),
+      next: (company) => this.company.set({ name: company.tradeName }),
       error: () => {},
     });
   }
 
   toggleTheme(): void {
-    this.isDark = !this.isDark;
-    document.documentElement.classList.toggle('light', !this.isDark);
+    this.isDark.update((v) => !v);
+    document.documentElement.classList.toggle('light', !this.isDark());
   }
 }
