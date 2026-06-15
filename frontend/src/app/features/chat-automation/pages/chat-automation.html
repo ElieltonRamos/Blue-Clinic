@@ -160,8 +160,22 @@
                   {{ msg.text }}
                 </p>
               </div>
-              <p class="text-[10px] text-(--color-text-muted) mt-1 mr-1 text-right">
+              <p
+                class="text-[10px] text-(--color-text-muted) mt-1 mr-1 text-right flex items-center justify-end gap-1"
+              >
                 {{ msg.sentAt | date: 'HH:mm' }}
+                @if (msg.status === 'failed') {
+                  <span class="text-(--color-danger)" title="Não entregue">✗</span>
+                }
+                @if (msg.status === 'sent') {
+                  <span title="Enviado">✓</span>
+                }
+                @if (msg.status === 'delivered') {
+                  <span title="Entregue">✓✓</span>
+                }
+                @if (msg.status === 'read') {
+                  <span class="text-(--color-primary)" title="Lido">✓✓</span>
+                }
               </p>
             </div>
           </div>
@@ -170,13 +184,19 @@
     </div>
 
     <div class="px-5 py-4 border-t border-(--color-border) bg-bg-sidebar shrink-0">
-      @if (patient()?.blocked) {
+      @if (windowExpiredConversationId() === activeConversationId()) {
         <div
-          class="flex items-center justify-center gap-2 py-3 rounded-xl bg-danger-subtle border border-(--color-danger)"
+          class="mb-3 flex items-center justify-between gap-3 py-3 px-4 rounded-xl bg-warning-subtle border border-warning"
         >
-          <span class="text-[12px] text-(--color-danger) font-medium"
-            >🚫 Contato bloqueado — envio desativado</span
+          <span class="text-[12px] text-warning font-medium">
+            ⚠️ Janela de 24h expirada — envie um template para retomar
+          </span>
+          <button
+            (click)="openTemplateModal()"
+            class="text-[12px] font-medium px-3 py-1.5 rounded-lg bg-warning text-(--color-text-inverse) hover:opacity-90 transition-opacity"
           >
+            Enviar Template
+          </button>
         </div>
       } @else {
         <div

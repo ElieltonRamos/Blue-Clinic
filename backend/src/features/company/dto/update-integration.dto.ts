@@ -36,4 +36,9 @@ export class UpdateIntegrationDto {
   @IsOptional()
   @IsBoolean()
   humanFallback?: boolean;
+
+  @ApiPropertyOptional({ example: '123456789' })
+  @IsOptional()
+  @IsString()
+  whatsappBusinessAccountId?: string;
 }

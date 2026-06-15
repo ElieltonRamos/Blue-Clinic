@@ -48,6 +48,7 @@ export interface NewMemberForm {
 export interface IntegrationStatus {
   id: number;
   phoneNumberId: string | null;
+  whatsappBusinessAccountId: string | null;
   botEnabled: boolean;
   autoReminder: boolean;
   createdAt: Date;
@@ -57,6 +58,7 @@ export interface IntegrationStatus {
 export interface UpsertIntegrationDto {
   phoneNumberId?: string;
   accessToken?: string;
+  whatsappBusinessAccountId?: string;
   botEnabled?: boolean;
   autoReminder?: boolean;
 }

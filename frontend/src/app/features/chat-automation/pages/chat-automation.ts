@@ -15,7 +15,13 @@ import { FormsModule } from '@angular/forms';
 import { forkJoin, Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { ChatService } from '../services/chat.service';
-import { ChatMessage, Conversation, ConversationStatus, PatientInfo } from '../types/chat.types';
+import {
+  ChatMessage,
+  Conversation,
+  ConversationStatus,
+  MessageStatus,
+  PatientInfo,
+} from '../types/chat.types';
 import { NotificationService } from '../../../shared/toastr/notification.service';
 import { ChatSocketService } from '../../../core/services/chat-socket.service';
 import { AuthService } from '../../../core/services/auth.service';
@@ -46,6 +52,7 @@ export class ChatAutomation implements OnInit, OnDestroy, AfterViewChecked {
   filterTab = signal<FilterTab>('todas');
   newMessage = signal('');
   isSending = signal(false);
+  windowExpiredConversationId = signal<number | null>(null);
 
   conversations = computed(() =>
     this.filterTab() === 'aguardando'
@@ -115,6 +122,39 @@ export class ChatAutomation implements OnInit, OnDestroy, AfterViewChecked {
           this.notification.info(`Nova mensagem de ${updated.patientName ?? updated.phone}`);
         }
       });
+
+    this.socketService
+      .onMessageStatusUpdated()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((update) => {
+        this.messages.update((list) =>
+          list.map((m) =>
+            m.id === update.messageId ? { ...m, status: update.status as MessageStatus } : m,
+          ),
+        );
+
+        if (update.errorCode === 131047) {
+          this.windowExpiredConversationId.set(this.activeConversationId());
+        }
+      });
+  }
+
+  sendTemplate(templateName: string, components: object[] = []): void {
+    const id = this.activeConversationId();
+    if (!id) return;
+    this.chatService.sendTemplate(id, templateName, components).subscribe({
+      next: () => {
+        this.windowExpiredConversationId.set(null);
+        this.notification.success('Template enviado.');
+      },
+      error: () => this.notification.error('Erro ao enviar template.'),
+    });
+  }
+
+  openTemplateModal(): void {
+    // por enquanto abre um prompt simples; substitua por modal quando tiver a lista de templates
+    const templateName = prompt('Nome do template:');
+    if (templateName) this.sendTemplate(templateName);
   }
 
   selectConversation(id: number): void {

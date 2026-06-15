@@ -41,4 +41,15 @@ export class ChatSocketService implements OnDestroy {
   ngOnDestroy(): void {
     this.socket.disconnect();
   }
+
+  onMessageStatusUpdated(): Observable<{ messageId: number; status: string; errorCode?: number }> {
+    return new Observable((observer) => {
+      this.socket.on(
+        'message_status_updated',
+        (payload: { messageId: number; status: string; errorCode?: number }) =>
+          observer.next(payload),
+      );
+      return () => this.socket.off('message_status_updated');
+    });
+  }
 }

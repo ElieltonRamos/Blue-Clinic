@@ -41,6 +41,7 @@ export class CompanyService {
     dto: {
       phoneNumberId?: string;
       accessToken?: string;
+      whatsappBusinessAccountId?: string;
       botEnabled?: boolean;
       autoReminder?: boolean;
     },
@@ -51,6 +52,7 @@ export class CompanyService {
         companyId,
         phoneNumberId: dto.phoneNumberId,
         accessToken: dto.accessToken,
+        whatsappBusinessAccountId: dto.whatsappBusinessAccountId,
         botEnabled: dto.botEnabled ?? true,
         autoReminder: dto.autoReminder ?? true,
       },
@@ -59,6 +61,9 @@ export class CompanyService {
           phoneNumberId: dto.phoneNumberId,
         }),
         ...(dto.accessToken !== undefined && { accessToken: dto.accessToken }),
+        ...(dto.whatsappBusinessAccountId !== undefined && {
+          whatsappBusinessAccountId: dto.whatsappBusinessAccountId,
+        }),
         ...(dto.botEnabled !== undefined && { botEnabled: dto.botEnabled }),
         ...(dto.autoReminder !== undefined && {
           autoReminder: dto.autoReminder,

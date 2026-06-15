@@ -7,6 +7,7 @@ import {
   PatientInfo,
   ConversationStatusUpdate,
   SendMessageDto,
+  WhatsappTemplate,
 } from '../types/chat.types';
 import { Observable } from 'rxjs';
 
@@ -58,5 +59,20 @@ export class ChatService {
 
   markAsRead(conversationId: number): Observable<void> {
     return this.http.patch<void>(`${this.apiUrl}/chat/conversations/${conversationId}/read`, {});
+  }
+
+  sendTemplate(
+    conversationId: number,
+    templateName: string,
+    components: object[],
+  ): Observable<void> {
+    return this.http.post<void>(
+      `${this.apiUrl}/whatssap/conversations/${conversationId}/send-template`,
+      { templateName, components },
+    );
+  }
+
+  getTemplates(): Observable<WhatsappTemplate[]> {
+    return this.http.get<WhatsappTemplate[]>(`${this.apiUrl}/whatssap/templates`);
   }
 }

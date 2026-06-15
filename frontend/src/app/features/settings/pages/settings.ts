@@ -157,6 +157,7 @@ export class Settings implements OnInit {
         if (integration) {
           this.integrationForm.set({
             phoneNumberId: integration.phoneNumberId ?? undefined,
+            whatsappBusinessAccountId: integration.whatsappBusinessAccountId ?? undefined,
             botEnabled: integration.botEnabled,
             autoReminder: integration.autoReminder,
           });

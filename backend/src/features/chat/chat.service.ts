@@ -136,7 +136,11 @@ export class ChatService {
     const conversation = await this.findConversation(companyId, conversationId);
 
     const formattedText = `${senderRole} - ${senderName}\n\n${text}`;
-    await this.trySendWhatsapp(companyId, conversation.phone, formattedText);
+    const wamid = await this.trySendWhatsapp(
+      companyId,
+      conversation.phone,
+      formattedText,
+    );
 
     const [message, updatedConv] = await this.prisma.client.$transaction(
       async (tx) => {
@@ -148,6 +152,8 @@ export class ChatService {
             read: true,
             senderName,
             senderRole,
+            wamid: wamid ?? null,
+            status: 'sent',
           },
         });
 
@@ -205,20 +211,22 @@ export class ChatService {
     companyId: number,
     phone: string,
     text: string,
-  ): Promise<void> {
+  ): Promise<string | null> {
     const config = await this.prisma.client.whatsappConfig.findUnique({
       where: { companyId },
       select: { accessToken: true, phoneNumberId: true },
     });
 
     if (config?.accessToken && config?.phoneNumberId) {
-      await this.whatsapp.sendText(
+      return await this.whatsapp.sendText(
         phone,
         text,
         config.accessToken,
         config.phoneNumberId,
       );
     }
+
+    return null;
   }
 
   private async findConversation(companyId: number, conversationId: number) {

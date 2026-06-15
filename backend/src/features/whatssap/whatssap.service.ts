@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Injectable, Logger } from '@nestjs/common';
@@ -60,7 +62,7 @@ export class WhatssapService {
     message: string,
     accessToken: string,
     phoneNumberId: string,
-  ): Promise<void> {
+  ): Promise<string | null> {
     let response: Response;
 
     try {
@@ -95,6 +97,9 @@ export class WhatssapService {
       );
       throw new Error(`WhatsApp HTTP error: ${response.status}`);
     }
+
+    const responseBody = await response.json().catch(() => ({}));
+    return responseBody?.messages?.[0]?.id ?? null;
   }
 
   async processWebhook(body: any): Promise<void> {
@@ -102,12 +107,18 @@ export class WhatssapService {
     const changes = entry?.changes?.[0];
     const value = changes?.value;
 
+    const phoneNumberId = value?.metadata?.phone_number_id as string;
+
+    if (value?.statuses?.length) {
+      await this.processStatus(value.statuses[0]);
+      return;
+    }
+
     if (!value?.messages?.length) return;
 
     const msg = value.messages[0];
     if (msg.type !== 'text') return;
 
-    const phoneNumberId = value.metadata?.phone_number_id as string;
     const phone = msg.from as string;
     const text = msg.text.body as string;
 
@@ -207,6 +218,72 @@ export class WhatssapService {
     }
   }
 
+  private async processStatus(status: any): Promise<void> {
+    const wamid = status.id as string;
+    const statusType = status.status as string;
+    const errorCode = status.errors?.[0]?.code as number | undefined;
+
+    this.logger.log(
+      `Status WhatsApp [${statusType}] wamid=${wamid} error=${errorCode ?? 'none'}`,
+    );
+
+    if (statusType === 'failed' && errorCode === 131047) {
+      const message = await this.prisma.client.chatMessage.findFirst({
+        where: { wamid },
+        include: {
+          conversation: { include: { company: { select: { id: true } } } },
+        },
+      });
+
+      if (!message) {
+        this.logger.warn(`Mensagem não encontrada para wamid=${wamid}`);
+        return;
+      }
+
+      await this.prisma.client.chatMessage.update({
+        where: { id: message.id },
+        data: { status: 'failed' },
+      });
+
+      const companyId = message.conversation.company.id;
+
+      this.gateway.emitMessageStatusUpdated(companyId, message.conversationId, {
+        messageId: message.id,
+        status: 'failed',
+        errorCode: 131047,
+      });
+
+      this.logger.warn(
+        `Janela 24h expirada para ${message.conversation.phone} [conversation ${message.conversationId}]`,
+      );
+
+      return;
+    }
+
+    if (['delivered', 'read', 'sent'].includes(statusType)) {
+      const message = await this.prisma.client.chatMessage.findFirst({
+        where: { wamid },
+        include: {
+          conversation: { include: { company: { select: { id: true } } } },
+        },
+      });
+
+      if (!message) return;
+
+      await this.prisma.client.chatMessage.update({
+        where: { id: message.id },
+        data: { status: statusType as any },
+      });
+
+      const companyId = message.conversation.company.id;
+
+      this.gateway.emitMessageStatusUpdated(companyId, message.conversationId, {
+        messageId: message.id,
+        status: statusType,
+      });
+    }
+  }
+
   private async handleBot(
     conversationId: number,
     phone: string,
@@ -222,10 +299,22 @@ export class WhatssapService {
         phone,
         text,
         async (msg) => {
-          await this.sendText(phone, msg, accessToken, phoneNumberId);
+          const wamid = await this.sendText(
+            phone,
+            msg,
+            accessToken,
+            phoneNumberId,
+          );
 
           const saved = await this.prisma.client.chatMessage.create({
-            data: { conversationId, sender: 'bot', text: msg, read: true },
+            data: {
+              conversationId,
+              sender: 'bot',
+              text: msg,
+              read: true,
+              wamid,
+              status: 'sent',
+            },
           });
 
           this.gateway.emitNewMessage(
@@ -261,5 +350,61 @@ export class WhatssapService {
       config.phoneNumberId,
     );
     return { ok: true };
+  }
+
+  async sendTemplateToConversation(
+    companyId: number,
+    conversationId: number,
+    templateName: string,
+    components: object[],
+  ): Promise<void> {
+    const conversation = await this.prisma.client.conversation.findFirst({
+      where: { id: conversationId, companyId },
+    });
+
+    if (!conversation) throw new Error('Conversa não encontrada');
+
+    const config = await this.prisma.client.whatsappConfig.findFirst({
+      where: { companyId },
+    });
+
+    if (!config?.accessToken || !config?.phoneNumberId) {
+      throw new Error('WhatsApp não configurado');
+    }
+
+    await this.sendTemplate(
+      conversation.phone,
+      templateName,
+      components,
+      config.accessToken,
+      config.phoneNumberId,
+    );
+  }
+
+  async getTemplates(companyId: number): Promise<any[]> {
+    const config = await this.prisma.client.whatsappConfig.findUnique({
+      where: { companyId },
+      select: { accessToken: true, whatsappBusinessAccountId: true },
+    });
+
+    if (!config?.accessToken || !config?.whatsappBusinessAccountId) {
+      throw new Error('WhatsApp não configurado');
+    }
+
+    const response = await fetch(
+      `https://graph.facebook.com/v25.0/${config.whatsappBusinessAccountId}/message_templates?fields=name,status,components&limit=100`,
+      {
+        headers: { Authorization: `Bearer ${config.accessToken}` },
+      },
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      this.logger.error('Erro ao buscar templates WhatsApp', error);
+      throw new Error('Erro ao buscar templates');
+    }
+
+    const body = await response.json();
+    return body?.data ?? [];
   }
 }

@@ -7,11 +7,15 @@ import {
   Res,
   HttpCode,
   UseGuards,
+  ParseIntPipe,
+  Param,
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { WhatssapService } from './whatssap.service';
 import { CurrentUser } from '../../core/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../core/guards/jwt-auth.guard';
+import { SendTemplateDto } from './dto/send-template.dto';
+import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 @Controller('whatssap')
 export class WhatssapController {
@@ -45,5 +49,29 @@ export class WhatssapController {
   @UseGuards(JwtAuthGuard)
   async testSend(@CurrentUser('companyId') companyId: number) {
     return this.whatssapService.testSend(companyId);
+  }
+
+  @Post('conversations/:id/send-template')
+  @UseGuards(JwtAuthGuard)
+  async sendTemplate(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser('companyId') companyId: number,
+    @Body() dto: SendTemplateDto,
+  ) {
+    return this.whatssapService.sendTemplateToConversation(
+      companyId,
+      id,
+      dto.templateName,
+      dto.components,
+    );
+  }
+
+  @Get('templates')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Listar templates aprovados do WhatsApp' })
+  @ApiResponse({ status: 200, description: 'Lista de templates' })
+  @ApiResponse({ status: 400, description: 'WhatsApp não configurado' })
+  async getTemplates(@CurrentUser('companyId') companyId: number) {
+    return this.whatssapService.getTemplates(companyId);
   }
 }

@@ -48,4 +48,14 @@ export class ChatGateway {
       .to(`company:${companyId}`)
       .emit('conversation_updated', conversation);
   }
+
+  emitMessageStatusUpdated(
+    companyId: number,
+    conversationId: number,
+    payload: { messageId: number; status: string; errorCode?: number },
+  ) {
+    this.server
+      .to(`conversation:${conversationId}`)
+      .emit('message_status_updated', payload);
+  }
 }
