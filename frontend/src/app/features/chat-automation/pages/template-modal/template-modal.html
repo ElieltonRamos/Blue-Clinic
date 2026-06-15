@@ -1,0 +1,193 @@
+<ng-template cdkPortal>
+  <div
+    class="bg-bg-card rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden border border-(--color-border-md) flex flex-col"
+    (click)="onModalClick($event)"
+  >
+    <!-- Header -->
+    <div
+      class="px-6 py-4 flex items-center justify-between border-b border-(--color-border) shrink-0"
+    >
+      <div>
+        <p class="text-[11px] font-bold text-(--color-text-muted) uppercase tracking-widest mb-0.5">
+          WhatsApp
+        </p>
+        <h2 class="text-base font-semibold text-(--color-text-primary)">Enviar Template</h2>
+      </div>
+      <button
+        (click)="closeModal()"
+        class="w-8 h-8 flex items-center justify-center rounded-lg text-(--color-text-muted) hover:bg-(--color-bg-hover-md) transition-colors"
+      >
+        ✕
+      </button>
+    </div>
+
+    <!-- Body -->
+    <div class="flex-1 overflow-y-auto p-6 space-y-5">
+      <!-- Loading -->
+      @if (isLoading()) {
+        <div class="flex justify-center py-10">
+          <div
+            class="w-6 h-6 border-2 border-(--color-primary) border-t-transparent rounded-full animate-spin"
+          ></div>
+        </div>
+      }
+
+      <!-- Lista de templates -->
+      @if (!isLoading()) {
+        <div class="space-y-2">
+          <p class="text-[10px] font-semibold text-(--color-text-muted) uppercase tracking-widest">
+            Selecione um template
+          </p>
+
+          @for (template of templates(); track template.id) {
+            <button
+              (click)="selectTemplate(template)"
+              class="w-full text-left p-3 rounded-xl border transition-all"
+              [class]="
+                selectedTemplate()?.id === template.id
+                  ? 'border-(--color-primary)/60 bg-(--color-primary-subtle)'
+                  : 'border-(--color-border) bg-(--color-bg-overlay) hover:border-(--color-border-md) hover:bg-(--color-bg-hover-md)'
+              "
+            >
+              <div class="flex items-center justify-between">
+                <p class="text-[13px] font-medium text-(--color-text-primary)">
+                  {{ template.name }}
+                </p>
+                @if (selectedTemplate()?.id === template.id) {
+                  <span class="text-(--color-primary-text) text-sm">✓</span>
+                }
+              </div>
+              <div class="flex gap-1.5 mt-1.5 flex-wrap">
+                @for (comp of template.components; track comp.type) {
+                  <span
+                    class="text-[9px] font-medium px-1.5 py-0.5 rounded bg-(--color-bg-hover-md) text-(--color-text-muted) uppercase tracking-wide"
+                  >
+                    {{ getComponentLabel(comp.type) }}
+                  </span>
+                }
+              </div>
+            </button>
+          }
+
+          @if (templates().length === 0 && !isLoading()) {
+            <p class="text-center text-[12px] text-(--color-text-muted) py-6">
+              Nenhum template aprovado encontrado.
+            </p>
+          }
+        </div>
+
+        <!-- Preview + Parâmetros -->
+        @if (selectedTemplate(); as tpl) {
+          <!-- Componentes do template -->
+          <div class="rounded-xl border border-(--color-border) overflow-hidden">
+            @for (comp of tpl.components; track comp.type) {
+              @if (comp.type !== 'BUTTONS') {
+                <div class="px-4 py-3 border-b border-(--color-border) last:border-b-0">
+                  <p
+                    class="text-[9px] font-semibold text-(--color-text-muted) uppercase tracking-widest mb-1"
+                  >
+                    {{ getComponentLabel(comp.type) }}
+                  </p>
+                  <p
+                    class="text-[12px] text-(--color-text-secondary) whitespace-pre-line leading-relaxed"
+                  >
+                    {{ comp.text ?? comp.format }}
+                  </p>
+                </div>
+              }
+              @if (comp.type === 'BUTTONS') {
+                <div class="px-4 py-3 border-t border-(--color-border)">
+                  <p
+                    class="text-[9px] font-semibold text-(--color-text-muted) uppercase tracking-widest mb-2"
+                  >
+                    Botões
+                  </p>
+                  <div class="flex gap-2 flex-wrap">
+                    @for (btn of comp.buttons; track btn.text) {
+                      <span
+                        class="text-[11px] px-3 py-1.5 rounded-lg border border-(--color-border-md) text-(--color-text-secondary) bg-(--color-bg-overlay)"
+                      >
+                        {{ btn.text }}
+                      </span>
+                    }
+                  </div>
+                </div>
+              }
+            }
+          </div>
+
+          <!-- Parâmetros dinâmicos -->
+          @if (paramKeys().length > 0) {
+            <div class="space-y-3">
+              <p
+                class="text-[10px] font-semibold text-(--color-text-muted) uppercase tracking-widest"
+              >
+                Preencha os parâmetros
+              </p>
+              @for (key of paramKeys(); track key) {
+                <div>
+                  <label class="block text-[11px] font-medium text-(--color-text-secondary) mb-1">
+                    Parâmetro {{ '{{' + key + '}}' }}
+                    @if (bodyComponent()?.example?.body_text?.[0]?.[+key - 1]; as ex) {
+                      <span class="text-(--color-text-muted) font-normal ml-1">ex: {{ ex }}</span>
+                    }
+                  </label>
+                  <input
+                    type="text"
+                    [value]="getParam(key)"
+                    (input)="setParam(key, $any($event.target).value)"
+                    class="w-full bg-(--color-bg-overlay) border border-(--color-border) rounded-xl px-3 py-2 text-[13px] text-(--color-input-text) placeholder:text-(--color-input-placeholder) outline-none focus:border-(--color-primary) transition-colors"
+                    [placeholder]="
+                      bodyComponent()?.example?.body_text?.[0]?.[+key - 1] ?? 'Valor para ' + key
+                    "
+                  />
+                </div>
+              }
+            </div>
+
+            <!-- Preview preenchido -->
+            <div
+              class="rounded-xl border border-(--color-border) bg-(--color-bg-overlay) px-4 py-3"
+            >
+              <p
+                class="text-[9px] font-semibold text-(--color-text-muted) uppercase tracking-widest mb-2"
+              >
+                Prévia
+              </p>
+              <p
+                class="text-[12px] text-(--color-text-primary) whitespace-pre-line leading-relaxed"
+              >
+                {{ preview() }}
+              </p>
+            </div>
+          }
+        }
+      }
+    </div>
+
+    <!-- Footer -->
+    <div
+      class="px-6 py-4 flex items-center justify-between border-t border-(--color-border) shrink-0"
+    >
+      <button
+        (click)="closeModal()"
+        class="px-4 py-2 rounded-lg text-[12px] font-medium text-(--color-text-secondary) hover:bg-(--color-bg-hover-md) transition-colors"
+      >
+        Cancelar
+      </button>
+
+      <button
+        (click)="send()"
+        [disabled]="!canSend() || isSending()"
+        class="px-5 py-2 rounded-lg text-[12px] font-medium bg-(--color-primary) text-(--color-text-inverse) hover:bg-(--color-primary-hover) transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-2"
+      >
+        @if (isSending()) {
+          <span
+            class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"
+          ></span>
+        }
+        {{ isSending() ? 'Enviando...' : '➤ Enviar Template' }}
+      </button>
+    </div>
+  </div>
+</ng-template>

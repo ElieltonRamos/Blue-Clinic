@@ -7,6 +7,7 @@ export interface MessageStatusUpdate {
   messageId: number;
   status: MessageStatus;
   errorCode?: number;
+  errorMessage?: string;
 }
 
 export interface ChatMessage {

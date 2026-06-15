@@ -274,3 +274,10 @@
     </div>
   }
 </div>
+
+<app-template-modal
+  [isOpen]="isTemplateModalOpen()"
+  [conversationId]="activeConversationId()"
+  (close)="isTemplateModalOpen.set(false)"
+  (sent)="windowExpiredConversationId.set(null)"
+/>

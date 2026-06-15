@@ -63,6 +63,7 @@ export class WhatssapController {
       id,
       dto.templateName,
       dto.components,
+      dto.resolvedText,
     );
   }
 

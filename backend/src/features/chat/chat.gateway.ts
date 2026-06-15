@@ -52,7 +52,12 @@ export class ChatGateway {
   emitMessageStatusUpdated(
     companyId: number,
     conversationId: number,
-    payload: { messageId: number; status: string; errorCode?: number },
+    payload: {
+      messageId: number;
+      status: string;
+      errorCode?: number;
+      errorMessage?: string;
+    },
   ) {
     this.server
       .to(`conversation:${conversationId}`)

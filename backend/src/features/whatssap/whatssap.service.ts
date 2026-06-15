@@ -25,7 +25,7 @@ export class WhatssapService {
     components: object[],
     accessToken: string,
     phoneNumberId: string,
-  ): Promise<void> {
+  ): Promise<string | null> {
     try {
       const response = await fetch(
         `https://graph.facebook.com/v25.0/${phoneNumberId}/messages`,
@@ -51,9 +51,15 @@ export class WhatssapService {
       if (!response.ok) {
         const error = await response.json();
         this.logger.error('Erro ao enviar template WhatsApp', error);
+        throw new Error(error?.error?.message ?? 'Erro ao enviar template');
       }
+
+      const body = await response.json();
+      return (body?.messages?.[0]?.id as string) ?? null;
     } catch (err) {
+      if (err instanceof Error) throw err;
       this.logger.error('Falha ao conectar com a API do WhatsApp', err);
+      throw new Error('Falha ao conectar com a API do WhatsApp');
     }
   }
 
@@ -222,18 +228,21 @@ export class WhatssapService {
     const wamid = status.id as string;
     const statusType = status.status as string;
     const errorCode = status.errors?.[0]?.code as number | undefined;
+    const errorMessage = status.errors?.[0]?.message as string | undefined;
 
     this.logger.log(
       `Status WhatsApp [${statusType}] wamid=${wamid} error=${errorCode ?? 'none'}`,
     );
 
-    if (statusType === 'failed' && errorCode === 131047) {
+    if (statusType === 'failed') {
+      this.logger.log(`Buscando mensagem para wamid=${wamid}`);
       const message = await this.prisma.client.chatMessage.findFirst({
         where: { wamid },
         include: {
           conversation: { include: { company: { select: { id: true } } } },
         },
       });
+      this.logger.log(`Mensagem encontrada: ${message?.id ?? 'null'}`);
 
       if (!message) {
         this.logger.warn(`Mensagem não encontrada para wamid=${wamid}`);
@@ -250,12 +259,15 @@ export class WhatssapService {
       this.gateway.emitMessageStatusUpdated(companyId, message.conversationId, {
         messageId: message.id,
         status: 'failed',
-        errorCode: 131047,
+        errorCode,
+        errorMessage: errorCode === 131047 ? undefined : errorMessage,
       });
 
-      this.logger.warn(
-        `Janela 24h expirada para ${message.conversation.phone} [conversation ${message.conversationId}]`,
-      );
+      if (errorCode === 131047) {
+        this.logger.warn(
+          `Janela 24h expirada para ${message.conversation.phone} [conversation ${message.conversationId}]`,
+        );
+      }
 
       return;
     }
@@ -357,6 +369,7 @@ export class WhatssapService {
     conversationId: number,
     templateName: string,
     components: object[],
+    resolvedText?: string,
   ): Promise<void> {
     const conversation = await this.prisma.client.conversation.findFirst({
       where: { id: conversationId, companyId },
@@ -372,13 +385,47 @@ export class WhatssapService {
       throw new Error('WhatsApp não configurado');
     }
 
-    await this.sendTemplate(
-      conversation.phone,
-      templateName,
-      components,
-      config.accessToken,
-      config.phoneNumberId,
+    let wamid: string | null = null;
+    let sendError: string | null = null;
+
+    try {
+      wamid = await this.sendTemplate(
+        conversation.phone,
+        templateName,
+        components,
+        config.accessToken,
+        config.phoneNumberId,
+      );
+    } catch (err: any) {
+      sendError = (err as Error).message ?? 'Erro ao enviar template';
+    }
+
+    const saved = await this.prisma.client.chatMessage.create({
+      data: {
+        conversationId,
+        sender: 'human',
+        text: resolvedText ?? `[Template: ${templateName}]`,
+        read: true,
+        wamid: wamid ?? undefined,
+        status: sendError ? 'failed' : 'sent',
+      },
+    });
+
+    this.gateway.emitNewMessage(
+      companyId,
+      conversationId,
+      new ChatMessageResponseDto(saved),
     );
+
+    if (sendError) {
+      this.gateway.emitMessageStatusUpdated(companyId, conversationId, {
+        messageId: saved.id,
+        status: 'failed',
+        errorCode: 0,
+        errorMessage: sendError,
+      });
+      throw new Error(sendError);
+    }
   }
 
   async getTemplates(companyId: number): Promise<any[]> {

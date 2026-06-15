@@ -65,10 +65,11 @@ export class ChatService {
     conversationId: number,
     templateName: string,
     components: object[],
+    resolvedText?: string,
   ): Observable<void> {
     return this.http.post<void>(
       `${this.apiUrl}/whatssap/conversations/${conversationId}/send-template`,
-      { templateName, components },
+      { templateName, components, resolvedText },
     );
   }
 

@@ -25,13 +25,14 @@ import {
 import { NotificationService } from '../../../shared/toastr/notification.service';
 import { ChatSocketService } from '../../../core/services/chat-socket.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { TemplateModal } from './template-modal/template-modal';
 
 type FilterTab = 'todas' | 'aguardando';
 
 @Component({
   selector: 'app-chat',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, TemplateModal],
   templateUrl: './chat-automation.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -53,6 +54,7 @@ export class ChatAutomation implements OnInit, OnDestroy, AfterViewChecked {
   newMessage = signal('');
   isSending = signal(false);
   windowExpiredConversationId = signal<number | null>(null);
+  isTemplateModalOpen = signal(false);
 
   conversations = computed(() =>
     this.filterTab() === 'aguardando'
@@ -133,6 +135,10 @@ export class ChatAutomation implements OnInit, OnDestroy, AfterViewChecked {
           ),
         );
 
+        if (update.status === 'failed' && update.errorMessage) {
+          this.notification.error(update.errorMessage);
+        }
+
         if (update.errorCode === 131047) {
           this.windowExpiredConversationId.set(this.activeConversationId());
         }
@@ -152,9 +158,7 @@ export class ChatAutomation implements OnInit, OnDestroy, AfterViewChecked {
   }
 
   openTemplateModal(): void {
-    // por enquanto abre um prompt simples; substitua por modal quando tiver a lista de templates
-    const templateName = prompt('Nome do template:');
-    if (templateName) this.sendTemplate(templateName);
+    this.isTemplateModalOpen.set(true);
   }
 
   selectConversation(id: number): void {

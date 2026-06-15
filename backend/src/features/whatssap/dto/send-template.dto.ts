@@ -43,4 +43,9 @@ export class SendTemplateDto {
   @ValidateNested({ each: true })
   @Type(() => TemplateComponentDto)
   components: TemplateComponentDto[] = [];
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  resolvedText?: string;
 }

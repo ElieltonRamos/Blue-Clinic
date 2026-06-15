@@ -2,7 +2,7 @@ import { Injectable, OnDestroy } from '@angular/core';
 import { io, Socket } from 'socket.io-client';
 import { Observable } from 'rxjs';
 import { environment } from './environment';
-import { ChatMessage, Conversation } from '../../features/chat-automation/types/chat.types';
+import { ChatMessage, Conversation, MessageStatusUpdate } from '../../features/chat-automation/types/chat.types';
 
 @Injectable({ providedIn: 'root' })
 export class ChatSocketService implements OnDestroy {
@@ -42,12 +42,10 @@ export class ChatSocketService implements OnDestroy {
     this.socket.disconnect();
   }
 
-  onMessageStatusUpdated(): Observable<{ messageId: number; status: string; errorCode?: number }> {
+  onMessageStatusUpdated(): Observable<MessageStatusUpdate> {
     return new Observable((observer) => {
-      this.socket.on(
-        'message_status_updated',
-        (payload: { messageId: number; status: string; errorCode?: number }) =>
-          observer.next(payload),
+      this.socket.on('message_status_updated', (payload: MessageStatusUpdate) =>
+        observer.next(payload),
       );
       return () => this.socket.off('message_status_updated');
     });
