@@ -12,6 +12,7 @@ import { ConversationResponseDto } from '../chat/dto/conversation-response.dto.j
 @Injectable()
 export class WhatssapService {
   private readonly logger = new Logger(WhatssapService.name);
+  private readonly INACTIVITY_MS = 4 * 60 * 60 * 1000; // 4h
 
   constructor(
     private readonly prisma: PrismaService,
@@ -170,13 +171,38 @@ export class WhatssapService {
     } else {
       if (conversation.patient?.blocked) return;
 
+      const isInactive =
+        conversation.lastMessageAt &&
+        Date.now() - new Date(conversation.lastMessageAt).getTime() >
+          this.INACTIVITY_MS;
+
+      const resetData: Record<string, any> = {
+        lastMessage: text,
+        lastMessageAt: new Date(),
+        unread: { increment: 1 },
+      };
+
+      if (isInactive) {
+        if (
+          conversation.status === 'human' ||
+          conversation.status === 'waiting'
+        ) {
+          resetData['status'] = 'bot';
+          this.logger.log(
+            `Conversa ${conversation.id} devolvida ao bot por inatividade de 4h (era ${conversation.status})`,
+          );
+        }
+        if (conversation.botStep !== null) {
+          resetData['botStep'] = null;
+          this.logger.log(
+            `botStep da conversa ${conversation.id} resetado por inatividade de 4h`,
+          );
+        }
+      }
+
       conversation = await this.prisma.client.conversation.update({
         where: { id: conversation.id },
-        data: {
-          lastMessage: text,
-          lastMessageAt: new Date(),
-          unread: { increment: 1 },
-        },
+        data: resetData,
         include: { patient: { select: { blocked: true } } },
       });
     }

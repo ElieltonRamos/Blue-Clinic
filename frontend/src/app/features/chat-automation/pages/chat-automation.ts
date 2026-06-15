@@ -58,7 +58,7 @@ export class ChatAutomation implements OnInit, OnDestroy, AfterViewChecked {
 
   conversations = computed(() =>
     this.filterTab() === 'aguardando'
-      ? this.allConversations().filter((c) => c.unread > 0)
+      ? this.allConversations().filter((c) => c.status === 'waiting' || c.unread > 0)
       : this.allConversations(),
   );
 
@@ -117,11 +117,20 @@ export class ChatAutomation implements OnInit, OnDestroy, AfterViewChecked {
       .onConversationUpdated()
       .pipe(takeUntil(this.destroy$))
       .subscribe((updated) => {
+        const previous = this.allConversations().find((c) => c.id === updated.id);
+
         this.allConversations.update((list) =>
           list.map((c) => (c.id === updated.id ? updated : c)),
         );
+
         if (updated.id !== this.activeConversationId() && updated.unread > 0) {
           this.notification.info(`Nova mensagem de ${updated.patientName ?? updated.phone}`);
+        }
+
+        if (previous?.status !== 'waiting' && updated.status === 'waiting') {
+          this.notification.warning(
+            `${updated.patientName ?? updated.phone} está aguardando atendimento`,
+          );
         }
       });
 
