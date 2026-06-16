@@ -9,6 +9,7 @@ import {
   signal,
   computed,
   ChangeDetectionStrategy,
+  ChangeDetectorRef,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -42,6 +43,7 @@ export class ChatAutomation implements OnInit, OnDestroy, AfterViewChecked {
   private chatService = inject(ChatService);
   private socketService = inject(ChatSocketService);
   private notification = inject(NotificationService);
+  private cdr = inject(ChangeDetectorRef);
   private destroy$ = new Subject<void>();
   private shouldScroll = false;
   private authService = inject(AuthService);
@@ -109,6 +111,7 @@ export class ChatAutomation implements OnInit, OnDestroy, AfterViewChecked {
       .subscribe((msg) => {
         if (msg.conversationId === this.activeConversationId()) {
           this.messages.update((list) => [...list, msg]);
+          this.cdr.markForCheck();
           setTimeout(() => this.scrollToBottom());
         }
       });
@@ -122,6 +125,7 @@ export class ChatAutomation implements OnInit, OnDestroy, AfterViewChecked {
         this.allConversations.update((list) =>
           list.map((c) => (c.id === updated.id ? updated : c)),
         );
+        this.cdr.markForCheck();
 
         if (updated.id !== this.activeConversationId() && updated.unread > 0) {
           this.notification.info(`Nova mensagem de ${updated.patientName ?? updated.phone}`);
@@ -143,6 +147,7 @@ export class ChatAutomation implements OnInit, OnDestroy, AfterViewChecked {
             m.id === update.messageId ? { ...m, status: update.status as MessageStatus } : m,
           ),
         );
+        this.cdr.markForCheck();
 
         if (update.status === 'failed' && update.errorMessage) {
           this.notification.error(update.errorMessage);
@@ -187,6 +192,7 @@ export class ChatAutomation implements OnInit, OnDestroy, AfterViewChecked {
         this.messages.set(msgs);
         this.patient.set(patient);
         this.chatService.markAsRead(id).subscribe();
+        this.cdr.markForCheck();
         setTimeout(() => this.scrollToBottom());
       },
       error: () => this.notification.error('Erro ao carregar conversa.'),
