@@ -236,4 +236,17 @@ export class ChatService {
     if (!conversation) throw new NotFoundException('Conversa não encontrada');
     return conversation;
   }
+
+  async linkPatient(
+    companyId: number,
+    conversationId: number,
+    patientId: number,
+  ): Promise<void> {
+    await this.findConversation(companyId, conversationId);
+
+    await this.prisma.client.conversation.update({
+      where: { id: conversationId },
+      data: { patientId },
+    });
+  }
 }

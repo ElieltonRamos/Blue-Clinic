@@ -137,4 +137,15 @@ export class ChatController {
   ) {
     return this.chatService.toggleBlock(companyId, id);
   }
+
+  @Patch(':id/patient')
+  @ApiOperation({ summary: 'Vincular paciente à conversa' })
+  @ApiParam({ name: 'id', type: Number })
+  linkPatient(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser('companyId') companyId: number,
+    @Body('patientId', ParseIntPipe) patientId: number,
+  ) {
+    return this.chatService.linkPatient(companyId, id, patientId);
+  }
 }

@@ -247,7 +247,7 @@
         </p>
       </div>
 
-      <div class="flex flex-col gap-3 p-4">
+      <div class="flex flex-col gap-2 p-4">
         <div class="rounded-xl border border-(--color-border) bg-bg-card p-3">
           <p class="text-[9px] text-(--color-text-muted) uppercase tracking-wider mb-1">
             Última Consulta
@@ -256,6 +256,25 @@
             {{ p.lastVisit ? (p.lastVisit | date: 'dd MMM, yyyy') : 'Nenhuma' }}
           </p>
         </div>
+
+        @if (!p.id) {
+          <button
+            (click)="openRegisterPatientModal()"
+            class="w-full bg-success text-(--color-text-inverse) font-bold py-2.5 rounded-lg text-[12px] flex items-center justify-center gap-2 hover:brightness-110 transition-all active:scale-95"
+          >
+            <span>➕</span>
+            <span>Registrar Paciente</span>
+          </button>
+        }
+
+        <button
+          (click)="openAppointmentModal()"
+          [disabled]="!p.id"
+          class="w-full bg-primary-dark text-(--color-text-inverse) font-bold py-2.5 rounded-lg text-[12px] flex items-center justify-center gap-2 hover:brightness-110 transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          <span>🩺</span>
+          <span>Criar Novo Agendamento</span>
+        </button>
       </div>
 
       <div class="px-4 pb-4 flex flex-col gap-2 mt-auto">
@@ -280,4 +299,20 @@
   [conversationId]="activeConversationId()"
   (close)="isTemplateModalOpen.set(false)"
   (sent)="windowExpiredConversationId.set(null)"
+/>
+
+<app-create-appointment-modal
+  [isOpen]="showAppointmentModal()"
+  [prefillPatientId]="patient()?.id ?? null"
+  (close)="showAppointmentModal.set(false)"
+  (appointmentCreated)="onAppointmentCreated($event)"
+/>
+
+<app-modal-edit-entity
+  title="Registrar Paciente"
+  [show]="showRegisterPatientModal()"
+  [fields]="patientFields"
+  [entity]="newPatient()"
+  (close)="showRegisterPatientModal.set(false)"
+  (save)="onSavePatient($event)"
 />

@@ -76,4 +76,10 @@ export class ChatService {
   getTemplates(): Observable<WhatsappTemplate[]> {
     return this.http.get<WhatsappTemplate[]>(`${this.apiUrl}/whatssap/templates`);
   }
+
+  linkPatient(conversationId: number, patientId: number): Observable<void> {
+    return this.http.patch<void>(`${this.apiUrl}/chat/conversations/${conversationId}/patient`, {
+      patientId,
+    });
+  }
 }

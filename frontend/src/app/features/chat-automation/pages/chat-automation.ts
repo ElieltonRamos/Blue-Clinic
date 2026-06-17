@@ -27,13 +27,19 @@ import { NotificationService } from '../../../shared/toastr/notification.service
 import { ChatSocketService } from '../../../core/services/chat-socket.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { TemplateModal } from './template-modal/template-modal';
+import { CreateAppointmentModal } from '../../../shared/create-appointment-modal/pages/create-appointment-modal';
+import { AppointmentResponse } from '../../../shared/create-appointment-modal/types/create-appointment.types';
+import { FormField, ModalEditEntity } from '../../../shared/modal-edit-entity/modal-edit-entity';
+import { CreatePatientRequest } from '../../patients/types/patients.types';
+import { PatientsService } from '../../patients/services/patients.service';
+import { HttpErrorResponse } from '@angular/common/http';
 
 type FilterTab = 'todas' | 'aguardando';
 
 @Component({
   selector: 'app-chat',
   standalone: true,
-  imports: [CommonModule, FormsModule, TemplateModal],
+  imports: [CommonModule, FormsModule, TemplateModal, CreateAppointmentModal, ModalEditEntity],
   templateUrl: './chat-automation.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -47,6 +53,19 @@ export class ChatAutomation implements OnInit, OnDestroy, AfterViewChecked {
   private destroy$ = new Subject<void>();
   private shouldScroll = false;
   private authService = inject(AuthService);
+  private patientsService = inject(PatientsService);
+
+  // signals
+  showRegisterPatientModal = signal(false);
+  newPatient = signal<Partial<CreatePatientRequest>>({});
+
+  patientFields: FormField[] = [
+    { name: 'name', label: 'Nome', type: 'text', placeholder: 'Nome completo', required: true },
+    { name: 'email', label: 'E-mail', type: 'email', placeholder: 'email@exemplo.com' },
+    { name: 'phone', label: 'Telefone', type: 'text', placeholder: '(00) 00000-0000' },
+    { name: 'cpf', label: 'CPF', type: 'text', placeholder: '000.000.000-00' },
+    { name: 'birthDate', label: 'Data de Nascimento', type: 'date' },
+  ];
 
   allConversations = signal<Conversation[]>([]);
   activeConversationId = signal<number | null>(null);
@@ -57,6 +76,7 @@ export class ChatAutomation implements OnInit, OnDestroy, AfterViewChecked {
   isSending = signal(false);
   windowExpiredConversationId = signal<number | null>(null);
   isTemplateModalOpen = signal(false);
+  showAppointmentModal = signal(false);
 
   conversations = computed(() =>
     this.filterTab() === 'aguardando'
@@ -256,5 +276,71 @@ export class ChatAutomation implements OnInit, OnDestroy, AfterViewChecked {
       human: 'bg-primary-subtle text-primary-text',
       waiting: 'bg-warning-subtle text-warning',
     }[status];
+  }
+
+  openAppointmentModal(): void {
+    this.showAppointmentModal.set(true);
+  }
+
+  onAppointmentCreated(appointment: AppointmentResponse): void {
+    this.showAppointmentModal.set(false);
+    this.notification.success('Agendamento criado com sucesso.');
+  }
+
+  openRegisterPatientModal(): void {
+    this.newPatient.set({ phone: this.patient()?.phone ?? '' });
+    this.showRegisterPatientModal.set(true);
+  }
+
+  onSavePatient(entity: Partial<CreatePatientRequest>): void {
+    if (!entity.name) {
+      this.notification.warning('O campo Nome é obrigatório.');
+      return;
+    }
+    if (!entity.cpf) {
+      this.notification.warning('O campo CPF é obrigatório.');
+      return;
+    }
+    if (!/^\d{11}$/.test(entity.cpf)) {
+      this.notification.warning('CPF deve conter exatamente 11 dígitos numéricos.');
+      return;
+    }
+
+    this.patientsService.createPatient(entity as CreatePatientRequest).subscribe({
+      next: (created) => {
+        const id = this.activeConversationId();
+        if (!id) return;
+
+        this.chatService.linkPatient(id, created.id).subscribe({
+          next: () => {
+            this.showRegisterPatientModal.set(false);
+            this.notification.success('Paciente registrado com sucesso.');
+            this.chatService.getPatient(id).subscribe({
+              next: (p) => {
+                this.patient.set(p);
+                this.allConversations.update((list) =>
+                  list.map((c) => (c.id === id ? { ...c, patientName: p.name } : c)),
+                );
+                this.cdr.markForCheck();
+              },
+            });
+          },
+          error: (err: HttpErrorResponse) => {
+            this.notification.error(this.getErrorMessage(err, 'Erro ao vincular paciente.'));
+          },
+        });
+      },
+      error: (err: HttpErrorResponse) => {
+        this.notification.error(this.getErrorMessage(err, 'Erro ao registrar paciente.'));
+      },
+    });
+  }
+
+  private getErrorMessage(err: HttpErrorResponse, defaultMsg: string): string {
+    const nestMessage = err?.error?.message;
+    if (nestMessage) {
+      return Array.isArray(nestMessage) ? nestMessage.join('<br>') : nestMessage;
+    }
+    return defaultMsg;
   }
 }
