@@ -25,12 +25,24 @@ import {
   handleCancelConfirm,
   showNextAppointment,
 } from './handlers/cancel.handler.js';
+import { ChatGateway } from '../chat/chat.gateway.js';
+import { ConversationResponseDto } from '../chat/dto/conversation-response.dto.js';
+
+const PREVIOUS_STEP: Partial<Record<BotStep, BotStep>> = {
+  SELECT_APPOINTMENT_TYPE: 'SELECT_SPECIALTY',
+  SELECT_DOCTOR: 'SELECT_APPOINTMENT_TYPE',
+  SELECT_DATE: 'SELECT_DOCTOR',
+  SELECT_SLOT: 'SELECT_DATE',
+};
 
 @Injectable()
 export class BotService {
   private readonly logger = new Logger(BotService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly gateway: ChatGateway,
+  ) {}
 
   async handle(
     conversationId: number,
@@ -50,11 +62,26 @@ export class BotService {
 
     // Interceptação global — exceto quando já está no MENU/IDLE
     if (step !== 'MENU' && step !== 'IDLE') {
-      if (
-        ['menu', 'inicio', 'início', 'voltar', 'cancelar'].includes(normalized)
-      ) {
+      if (['menu', 'inicio', 'início', 'cancelar'].includes(normalized)) {
         await this.updateConversation(conversationId, 'MENU', { phone });
         await sendFn(`Voltando ao menu principal...\n\n${MENU_TEXT}`);
+        return;
+      }
+
+      if (normalized === 'voltar') {
+        const previousStep = PREVIOUS_STEP[step];
+        if (!previousStep) {
+          await this.updateConversation(conversationId, 'MENU', { phone });
+          await sendFn(`Voltando ao menu principal...\n\n${MENU_TEXT}`);
+          return;
+        }
+        await this.goToStep(
+          previousStep,
+          data,
+          conversationId,
+          companyId,
+          sendFn,
+        );
         return;
       }
 
@@ -68,10 +95,17 @@ export class BotService {
           'falar com alguém',
         ].includes(normalized)
       ) {
-        await this.prisma.client.conversation.update({
+        const updated = await this.prisma.client.conversation.update({
           where: { id: conversationId },
           data: { status: 'waiting', botStep: 'IDLE', botData: {} },
+          include: { patient: { select: { name: true } } },
         });
+
+        this.gateway.emitConversationUpdated(
+          companyId,
+          new ConversationResponseDto(updated),
+        );
+
         await sendFn('Aguarde, em breve um atendente irá te responder. 😊');
         return;
       }
@@ -86,6 +120,42 @@ export class BotService {
       phone,
       sendFn,
     );
+  }
+
+  private async goToStep(
+    targetStep: BotStep,
+    data: BotData,
+    conversationId: number,
+    companyId: number,
+    sendFn: SendFn,
+  ): Promise<void> {
+    switch (targetStep) {
+      case 'SELECT_SPECIALTY':
+        await this.updateConversation(conversationId, 'SELECT_SPECIALTY', data);
+        return askSpecialty(companyId, sendFn, this.prisma);
+      case 'SELECT_APPOINTMENT_TYPE':
+        await this.updateConversation(
+          conversationId,
+          'SELECT_APPOINTMENT_TYPE',
+          data,
+        );
+        return askAppointmentType(companyId, sendFn, this.prisma);
+      case 'SELECT_DOCTOR':
+        await this.updateConversation(conversationId, 'SELECT_DOCTOR', data);
+        return askDoctor(companyId, data.specialty ?? '', sendFn, this.prisma);
+      case 'SELECT_DATE':
+        await this.updateConversation(conversationId, 'SELECT_DATE', data);
+        return askDate(
+          data,
+          conversationId,
+          companyId,
+          sendFn,
+          this.prisma,
+          this.updateConversation.bind(this),
+        );
+      default:
+        return;
+    }
   }
 
   private async dispatch(
@@ -117,6 +187,7 @@ export class BotService {
             showNextAppointment(cId, cmpId, ph, sf, p, update),
           (cId, cmpId, ph, sf) =>
             showCancelAppointment(cId, cmpId, ph, sf, p, update),
+          this.gateway,
         );
       case 'REGISTER_NAME':
         return handleRegisterName(text, data, conversationId, sendFn, update);

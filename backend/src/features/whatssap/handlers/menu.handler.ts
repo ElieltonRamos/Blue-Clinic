@@ -1,8 +1,41 @@
 import { PrismaService } from '../../../core/database/prisma.service.js';
 import { BotData, BotStep, SendFn } from '../entities/bot-state.types.js';
+import { ChatGateway } from '../../chat/chat.gateway.js';
+import { ConversationResponseDto } from '../../chat/dto/conversation-response.dto.js';
 
 export const MENU_TEXT =
   '1️⃣ Agendar consulta\n2️⃣ Cancelar consulta\n3️⃣ Ver próxima consulta\n4️⃣ Falar com atendente';
+
+function normalizeText(text: string): string {
+  return text
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
+const OPTION_KEYWORDS: Record<string, '1' | '2' | '3' | '4'> = {
+  '1': '1',
+  agendar: '1',
+  'agendar consulta': '1',
+  agendamento: '1',
+  marcar: '1',
+  'marcar consulta': '1',
+  '2': '2',
+  cancelar: '2',
+  'cancelar consulta': '2',
+  '3': '3',
+  proxima: '3',
+  'proxima consulta': '3',
+  'ver proxima consulta': '3',
+  '4': '4',
+  atendente: '4',
+  humano: '4',
+  ajuda: '4',
+  help: '4',
+  'falar com atendente': '4',
+  'falar com alguem': '4',
+};
 
 export async function handleMenu(
   text: string,
@@ -30,10 +63,11 @@ export async function handleMenu(
     phone: string,
     sendFn: SendFn,
   ) => Promise<void>,
+  gateway: ChatGateway,
 ): Promise<void> {
-  const option = text.trim();
+  const option = OPTION_KEYWORDS[normalizeText(text)];
 
-  if (!['1', '2', '3', '4'].includes(option)) {
+  if (!option) {
     const company = await prisma.client.company.findUnique({
       where: { id: companyId },
       select: { tradeName: true },
@@ -47,10 +81,17 @@ export async function handleMenu(
   }
 
   if (option === '4') {
-    await prisma.client.conversation.update({
+    const updated = await prisma.client.conversation.update({
       where: { id: conversationId },
       data: { status: 'waiting', botStep: 'IDLE', botData: {} },
+      include: { patient: { select: { name: true } } },
     });
+
+    gateway.emitConversationUpdated(
+      companyId,
+      new ConversationResponseDto(updated),
+    );
+
     await sendFn('Aguarde, em breve um atendente irá te responder. 😊');
     return;
   }

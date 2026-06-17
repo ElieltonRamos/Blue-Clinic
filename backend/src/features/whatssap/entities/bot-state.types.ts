@@ -27,6 +27,7 @@ export interface BotData {
   phone?: string;
   _suggestedDates?: string[];
   _awaitingManualDate?: boolean;
+  _pendingConfirmDate?: string;
 }
 
 export type SendFn = (msg: string) => Promise<void>;

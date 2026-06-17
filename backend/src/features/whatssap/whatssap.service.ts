@@ -124,10 +124,19 @@ export class WhatssapService {
     if (!value?.messages?.length) return;
 
     const msg = value.messages[0];
-    if (msg.type !== 'text') return;
+
+    let text: string;
+    if (msg.type === 'text') {
+      text = msg.text.body as string;
+    } else if (msg.type === 'button') {
+      text = this.mapButtonToText(
+        (msg.button?.text ?? msg.button?.payload ?? '') as string,
+      );
+    } else {
+      return;
+    }
 
     const phone = msg.from as string;
-    const text = msg.text.body as string;
 
     const config = await this.prisma.client.whatsappConfig.findFirst({
       where: { phoneNumberId },
@@ -248,6 +257,13 @@ export class WhatssapService {
         config.phoneNumberId,
       );
     }
+  }
+
+  private mapButtonToText(buttonValue: string): string {
+    const normalized = buttonValue.trim().toLowerCase();
+    if (normalized === 'confirmar') return '1';
+    if (normalized === 'cancelar') return '2';
+    return buttonValue;
   }
 
   private async processStatus(status: any): Promise<void> {

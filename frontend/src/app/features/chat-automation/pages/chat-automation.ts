@@ -113,6 +113,10 @@ export class ChatAutomation implements OnInit, OnDestroy, AfterViewChecked {
           this.messages.update((list) => [...list, msg]);
           this.cdr.markForCheck();
           setTimeout(() => this.scrollToBottom());
+
+          if (msg.sender === 'patient') {
+            this.chatService.markAsRead(msg.conversationId).subscribe();
+          }
         }
       });
 
