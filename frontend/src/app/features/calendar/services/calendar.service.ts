@@ -63,4 +63,10 @@ export class CalendarService {
       body,
     );
   }
+
+  getConversationByPatient(patientId: number) {
+    return this.http.get<{ id: number }>(
+      `${this.apiUrl}/chat/conversations/by-patient/${patientId}`,
+    );
+  }
 }

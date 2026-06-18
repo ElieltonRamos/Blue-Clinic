@@ -35,14 +35,6 @@ import { PatientInfoResponseDto } from './dto/patient-info-response.dto.js';
 export class ChatController {
   constructor(private readonly chatService: ChatService) {}
 
-  @Patch(':id/read')
-  markAsRead(
-    @CurrentUser('companyId') companyId: number,
-    @Param('id', ParseIntPipe) id: number,
-  ) {
-    return this.chatService.markAsRead(companyId, id);
-  }
-
   @Get()
   @ApiOperation({ summary: 'Listar conversas' })
   @ApiResponse({ status: HttpStatus.OK, type: [ConversationResponseDto] })
@@ -51,6 +43,32 @@ export class ChatController {
     @Query() filters: ConversationFiltersDto,
   ) {
     return this.chatService.getConversations(companyId, filters.status);
+  }
+
+  @Get('by-patient/:patientId')
+  @ApiOperation({ summary: 'Buscar ou criar conversa pelo paciente' })
+  @ApiParam({ name: 'patientId', type: Number })
+  @ApiResponse({ status: HttpStatus.OK, type: ConversationResponseDto })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Paciente não encontrado',
+  })
+  getOrCreateByPatient(
+    @Param('patientId', ParseIntPipe) patientId: number,
+    @CurrentUser('companyId') companyId: number,
+  ) {
+    return this.chatService.getOrCreateConversationByPatient(
+      companyId,
+      patientId,
+    );
+  }
+
+  @Patch(':id/read')
+  markAsRead(
+    @CurrentUser('companyId') companyId: number,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    return this.chatService.markAsRead(companyId, id);
   }
 
   @Get(':id/messages')

@@ -437,6 +437,17 @@
                     Confirmar
                   </button>
                   <button
+                    (click)="sendConfirmationRequest(apt); $event.stopPropagation()"
+                    [disabled]="actionLoading() || confirmationSending() === apt.id"
+                    class="text-[10px] px-2 py-1 rounded-lg bg-info-subtle text-info hover:opacity-80 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    @if (confirmationSending() === apt.id) {
+                      Enviando...
+                    } @else {
+                      📲 Confirmar via WhatsApp
+                    }
+                  </button>
+                  <button
                     (click)="requestCancel(apt); $event.stopPropagation()"
                     [disabled]="actionLoading()"
                     class="text-[10px] px-2 py-1 rounded-lg bg-danger-subtle text-(--color-danger) hover:opacity-80 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
@@ -573,4 +584,13 @@
   [prefillPatientId]="pendingReschedulePatientId"
   (close)="showCreateModal = false; pendingReschedulePatientId = null"
   (appointmentCreated)="onAppointmentCreated($event)"
+/>
+
+<app-template-modal
+  [isOpen]="isTemplateModalOpen()"
+  [conversationId]="templateConversationId()"
+  prefillTemplateName="lembrete_consulta"
+  [prefillParams]="templatePrefillParams"
+  (close)="onTemplateModalClose()"
+  (sent)="onTemplateSent()"
 />

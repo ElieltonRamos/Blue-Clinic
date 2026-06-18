@@ -19,6 +19,7 @@ import { CreateAppointmentModal } from '../../../shared/create-appointment-modal
 import { AppointmentResponse } from '../../../shared/create-appointment-modal/types/create-appointment.types';
 import { NotificationService } from '../../../shared/toastr/notification.service';
 import { ModalAppointmentReceipt } from '../../../shared/modal-appointment-receipt/modal-appointment-receipt';
+import { TemplateModal } from '../../chat-automation/pages/template-modal/template-modal';
 
 const PAYMENT_METHODS: PaymentMethodConfig[] = [
   { method: 'pix', label: 'PIX', icon: '📱' },
@@ -30,7 +31,13 @@ const PAYMENT_METHODS: PaymentMethodConfig[] = [
 @Component({
   selector: 'app-agenda',
   standalone: true,
-  imports: [CommonModule, FormsModule, CreateAppointmentModal, ModalAppointmentReceipt],
+  imports: [
+    CommonModule,
+    FormsModule,
+    CreateAppointmentModal,
+    ModalAppointmentReceipt,
+    TemplateModal,
+  ],
   templateUrl: './calendar.html',
 })
 export class Calendar implements OnInit {
@@ -50,6 +57,11 @@ export class Calendar implements OnInit {
   receiptData: PaymentResponseDto | null = null;
   blockedHours: BlockedHour[] = [];
   autoConfirmation: AutoConfirmation = { confirmed: 0, total: 0 };
+
+  isTemplateModalOpen = signal(false);
+  templateConversationId = signal<number | null>(null);
+  templatePrefillParams: Record<string, string> = {};
+  confirmationSending = signal<number | null>(null);
 
   selectedDay = signal<CalendarDay | null>(null);
   actionLoading = signal(false);
@@ -272,6 +284,40 @@ export class Calendar implements OnInit {
   }
 
   // ── Appointment actions ───────────────────────────────────────
+
+  sendConfirmationRequest(apt: Appointment): void {
+    if (this.confirmationSending() !== null) return;
+    this.confirmationSending.set(apt.id);
+
+    this.service.getConversationByPatient(apt.patientId).subscribe({
+      next: (conv) => {
+        this.templateConversationId.set(conv.id);
+        this.templatePrefillParams = {
+          '1': apt.patientName,
+          '2': this.doctorNameFor(apt.doctorId),
+          '3': this.formatAptDate(apt.date),
+          '4': apt.startTime,
+        };
+        this.confirmationSending.set(null);
+        this.isTemplateModalOpen.set(true);
+      },
+      error: (err) => {
+        this.notify.error(this.getErrorMessage(err, 'Erro ao localizar conversa do paciente'));
+        this.confirmationSending.set(null);
+      },
+    });
+  }
+
+  onTemplateModalClose(): void {
+    this.isTemplateModalOpen.set(false);
+    this.templateConversationId.set(null);
+  }
+
+  onTemplateSent(): void {
+    this.isTemplateModalOpen.set(false);
+    this.templateConversationId.set(null);
+    this.notify.success('Pedido de confirmação enviado via WhatsApp');
+  }
 
   confirmAppointment(apt: Appointment): void {
     if (this.actionLoading()) return;
@@ -512,5 +558,12 @@ export class Calendar implements OnInit {
     const msg = err?.error?.message;
     return msg ? (Array.isArray(msg) ? msg.join(', ') : msg) : defaultMsg;
   }
-}
 
+  private formatAptDate(dateStr: string): string {
+    const [year, month, day] = dateStr.split('-').map(Number);
+    return new Date(year, month - 1, day).toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+    });
+  }
+}

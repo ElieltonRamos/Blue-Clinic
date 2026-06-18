@@ -249,4 +249,38 @@ export class ChatService {
       data: { patientId },
     });
   }
+
+  async getOrCreateConversationByPatient(
+    companyId: number,
+    patientId: number,
+  ): Promise<ConversationResponseDto> {
+    const existing = await this.prisma.client.conversation.findFirst({
+      where: { companyId, patientId },
+      include: { patient: { select: { name: true } } },
+      orderBy: { lastMessageAt: 'desc' },
+    });
+
+    if (existing) return new ConversationResponseDto(existing);
+
+    const patient = await this.prisma.client.patient.findFirst({
+      where: { id: patientId, companyId },
+      select: { phone: true },
+    });
+
+    if (!patient) throw new NotFoundException('Paciente não encontrado');
+    if (!patient.phone)
+      throw new NotFoundException('Paciente não possui telefone cadastrado');
+
+    const created = await this.prisma.client.conversation.create({
+      data: {
+        companyId,
+        patientId,
+        phone: patient.phone,
+        status: 'bot',
+      },
+      include: { patient: { select: { name: true } } },
+    });
+
+    return new ConversationResponseDto(created);
+  }
 }
