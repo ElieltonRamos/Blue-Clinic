@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-call */
 import { PrismaService } from '../../../core/database/prisma.service.js';
 import { BotData, BotStep, SendFn } from '../entities/bot-state.types.js';
 
@@ -38,6 +37,7 @@ export async function handleSelectAppointmentType(
     companyId: number,
     specialty: string,
     sendFn: SendFn,
+    appointmentTypeId: number,
   ) => Promise<void>,
 ): Promise<void> {
   const types = await prisma.client.appointmentType.findMany({
@@ -57,5 +57,5 @@ export async function handleSelectAppointmentType(
     appointmentTypeName: type.name,
     appointmentTypeDuration: type.duration,
   });
-  return askDoctor(companyId, data.specialty ?? '', sendFn);
+  return askDoctor(companyId, data.specialty ?? '', sendFn, type.id);
 }

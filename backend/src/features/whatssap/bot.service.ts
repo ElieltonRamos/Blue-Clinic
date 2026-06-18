@@ -142,7 +142,13 @@ export class BotService {
         return askAppointmentType(companyId, sendFn, this.prisma);
       case 'SELECT_DOCTOR':
         await this.updateConversation(conversationId, 'SELECT_DOCTOR', data);
-        return askDoctor(companyId, data.specialty ?? '', sendFn, this.prisma);
+        return askDoctor(
+          companyId,
+          data.specialty ?? '',
+          sendFn,
+          this.prisma,
+          data.appointmentTypeId,
+        );
       case 'SELECT_DATE':
         await this.updateConversation(conversationId, 'SELECT_DATE', data);
         return askDate(
@@ -222,7 +228,8 @@ export class BotService {
           sendFn,
           p,
           update,
-          (cId, spec, sf) => askDoctor(cId, spec, sf, p),
+          (cId, spec, sf, appointmentTypeId) =>
+            askDoctor(cId, spec, sf, p, appointmentTypeId),
         );
       case 'SELECT_DOCTOR':
         return handleSelectDoctor(

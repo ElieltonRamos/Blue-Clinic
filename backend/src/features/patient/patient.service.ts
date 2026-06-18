@@ -119,7 +119,11 @@ export class PatientsService {
     companyId: number,
     dto: UpdatePatientDto,
   ): Promise<PatientDetailResponseDto> {
-    await this.findOne(id, companyId);
+    const current = await this.prisma.client.patient.findFirst({
+      where: { id, companyId },
+      select: { id: true, phone: true },
+    });
+    if (!current) throw new NotFoundException('Paciente não encontrado');
 
     if (dto.name !== undefined)
       await this.assertNoDuplicateName(companyId, dto.name, id);
@@ -137,10 +141,30 @@ export class PatientsService {
       data.whatsappActive = dto.whatsappActive;
     if (dto.lgpdConsent !== undefined) data.lgpdConsent = dto.lgpdConsent;
 
-    const patient = await this.prisma.client.patient.update({
-      where: { id },
-      data,
-      include: PATIENT_DETAIL_INCLUDE,
+    const phoneChanged = dto.phone !== undefined && dto.phone !== current.phone;
+
+    const patient = await this.prisma.client.$transaction(async (tx) => {
+      const updated = await tx.patient.update({
+        where: { id },
+        data,
+        include: PATIENT_DETAIL_INCLUDE,
+      });
+
+      if (phoneChanged) {
+        if (current.phone) {
+          await tx.conversation.updateMany({
+            where: { phone: current.phone, patientId: id },
+            data: { patientId: null },
+          });
+        }
+
+        await tx.conversation.updateMany({
+          where: { phone: dto.phone, companyId },
+          data: { patientId: id },
+        });
+      }
+
+      return updated;
     });
 
     return new PatientDetailResponseDto(patient);

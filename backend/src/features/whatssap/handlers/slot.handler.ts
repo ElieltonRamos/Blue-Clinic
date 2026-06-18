@@ -158,6 +158,20 @@ export async function handleSelectSlot(
   const [y, m, d] = (data.date ?? '').split('-');
   const dateFormatted = `${d}/${m}/${y}`;
 
+  const commission = await prisma.client.appointmentTypeCommission.findUnique({
+    where: {
+      doctorId_appointmentTypeId: {
+        doctorId: data.doctorId!,
+        appointmentTypeId: data.appointmentTypeId!,
+      },
+    },
+    select: { price: true },
+  });
+
+  const priceLabel = commission
+    ? `\n💰 *Valor:* R$ ${Number(commission.price).toFixed(2).replace('.', ',')}`
+    : '';
+
   await updateConversation(conversationId, 'CONFIRM_APPOINTMENT', {
     ...data,
     startTime: slot.startTime,
@@ -169,7 +183,7 @@ export async function handleSelectSlot(
       `👨‍⚕️ *Médico:* ${data.doctorName}\n` +
       `📋 *Tipo:* ${data.appointmentTypeName}\n` +
       `📅 *Data:* ${dateFormatted}\n` +
-      `🕐 *Horário:* ${slot.startTime} – ${slot.endTime}\n\n` +
+      `🕐 *Horário:* ${slot.startTime} – ${slot.endTime}${priceLabel}\n\n` +
       `Digite *1* para confirmar ou *2* para cancelar.`,
   );
 }

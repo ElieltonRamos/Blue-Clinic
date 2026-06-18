@@ -117,20 +117,55 @@ export async function handleRegisterCpf(
     where: { companyId, cpf },
   });
 
-  let patient = existing;
+  if (existing) {
+    // CPF já cadastrado com outro telefone — não vincula
+    if (existing.phone && existing.phone !== data.phone) {
+      await sendFn(
+        'Este CPF já está cadastrado com outro número de telefone. ' +
+          'Entre em contato com a clínica para atualizar seu cadastro.',
+      );
+      return;
+    }
 
-  if (!patient) {
-    patient = await prisma.client.patient.create({
-      data: {
-        companyId,
-        name: data.name!,
-        cpf,
-        phone: data.phone,
-        status: 'Ativo',
-        whatsappActive: true,
-      },
+    // Mesmo telefone ou sem telefone cadastrado — vincula normalmente
+    await prisma.client.conversation.update({
+      where: { id: conversationId },
+      data: { patientId: existing.id },
     });
+
+    await updateConversation(conversationId, 'SELECT_SPECIALTY', {
+      ...data,
+      patientId: existing.id,
+    });
+
+    await sendFn(`Bem-vindo de volta, *${existing.name}*! ✅`);
+    return askSpecialty(companyId, sendFn);
   }
+
+  // CPF não cadastrado — verifica se o telefone já existe em outro paciente
+  const phoneConflict = await prisma.client.patient.findFirst({
+    where: { companyId, phone: data.phone },
+    select: { id: true },
+  });
+
+  if (phoneConflict) {
+    await sendFn(
+      'Este número já está associado a outro cadastro. ' +
+        'Entre em contato com a clínica.',
+    );
+    return;
+  }
+
+  const patient = await prisma.client.patient.create({
+    data: {
+      companyId,
+      name: data.name!,
+      cpf,
+      phone: data.phone,
+      status: 'Ativo',
+      whatsappActive: true,
+    },
+  });
 
   await prisma.client.conversation.update({
     where: { id: conversationId },
