@@ -60,9 +60,23 @@ export class BotService {
     const data = (conversation.botData ?? {}) as BotData;
     const normalized = text.trim().toLowerCase();
 
+    if (step === 'AWAITING_REMINDER_REPLY') {
+      await this.handleReminderReply(
+        text.trim(),
+        conversationId,
+        companyId,
+        conversation.patientId,
+        phone,
+        sendFn,
+      );
+      return;
+    }
+
     // Interceptação global — exceto quando já está no MENU/IDLE
     if (step !== 'MENU' && step !== 'IDLE') {
-      if (['menu', 'inicio', 'início', 'cancelar'].includes(normalized)) {
+      if (
+        ['menu', 'inicio', 'início', 'voltar ao inicio'].includes(normalized)
+      ) {
         await this.updateConversation(conversationId, 'MENU', { phone });
         await sendFn(`Voltando ao menu principal...\n\n${MENU_TEXT}`);
         return;
@@ -295,5 +309,99 @@ export class BotService {
       where: { id: conversationId },
       data: { botStep: step, botData: data as Record<string, any> },
     });
+  }
+
+  private async handleReminderReply(
+    text: string,
+    conversationId: number,
+    companyId: number,
+    patientId: number | null,
+    phone: string,
+    sendFn: SendFn,
+  ): Promise<void> {
+    const normalized = text.trim().toLowerCase();
+
+    if (['menu', 'inicio', 'início'].includes(normalized)) {
+      await this.updateConversation(conversationId, 'MENU', { phone });
+      await sendFn(`Voltando ao menu principal...\n\n${MENU_TEXT}`);
+      return;
+    }
+
+    if (normalized === '1' || normalized === 'confirmar') {
+      if (!patientId) {
+        await sendFn('Não foi possível identificar seu cadastro. 😔');
+        await this.updateConversation(conversationId, 'MENU', { phone });
+        return;
+      }
+
+      const appointment = await this.prisma.client.appointment.findFirst({
+        where: {
+          patientId,
+          status: 'pending',
+          date: { gte: new Date() },
+        },
+        orderBy: { date: 'asc' },
+      });
+
+      if (!appointment) {
+        await sendFn(
+          'Não encontramos nenhuma consulta pendente de confirmação. 🤔',
+        );
+        await this.updateConversation(conversationId, 'MENU', { phone });
+        return;
+      }
+
+      await this.prisma.client.appointment.update({
+        where: { id: appointment.id },
+        data: { status: 'confirmed' },
+      });
+
+      await sendFn('Consulta confirmada com sucesso! ✅ Até logo.');
+      await this.updateConversation(conversationId, 'MENU', { phone });
+      return;
+    }
+
+    if (normalized === '2' || normalized === 'cancelar') {
+      if (!patientId) {
+        await sendFn('Não foi possível identificar seu cadastro. 😔');
+        await this.updateConversation(conversationId, 'MENU', { phone });
+        return;
+      }
+
+      const appointment = await this.prisma.client.appointment.findFirst({
+        where: {
+          patientId,
+          status: 'pending',
+          date: { gte: new Date() },
+        },
+        orderBy: { date: 'asc' },
+      });
+
+      if (!appointment) {
+        await sendFn(
+          'Não encontramos nenhuma consulta pendente de cancelamento. 🤔',
+        );
+        await this.updateConversation(conversationId, 'MENU', { phone });
+        return;
+      }
+
+      await this.prisma.client.appointment.update({
+        where: { id: appointment.id },
+        data: {
+          status: 'cancelled',
+          cancellationReason: 'Cancelado pelo paciente via WhatsApp',
+        },
+      });
+
+      await sendFn(
+        'Sua consulta foi cancelada. 😔 Se precisar reagendar, estamos à disposição!',
+      );
+      await this.updateConversation(conversationId, 'MENU', { phone });
+      return;
+    }
+
+    await sendFn(
+      'Por favor, responda *1* para confirmar ou *2* para cancelar sua consulta.',
+    );
   }
 }

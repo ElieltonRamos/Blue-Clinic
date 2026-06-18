@@ -25,7 +25,6 @@ const PAYMENT_METHODS: PaymentMethodConfig[] = [
   { method: 'pix', label: 'PIX', icon: '📱' },
   { method: 'dinheiro', label: 'Dinheiro', icon: '💵' },
   { method: 'cartao', label: 'Cartão', icon: '💳' },
-  { method: 'convenio', label: 'Convênio', icon: '🏥' },
 ];
 
 @Component({
@@ -447,7 +446,7 @@ export class Calendar implements OnInit {
   }
 
   doctorNameFor(doctorId: number): string {
-    return this.doctorMap.get(doctorId) ?? String(doctorId);
+    return this.doctorMap.get(Number(doctorId)) ?? String(doctorId);
   }
 
   methodLabel(method: PaymentMethod): string {

@@ -212,6 +212,7 @@ export class AppointmentsService {
       include: {
         patient: { select: { name: true } },
         doctor: { select: { name: true } },
+        appointmentType: { select: { name: true } },
       },
     });
 
@@ -278,7 +279,12 @@ export class AppointmentsService {
       },
     );
 
-    return new PaymentResponseDto(payment);
+    return new PaymentResponseDto({
+      ...payment,
+      specialty: appointment.specialty,
+      startTime: appointment.startTime,
+      appointmentTypeName: appointment.appointmentType?.name ?? null,
+    });
   }
 
   private async resolveCommissions(

@@ -7,11 +7,18 @@ import { PrismaService } from '../../core/database/prisma.service.js';
 import { FinanceSummaryDto } from './dto/finance-summary.dto.js';
 import { FinanceExpenseDto } from './dto/finance-expense.dto.js';
 import { FinanceTransactionDto } from './dto/finance-transaction.dto.js';
-import { ProfessionalRevenueDto } from './dto/professional-revenue.dto.js';
+import {
+  ProfessionalRevenueDto,
+  ProfessionalRevenueAppointmentDto,
+} from './dto/professional-revenue.dto.js';
 import { CashClosingRowDto } from './dto/cash-closing-row.dto.js';
 import { FinanceFilterDto } from './dto/finance-filter.dto.js';
 import { CreateExpenseDto } from './dto/create-expense.dto.js';
 import { UpdateExpenseDto } from './dto/update-expense.dto.js';
+import { ExpenseWithRegisteredBy } from './entities/financial.entity.js';
+
+const TZ = 'America/Sao_Paulo';
+const TZ_OFFSET = '-03:00';
 
 @Injectable()
 export class FinanceService {
@@ -19,9 +26,17 @@ export class FinanceService {
 
   // ── Helpers ────────────────────────────────────────────────────────────────
 
+  private toLocalDateString(date: Date): string {
+    return date
+      .toLocaleDateString('pt-BR', { timeZone: TZ })
+      .split('/')
+      .reverse()
+      .join('-');
+  }
+
   private parseDateRange(filter: FinanceFilterDto): { gte: Date; lte: Date } {
-    const gte = new Date(`${filter.dateFrom}T00:00:00.000Z`);
-    const lte = new Date(`${filter.dateTo}T23:59:59.999Z`);
+    const gte = new Date(`${filter.dateFrom}T00:00:00.000${TZ_OFFSET}`);
+    const lte = new Date(`${filter.dateTo}T23:59:59.999${TZ_OFFSET}`);
     if (isNaN(gte.getTime()) || isNaN(lte.getTime())) {
       throw new BadRequestException(
         'Datas inválidas. Use o formato YYYY-MM-DD',
@@ -31,13 +46,18 @@ export class FinanceService {
   }
 
   private previousRange(filter: FinanceFilterDto): { gte: Date; lte: Date } {
-    const from = new Date(`${filter.dateFrom}T00:00:00.000Z`);
-    const to = new Date(`${filter.dateTo}T23:59:59.999Z`);
+    const from = new Date(`${filter.dateFrom}T00:00:00.000${TZ_OFFSET}`);
+    const to = new Date(`${filter.dateTo}T23:59:59.999${TZ_OFFSET}`);
     const diffMs = to.getTime() - from.getTime();
-    return {
-      gte: new Date(from.getTime() - diffMs - 1000),
-      lte: new Date(from.getTime() - 1000),
-    };
+
+    const lte = new Date(from.getTime() - 1);
+    const gte = new Date(lte.getTime() - diffMs);
+
+    return { gte, lte };
+  }
+
+  private toStartOfDay(date: string): Date {
+    return new Date(`${date}T00:00:00.000${TZ_OFFSET}`);
   }
 
   // ── Summary ────────────────────────────────────────────────────────────────
@@ -105,7 +125,7 @@ export class FinanceService {
       registeredById: e.registeredById,
       registeredByName: e.registeredBy.username,
       value: Number(e.value),
-      date: e.date.toISOString().split('T')[0],
+      date: this.toLocalDateString(e.date),
       status: e.status,
     }));
   }
@@ -139,8 +159,12 @@ export class FinanceService {
     const fromPayments: FinanceTransactionDto[] = payments.map((p) => ({
       id: `payment-${p.id}`,
       type: 'entrada' as const,
-      date: p.date.toISOString().split('T')[0],
-      time: p.date.toISOString().split('T')[1].slice(0, 5),
+      date: this.toLocalDateString(p.date),
+      time: p.date.toLocaleTimeString('pt-BR', {
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: TZ,
+      }),
       patient: p.patient ?? '',
       doctor: p.doctor ?? '',
       registeredBy: p.registeredBy.username,
@@ -151,8 +175,12 @@ export class FinanceService {
     const fromExpenses: FinanceTransactionDto[] = expenses.map((e) => ({
       id: `expense-${e.id}`,
       type: 'saida' as const,
-      date: e.date.toISOString().split('T')[0],
-      time: e.date.toISOString().split('T')[1].slice(0, 5),
+      date: this.toLocalDateString(e.date),
+      time: e.date.toLocaleTimeString('pt-BR', {
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: TZ,
+      }),
       patient: e.description,
       doctor: '',
       registeredBy: e.registeredBy.username,
@@ -178,10 +206,17 @@ export class FinanceService {
     const payments = await this.prisma.client.payment.findMany({
       where: { date: range, appointment: { doctor: { companyId } } },
       select: {
-        doctor: true,
+        date: true,
+        value: true,
         doctorEarnings: true,
+        discount: true,
         appointment: {
           select: {
+            date: true,
+            startTime: true,
+            specialty: true,
+            appointmentType: { select: { name: true } },
+            patient: { select: { name: true } },
             doctor: { select: { id: true, name: true, avatarUrl: true } },
           },
         },
@@ -190,20 +225,40 @@ export class FinanceService {
 
     const map = new Map<
       number,
-      { id: number; name: string; avatarUrl: string | null; value: number }
+      {
+        id: number;
+        name: string;
+        avatarUrl: string | null;
+        value: number;
+        appointments: ProfessionalRevenueAppointmentDto[];
+      }
     >();
 
     for (const p of payments) {
       const doctor = p.appointment.doctor;
+      const appointment: ProfessionalRevenueAppointmentDto = {
+        date: this.toLocalDateString(p.appointment.date),
+        startTime: p.appointment.startTime,
+        specialty: p.appointment.specialty,
+        appointmentType: p.appointment.appointmentType?.name ?? null,
+        patientName: p.appointment.patient.name,
+        paymentValue: Number(p.value),
+        doctorEarnings: Number(p.doctorEarnings),
+        discount: Number(p.discount),
+        paymentDate: this.toLocalDateString(p.date),
+      };
+
       const existing = map.get(doctor.id);
       if (existing) {
         existing.value += Number(p.doctorEarnings);
+        existing.appointments.push(appointment);
       } else {
         map.set(doctor.id, {
           id: doctor.id,
           name: doctor.name,
           avatarUrl: doctor.avatarUrl,
           value: Number(p.doctorEarnings),
+          appointments: [appointment],
         });
       }
     }
@@ -215,6 +270,7 @@ export class FinanceService {
         name: d.name,
         avatar: d.avatarUrl ?? '👤',
         value: d.value,
+        appointments: d.appointments,
       }));
   }
 
@@ -268,6 +324,21 @@ export class FinanceService {
     return Array.from(map.values());
   }
 
+  // ── Create / Update Expense ────────────────────────────────────────────────
+
+  private mapExpense(expense: ExpenseWithRegisteredBy): FinanceExpenseDto {
+    return {
+      id: String(expense.id),
+      description: expense.description,
+      category: expense.category,
+      registeredById: expense.registeredById,
+      registeredByName: expense.registeredBy.username,
+      value: Number(expense.value),
+      date: this.toLocalDateString(expense.date),
+      status: expense.status,
+    };
+  }
+
   async createExpense(
     companyId: number,
     registeredById: number,
@@ -280,7 +351,7 @@ export class FinanceService {
         description: dto.description,
         category: dto.category,
         value: dto.value,
-        date: new Date(`${dto.date}T00:00:00.000Z`),
+        date: this.toStartOfDay(dto.date),
         status: dto.status,
       },
       include: {
@@ -288,16 +359,7 @@ export class FinanceService {
       },
     });
 
-    return {
-      id: String(expense.id),
-      description: expense.description,
-      category: expense.category,
-      registeredById: expense.registeredById,
-      registeredByName: expense.registeredBy.username,
-      value: Number(expense.value),
-      date: expense.date.toISOString().split('T')[0],
-      status: expense.status,
-    };
+    return this.mapExpense(expense);
   }
 
   async updateExpense(
@@ -316,9 +378,7 @@ export class FinanceService {
         ...(dto.description !== undefined && { description: dto.description }),
         ...(dto.category !== undefined && { category: dto.category }),
         ...(dto.value !== undefined && { value: dto.value }),
-        ...(dto.date !== undefined && {
-          date: new Date(`${dto.date}T00:00:00.000Z`),
-        }),
+        ...(dto.date !== undefined && { date: this.toStartOfDay(dto.date) }),
         ...(dto.status !== undefined && { status: dto.status }),
       },
       include: {
@@ -326,15 +386,6 @@ export class FinanceService {
       },
     });
 
-    return {
-      id: String(expense.id),
-      description: expense.description,
-      category: expense.category,
-      registeredById: expense.registeredById,
-      registeredByName: expense.registeredBy.username,
-      value: Number(expense.value),
-      date: expense.date.toISOString().split('T')[0],
-      status: expense.status,
-    };
+    return this.mapExpense(expense);
   }
 }

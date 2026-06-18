@@ -104,7 +104,6 @@ export class Financial implements OnInit {
         this.pageLoading.set(false);
       },
       error: (err: HttpErrorResponse) => {
-        console.log('erro', err);
         this.notify.error(this.getErrorMessage(err, 'Erro ao carregar dados financeiros'));
         this.pageLoading.set(false);
       },
@@ -253,6 +252,16 @@ export class Financial implements OnInit {
     return Math.max(...this.professionals.map((p) => p.value), 1);
   }
 
+  expandedProfessionals = new Set<string>();
+
+  toggleProfessional(id: string): void {
+    if (this.expandedProfessionals.has(id)) {
+      this.expandedProfessionals.delete(id);
+    } else {
+      this.expandedProfessionals.add(id);
+    }
+  }
+
   private getErrorMessage(err: HttpErrorResponse, defaultMsg: string): string {
     const msg = err?.error?.message;
     return msg ? (Array.isArray(msg) ? msg.join(', ') : msg) : defaultMsg;
@@ -334,53 +343,91 @@ export class Financial implements OnInit {
   }
 
   exportProfessionalRevenues(): void {
-    const rows = this.professionals
-      .map(
-        (p) => `
-    <tr>
-      <td>${p.name}</td>
-      <td class="amount">${this.formatCurrency(p.value)}</td>
-      <td class="amount">${this.professionals.length > 0 ? ((p.value / this.professionals.reduce((s, x) => s + x.value, 0)) * 100).toFixed(1) + '%' : '—'}</td>
-    </tr>
-  `,
-      )
-      .join('');
-
     const total = this.professionals.reduce((s, p) => s + p.value, 0);
 
+    const professionalSections = this.professionals
+      .map((p) => {
+        const participacao = total > 0 ? ((p.value / total) * 100).toFixed(1) + '%' : '—';
+
+        const appointmentRows = p.appointments
+          .map(
+            (apt) => `
+            <tr>
+              <td>${apt.date}</td>
+              <td>${apt.patientName}</td>
+              <td>${apt.specialty}</td>
+              <td>${apt.appointmentType ?? '—'}</td>
+              <td class="amount">${this.formatCurrency(apt.paymentValue)}</td>
+              <td class="amount" style="color:#1a6b3c">${this.formatCurrency(apt.doctorEarnings)}</td>
+            </tr>
+          `,
+          )
+          .join('');
+
+        return `
+        <div class="prof-header">
+          <div class="prof-name">${p.name}</div>
+          <div class="prof-meta">
+            ${p.appointments.length} atendimento${p.appointments.length !== 1 ? 's' : ''}
+            &nbsp;|&nbsp; Participação: ${participacao}
+            &nbsp;|&nbsp; Total: <strong>${this.formatCurrency(p.value)}</strong>
+          </div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Paciente</th>
+              <th>Especialidade</th>
+              <th>Tipo</th>
+              <th>Valor Pago</th>
+              <th>Comissão</th>
+            </tr>
+          </thead>
+          <tbody>${appointmentRows}</tbody>
+          <tfoot>
+            <tr>
+              <td colspan="5"><strong>Total do Profissional</strong></td>
+              <td class="total">${this.formatCurrency(p.value)}</td>
+            </tr>
+          </tfoot>
+        </table>
+      `;
+      })
+      .join('');
+
     this.printViaIframe(`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
-    ${this.baseStyles}
-    .summary-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
-    .card { border: 1px solid #d0d0e8; border-radius: 4px; padding: 8px 12px; }
-    .card-label { font-size: 7pt; color: #888; text-transform: uppercase; margin-bottom: 2px; }
-    .card-value { font-size: 11pt; font-weight: 700; color: #1a1a2e; }
-  </style></head><body>
-    ${this.printHeader}
-    <div class="section-title">Produtividade por Profissional</div>
-    <div class="summary-cards">
-      <div class="card">
-        <div class="card-label">Total de Profissionais</div>
-        <div class="card-value">${this.professionals.length}</div>
+      ${this.baseStyles}
+      .summary-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+      .card { border: 1px solid #d0d0e8; border-radius: 4px; padding: 8px 12px; }
+      .card-label { font-size: 7pt; color: #888; text-transform: uppercase; margin-bottom: 2px; }
+      .card-value { font-size: 11pt; font-weight: 700; color: #1a1a2e; }
+      .prof-header { display: flex; justify-content: space-between; align-items: baseline; margin: 16px 0 6px; padding-bottom: 4px; border-bottom: 2px solid #1a1a2e; }
+      .prof-name { font-size: 10pt; font-weight: 700; }
+      .prof-meta { font-size: 8pt; color: #555; }
+    </style></head><body>
+      ${this.printHeader}
+      <div class="section-title">Produtividade por Profissional</div>
+      <div class="summary-cards">
+        <div class="card">
+          <div class="card-label">Total de Profissionais</div>
+          <div class="card-value">${this.professionals.length}</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Receita Total</div>
+          <div class="card-value">${this.formatCurrency(total)}</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Média por Profissional</div>
+          <div class="card-value">${this.professionals.length > 0 ? this.formatCurrency(total / this.professionals.length) : '—'}</div>
+        </div>
       </div>
-      <div class="card">
-        <div class="card-label">Receita Total</div>
-        <div class="card-value">${this.formatCurrency(total)}</div>
+      ${professionalSections}
+      <div class="print-footer">
+        <span>${this.companyData?.tradeName || ''} — BlueClinic</span>
+        <span>Gerado em ${this.getTodayFormatted()}</span>
       </div>
-      <div class="card">
-        <div class="card-label">Média por Profissional</div>
-        <div class="card-value">${this.professionals.length > 0 ? this.formatCurrency(total / this.professionals.length) : '—'}</div>
-      </div>
-    </div>
-    <table>
-      <thead><tr><th>Profissional</th><th>Receita</th><th>Participação</th></tr></thead>
-      <tbody>${rows}</tbody>
-      <tfoot><tr><td><strong>Total</strong></td><td class="total">${this.formatCurrency(total)}</td><td class="total">100%</td></tr></tfoot>
-    </table>
-    <div class="print-footer">
-      <span>${this.companyData?.tradeName || ''} — BlueClinic</span>
-      <span>Gerado em ${this.getTodayFormatted()}</span>
-    </div>
-  </body></html>`);
+    </body></html>`);
   }
 
   exportCashClosing(): void {

@@ -247,6 +247,28 @@ export class WhatssapService {
       `Mensagem recebida de ${phone} (company ${companyId}): ${text}`,
     );
 
+    // Intercepta resposta de botão de template (context.id = wamid da mensagem original)
+    if (msg.type === 'button' && msg.context?.id) {
+      const contextWamid = msg.context.id as string;
+      const buttonPayload = (msg.button?.payload ?? '') as string;
+
+      const originMessage = await this.prisma.client.chatMessage.findFirst({
+        where: { wamid: contextWamid },
+      });
+
+      if (originMessage) {
+        await this.handleTemplateReply(
+          buttonPayload,
+          conversation.id,
+          conversation.patientId,
+          companyId,
+          accessToken,
+          config.phoneNumberId,
+        );
+        return;
+      }
+    }
+
     if (botEnabled && accessToken && conversation.status === 'bot') {
       await this.handleBot(
         conversation.id,
@@ -257,6 +279,81 @@ export class WhatssapService {
         config.phoneNumberId,
       );
     }
+  }
+
+  private async handleTemplateReply(
+    payload: string,
+    conversationId: number,
+    patientId: number | null,
+    companyId: number,
+    accessToken: string,
+    phoneNumberId: string,
+  ): Promise<void> {
+    const normalized = payload.trim().toLowerCase();
+
+    if (normalized === 'confirmar') {
+      if (!patientId) {
+        this.logger.warn(
+          `handleTemplateReply: patientId nulo para conversa ${conversationId}`,
+        );
+        return;
+      }
+
+      const appointment = await this.prisma.client.appointment.findFirst({
+        where: {
+          patientId,
+          status: 'pending',
+          date: { gte: new Date() },
+        },
+        orderBy: { date: 'asc' },
+      });
+
+      if (!appointment) {
+        this.logger.warn(
+          `handleTemplateReply: nenhum agendamento pendente com lembrete enviado para patient ${patientId}`,
+        );
+        await this.sendText(
+          await this.getPhone(conversationId),
+          'Não encontramos nenhuma consulta pendente de confirmação. 🤔',
+          accessToken,
+          phoneNumberId,
+        );
+        return;
+      }
+
+      await this.prisma.client.appointment.update({
+        where: { id: appointment.id },
+        data: { status: 'confirmed' },
+      });
+
+      this.logger.log(
+        `Agendamento ${appointment.id} confirmado via WhatsApp (template reply)`,
+      );
+
+      await this.sendText(
+        await this.getPhone(conversationId),
+        'Consulta confirmada com sucesso! ✅ Até logo.',
+        accessToken,
+        phoneNumberId,
+      );
+
+      return;
+    }
+
+    if (normalized === 'cancelar') {
+      this.logger.log(
+        `handleTemplateReply: paciente escolheu cancelar (conversa ${conversationId}) — encaminhando ao bot`,
+      );
+      // Deixa cair no fluxo normal do bot (cancel flow)
+    }
+  }
+
+  private async getPhone(conversationId: number): Promise<string> {
+    const conv = await this.prisma.client.conversation.findUnique({
+      where: { id: conversationId },
+      select: { phone: true },
+    });
+    return conv?.phone ?? '';
   }
 
   private mapButtonToText(buttonValue: string): string {
@@ -458,6 +555,14 @@ export class WhatssapService {
       conversationId,
       new ChatMessageResponseDto(saved),
     );
+
+    // após salvar o wamid e antes do throw
+    if (!sendError && templateName === 'lembrete_consulta') {
+      await this.prisma.client.conversation.update({
+        where: { id: conversationId },
+        data: { botStep: 'AWAITING_REMINDER_REPLY' },
+      });
+    }
 
     if (sendError) {
       this.gateway.emitMessageStatusUpdated(companyId, conversationId, {

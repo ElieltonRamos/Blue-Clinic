@@ -17,7 +17,6 @@ const METHOD_LABELS: Record<string, string> = {
   pix: 'PIX',
   dinheiro: 'Dinheiro',
   cartao: 'Cartão',
-  convenio: 'Convênio',
 };
 
 @Component({
@@ -77,6 +76,66 @@ export class ModalAppointmentReceipt implements OnInit {
 
   close(): void {
     this.closeModal.emit();
+  }
+
+  printA4(): void {
+    const content = document.getElementById('receiptContent')?.innerHTML;
+    if (!content) return;
+
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentWindow?.document;
+    if (!doc) return;
+
+    const styles = Array.from(document.styleSheets)
+      .map((style) => {
+        try {
+          return style.href ? `<link rel="stylesheet" href="${style.href}">` : '';
+        } catch {
+          return '';
+        }
+      })
+      .join('');
+
+    doc.open();
+    doc.write(`
+    <html>
+      <head>
+        ${styles}
+        <style>
+          @media print {
+            @page { size: A4; margin: 20mm 15mm; }
+            body {
+              margin: 0;
+              padding: 0;
+              width: 100%;
+              font-family: Arial, sans-serif;
+              font-size: 11pt;
+              color: #000;
+            }
+            button, .no-print { display: none !important; }
+            table { width: 100%; border-collapse: collapse; }
+            th { padding: 6px 8px; border-bottom: 2px solid #000; text-align: left; font-size: 11pt; }
+            td { padding: 6px 8px; border-bottom: 1px solid #ccc; font-size: 11pt; }
+            h1 { font-size: 16pt; margin-bottom: 12px; }
+            h2 { font-size: 12pt; text-align: center; margin-bottom: 16px; }
+            p { margin: 4px 0; }
+          }
+        </style>
+      </head>
+      <body onload="window.print(); setTimeout(() => window.close(), 100);">
+        ${content}
+      </body>
+    </html>
+  `);
+    doc.close();
+
+    setTimeout(() => document.body.removeChild(iframe), 2000);
   }
 
   print(): void {

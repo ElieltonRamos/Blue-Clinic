@@ -9,6 +9,7 @@ export type BotStep =
   | 'SELECT_SLOT'
   | 'CONFIRM_APPOINTMENT'
   | 'CANCEL_CONFIRM'
+  | 'AWAITING_REMINDER_REPLY'
   | 'IDLE';
 
 export interface BotData {

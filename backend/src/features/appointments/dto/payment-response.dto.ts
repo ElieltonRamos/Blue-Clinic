@@ -38,40 +38,31 @@ export class PaymentResponseDto {
   })
   date: Date;
 
-  @ApiPropertyOptional({
-    example: 'Carlos Henrique',
-    description: 'Nome do paciente',
-    nullable: true,
-  })
+  @ApiPropertyOptional({ example: 'Carlos Henrique', nullable: true })
   patient: string | null;
 
-  @ApiPropertyOptional({
-    example: 'Dra. Ana Costa',
-    description: 'Nome do médico',
-    nullable: true,
-  })
+  @ApiPropertyOptional({ example: 'Dra. Ana Costa', nullable: true })
   doctor: string | null;
 
-  @ApiProperty({ example: 150.0, description: 'Valor total bruto cobrado' })
+  @ApiProperty({ example: 150.0 })
   value: number;
 
-  @ApiProperty({
-    example: 60.0,
-    description: 'Repasse destinado ao médico (gorjetas são omitidas do lucro)',
-  })
+  @ApiProperty({ example: 60.0 })
   doctorEarnings: number;
 
-  @ApiProperty({
-    example: 90.0,
-    description: 'Faturamento retido pela clínica',
-  })
+  @ApiProperty({ example: 90.0 })
   clinicEarnings: number;
 
-  @ApiProperty({
-    type: () => [PaymentEntryDto],
-    description:
-      'Detalhamento das formas de pagamento que compõem o valor total',
-  })
+  @ApiPropertyOptional({ example: 'Cardiologia', nullable: true })
+  specialty: string | null;
+
+  @ApiPropertyOptional({ example: '14:00', nullable: true })
+  startTime: string | null;
+
+  @ApiPropertyOptional({ example: 'Consulta de Retorno', nullable: true })
+  appointmentTypeName: string | null;
+
+  @ApiProperty({ type: () => [PaymentEntryDto] })
   entries: PaymentEntryDto[];
 
   constructor(p: any) {
@@ -83,6 +74,9 @@ export class PaymentResponseDto {
     this.value = Number(p.value);
     this.doctorEarnings = Number(p.doctorEarnings);
     this.clinicEarnings = Number(p.clinicEarnings);
+    this.specialty = p.specialty ?? null;
+    this.startTime = p.startTime ?? null;
+    this.appointmentTypeName = p.appointmentTypeName ?? null;
     this.entries = (p.entries ?? []).map((e: any) => ({
       id: e.id,
       method: e.method,

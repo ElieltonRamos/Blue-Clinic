@@ -65,7 +65,6 @@ export class DashboardController {
     @CurrentUser('companyId') companyId: number,
     @Query('doctorId', new ParseIntPipe({ optional: true })) doctorId?: number,
   ): Promise<AppointmentTodayDto[]> {
-    console.log('companyId:', companyId, typeof companyId);
     return this.dashboardService.getAppointmentsToday(companyId, doctorId);
   }
 

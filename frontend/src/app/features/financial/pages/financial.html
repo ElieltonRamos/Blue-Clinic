@@ -236,35 +236,112 @@
             </button>
           </div>
 
-          <div class="grid grid-cols-4 gap-3">
+          <div class="flex flex-col gap-3">
             @for (prof of professionals; track prof.id) {
-              <div
-                class="rounded-xl border border-(--color-border) bg-bg-card p-3 flex flex-col gap-2"
-              >
-                <div class="flex items-center gap-2">
+              <div class="rounded-xl border border-(--color-border) bg-bg-card overflow-hidden">
+                <!-- Card header (clicável) -->
+                <button
+                  (click)="toggleProfessional(prof.id)"
+                  class="w-full p-3 flex items-center gap-3 hover:bg-(--color-bg-hover-md) transition-colors text-left"
+                >
                   <div
                     class="w-9 h-9 rounded-full bg-(--color-bg-overlay) border border-(--color-border-md) flex items-center justify-center text-base shrink-0"
                   >
                     {{ prof.avatar }}
                   </div>
-                  <p class="text-[11px] font-medium text-(--color-text-primary) leading-tight">
-                    {{ prof.name }}
-                  </p>
-                </div>
-                <p class="text-[13px] font-bold text-(--color-primary-text)">
-                  {{ formatCurrency(prof.value) }}
-                </p>
-                <div class="h-1 rounded-full bg-(--color-bg-overlay)">
-                  <div
-                    class="h-1 rounded-full bg-(--color-primary) transition-all"
-                    [style.width.%]="(prof.value / maxProfessionalValue()) * 100"
-                  ></div>
-                </div>
+
+                  <div class="flex-1 min-w-0">
+                    <p class="text-[12px] font-medium text-(--color-text-primary) truncate">
+                      {{ prof.name }}
+                    </p>
+                    <p class="text-[11px] text-(--color-text-muted)">
+                      {{ prof.appointments.length }} atendimento{{
+                        prof.appointments.length !== 1 ? 's' : ''
+                      }}
+                    </p>
+                  </div>
+
+                  <div class="flex items-center gap-3 shrink-0">
+                    <div class="text-right">
+                      <p class="text-[13px] font-bold text-(--color-primary-text)">
+                        {{ formatCurrency(prof.value) }}
+                      </p>
+                      <div class="h-1 w-24 rounded-full bg-(--color-bg-overlay) mt-1">
+                        <div
+                          class="h-1 rounded-full bg-(--color-primary) transition-all"
+                          [style.width.%]="(prof.value / maxProfessionalValue()) * 100"
+                        ></div>
+                      </div>
+                    </div>
+                    <span
+                      class="text-[10px] text-(--color-text-muted) transition-transform duration-200"
+                      [class.rotate-180]="expandedProfessionals.has(prof.id)"
+                    >
+                      ▼
+                    </span>
+                  </div>
+                </button>
+
+                <!-- Expand: lista de consultas -->
+                @if (expandedProfessionals.has(prof.id)) {
+                  <div class="border-t border-(--color-border) px-3 pb-3">
+                    <div
+                      class="grid grid-cols-[1fr_1.2fr_1fr_1fr_1fr_1fr] gap-2 py-2 border-b border-(--color-border)"
+                    >
+                      @for (
+                        col of [
+                          'Data',
+                          'Paciente',
+                          'Especialidade',
+                          'Tipo',
+                          'Valor Pago',
+                          'Comissão',
+                        ];
+                        track col
+                      ) {
+                        <p
+                          class="text-[10px] uppercase tracking-wider text-(--color-text-muted) font-semibold"
+                        >
+                          {{ col }}
+                        </p>
+                      }
+                    </div>
+
+                    @for (apt of prof.appointments; track apt.paymentDate + apt.patientName) {
+                      <div
+                        class="grid grid-cols-[1fr_1.2fr_1fr_1fr_1fr_1fr] gap-2 py-2.5 border-b border-(--color-border) items-center last:border-0"
+                      >
+                        <p class="text-[11px] text-(--color-text-muted)">{{ apt.date }}</p>
+                        <p class="text-[11px] font-medium text-(--color-text-primary) truncate">
+                          {{ apt.patientName }}
+                        </p>
+                        <p class="text-[11px] text-(--color-text-secondary) truncate">
+                          {{ apt.specialty }}
+                        </p>
+                        <p class="text-[11px] text-(--color-text-muted)">
+                          {{ apt.appointmentType ?? '—' }}
+                        </p>
+                        <p class="text-[11px] text-(--color-text-secondary)">
+                          {{ formatCurrency(apt.paymentValue) }}
+                        </p>
+                        <p class="text-[11px] font-semibold text-(--color-primary-text)">
+                          {{ formatCurrency(apt.doctorEarnings) }}
+                        </p>
+                      </div>
+                    }
+
+                    @if (prof.appointments.length === 0) {
+                      <p class="text-[12px] text-(--color-text-muted) text-center py-4">
+                        Nenhum atendimento no período
+                      </p>
+                    }
+                  </div>
+                }
               </div>
             }
 
             @if (professionals.length === 0) {
-              <p class="col-span-4 text-[12px] text-(--color-text-muted) text-center py-4">
+              <p class="text-[12px] text-(--color-text-muted) text-center py-4">
                 Nenhum dado no período
               </p>
             }

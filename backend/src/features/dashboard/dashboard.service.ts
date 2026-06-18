@@ -150,8 +150,6 @@ export class DashboardService {
     doctorId?: number,
   ): Promise<AppointmentTodayDto[]> {
     const today = this.todayRange();
-    console.log('today range:', today);
-    console.log('companyId:', companyId);
 
     const appointments = await this.prisma.client.appointment.findMany({
       where: {

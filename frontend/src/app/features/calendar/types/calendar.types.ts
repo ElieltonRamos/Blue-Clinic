@@ -89,6 +89,9 @@ export interface PaymentResponseDto {
   value: number;
   doctorEarnings: number;
   clinicEarnings: number;
+  specialty: string | null;
+  startTime: string | null;
+  appointmentTypeName: string | null;
   entries: PaymentEntry[];
 }
 

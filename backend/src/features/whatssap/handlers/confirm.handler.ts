@@ -32,7 +32,14 @@ export async function handleConfirmAppointment(
   const [y, m, d] = (data.date ?? '').split('-');
   const dateFormatted = `${d}/${m}/${y}`;
 
-  if (text !== '1' && text !== '2') {
+  const normalized = text.trim().toLowerCase();
+
+  if (
+    normalized !== '1' &&
+    normalized !== '2' &&
+    normalized !== 'confirmar' &&
+    normalized !== 'cancelar'
+  ) {
     await sendFn(
       `📋 *Resumo do agendamento:*\n\n` +
         `👨‍⚕️ *Médico:* ${data.doctorName}\n` +
@@ -44,7 +51,7 @@ export async function handleConfirmAppointment(
     return;
   }
 
-  if (text === '2') {
+  if (normalized === '2' || normalized === 'cancelar') {
     await updateConversation(conversationId, 'MENU', {});
     await sendFn(`Agendamento cancelado. Como posso ajudar?\n\n${MENU_TEXT}`);
     return;
@@ -68,6 +75,7 @@ export async function handleConfirmAppointment(
       endTime: data.endTime!,
       status: 'pending',
       origin: 'whatsapp',
+      feeOverride: commission?.price ?? null,
     },
   });
 
