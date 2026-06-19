@@ -211,7 +211,7 @@ Section "Instalar"
     pm2_found:
 
     ; Modificado o comando de inicialização do NSSM para usar "pm2 start server.js --no-daemon"
-    nsExec::ExecToLog '"$INSTDIR\nssm.exe" install ${SERVICE_NAME} "$WINDIR\System32\cmd.exe" "/c $\"$Pm2Path$\" start server.js --no-daemon"'
+    nsExec::ExecToLog '"$INSTDIR\nssm.exe" install ${SERVICE_NAME} "$WINDIR\System32\cmd.exe" "/c $\"$Pm2Path$\" start server.js -i max --no-daemon"'
     nsExec::ExecToLog '"$INSTDIR\nssm.exe" set ${SERVICE_NAME} AppDirectory "$INSTDIR"'
     nsExec::ExecToLog '"$INSTDIR\nssm.exe" set ${SERVICE_NAME} Start SERVICE_AUTO_START'
     nsExec::ExecToLog '"$INSTDIR\nssm.exe" set ${SERVICE_NAME} AppRestartDelay 5000'
