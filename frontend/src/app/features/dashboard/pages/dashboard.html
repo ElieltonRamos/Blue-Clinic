@@ -4,7 +4,7 @@
     <h1 class="text-xl font-semibold text-(--color-text-primary)">
       @switch (role) {
         @case ('admin') {
-          Visão Geral Clínica
+          Painel Geral da Clínica
         }
         @case ('medico') {
           Minha Agenda
@@ -18,7 +18,7 @@
       @switch (role) {
         @case ('admin') {
           Bem-vindo de volta, {{ currentUserName }}. Aqui está o desempenho da sua clínica em
-          agosto.
+          {{ currentMonth }}.
         }
         @case ('medico') {
           Bem-vindo, {{ currentUserName }}. Suas consultas de hoje.
@@ -405,9 +405,12 @@
               <span
                 class="text-[10px] font-medium px-2.5 py-1 rounded-full"
                 [ngClass]="{
-                  'bg-success-subtle text-success': appt.status === 'Confirmado',
-                  'bg-warning-subtle text-warning': appt.status === 'Pendente',
+                  'bg-success-subtle text-success':
+                    appt.status === 'Confirmado' || appt.status === 'Concluído',
+                  'bg-warning-subtle text-warning':
+                    appt.status === 'Pendente' || appt.status === 'Reagendado',
                   'bg-danger-subtle text-(--color-danger)': appt.status === 'Cancelado',
+                  'bg-(--color-bg-hover) text-(--color-text-muted)': appt.status === 'Bloqueado',
                 }"
                 >{{ appt.status }}</span
               >

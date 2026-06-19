@@ -28,6 +28,7 @@ export class Dashboard implements OnInit {
   private notify = inject(NotificationService);
   private cdr = inject(ChangeDetectorRef);
   today = new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' });
+  currentMonth = new Date().toLocaleDateString('pt-BR', { month: 'long' });
 
   role: Role = 'admin';
   currentUserId = 0;

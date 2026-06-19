@@ -21,7 +21,7 @@ interface NavItem {
 })
 export class AppLayout implements OnInit {
   company = signal({ name: '' });
-  isDark = signal(true);
+  isDark = signal(localStorage.getItem('theme') !== 'light');
   currentRouteTitle = signal('Visão Geral da Clínica');
   currentUser = signal({ initials: '', name: '', role: '' });
 
@@ -129,6 +129,7 @@ export class AppLayout implements OnInit {
   }
 
   ngOnInit(): void {
+    document.documentElement.classList.toggle('light', !this.isDark());
     const payload = this.auth.getTokenPayload();
     if (payload) {
       this.currentUser.set({
@@ -147,5 +148,6 @@ export class AppLayout implements OnInit {
   toggleTheme(): void {
     this.isDark.update((v) => !v);
     document.documentElement.classList.toggle('light', !this.isDark());
+    localStorage.setItem('theme', this.isDark() ? 'dark' : 'light');
   }
 }

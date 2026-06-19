@@ -19,7 +19,7 @@ export interface Appointment {
   doctorAvatar: string;
   doctor: string;
   doctorId: string;
-  status: 'Confirmado' | 'Pendente' | 'Cancelado';
+  status: 'Confirmado' | 'Pendente' | 'Cancelado' | 'Concluído' | 'Reagendado' | 'Bloqueado';
 }
 
 export interface NextPatient {

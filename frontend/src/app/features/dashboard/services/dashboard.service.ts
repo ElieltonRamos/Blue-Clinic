@@ -118,11 +118,19 @@ export class DashboardService {
   }
 
   private mapAppointment(a: AppointmentResponse): Appointment {
-    const statusMap: Record<string, 'Confirmado' | 'Pendente' | 'Cancelado'> = {
+    const statusMap: Record<
+      string,
+      'Confirmado' | 'Pendente' | 'Cancelado' | 'Concluído' | 'Reagendado' | 'Bloqueado'
+    > = {
       confirmed: 'Confirmado',
       checkin: 'Confirmado',
       pending: 'Pendente',
       cancelled: 'Cancelado',
+      finished: 'Concluído',
+      paid: 'Concluído',
+      rescheduled: 'Reagendado',
+      blocked: 'Bloqueado',
+      external: 'Bloqueado',
     };
     return {
       initials: DashboardService.initialsStatic(a.patient.name),

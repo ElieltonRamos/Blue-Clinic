@@ -1,25 +1,29 @@
 @if (show) {
-  <div class="fixed inset-0 flex items-center justify-center z-50 bg-backdrop backdrop-blur-sm">
+  <div
+    class="fixed inset-0 z-50 flex items-center justify-center bg-backdrop"
+    (click)="onClose()"
+  >
     <div
-      class="bg-bg-card w-full max-w-lg rounded-2xl shadow-lg overflow-hidden transition-all max-h-[90vh] flex flex-col border border-border"
+      class="bg-bg-card w-full max-w-md rounded-2xl border border-(--color-border) shadow-xl overflow-hidden max-h-[90vh] flex flex-col"
+      (click)="$event.stopPropagation()"
     >
-      <div class="flex justify-between items-center border-b border-border px-6 py-4">
-        <h2 class="text-text-primary text-xl font-bold">{{ title }}</h2>
+      <div class="flex items-center justify-between px-6 py-4">
+        <p class="text-[14px] font-semibold text-(--color-text-primary)">{{ title }}</p>
         <button
-          class="text-text-muted hover:text-text-primary text-2xl font-bold cursor-pointer"
           (click)="onClose()"
+          class="w-7 h-7 flex items-center justify-center rounded-lg text-(--color-text-muted) hover:bg-(--color-bg-hover-md) transition-colors cursor-pointer"
         >
-          ✖
+          ✕
         </button>
       </div>
 
-      <div class="p-6 flex flex-col gap-4 overflow-y-auto">
+      <div class="px-6 pb-2 flex flex-col gap-3 overflow-y-auto">
         <ng-content></ng-content>
 
         @for (field of fields; track field.name) {
           @if (!field.visibleWhen || field.visibleWhen(entity)) {
-            <div>
-              <label class="text-text-primary font-semibold block mb-1">
+            <div class="flex flex-col gap-1">
+              <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)">
                 {{ field.label }}
               </label>
 
@@ -28,29 +32,29 @@
                   [type]="field.type"
                   [(ngModel)]="entity[field.name]"
                   [placeholder]="field.placeholder ?? ''"
-                  class="text-lg w-full p-2 rounded-md bg-input-bg border border-input-border text-input-text font-semibold placeholder:text-input-placeholder focus:border-input-border-focus outline-hidden"
+                  class="bg-(--color-input-bg) border border-(--color-input-border) rounded-lg px-3 py-2 text-[12px] text-(--color-input-text) placeholder:text-(--color-input-placeholder) outline-none focus:border-(--color-input-border-focus) transition-colors"
                 />
               }
 
               @if (field.type === 'password') {
                 <div
-                  class="flex items-center rounded-md bg-input-bg border border-input-border px-3 py-2 focus-within:border-input-border-focus"
+                  class="flex items-center bg-(--color-input-bg) border border-(--color-input-border) rounded-lg px-3 py-2 focus-within:border-(--color-input-border-focus) transition-colors"
                 >
                   <input
                     [type]="showPassword ? 'text' : 'password'"
                     [(ngModel)]="entity[field.name]"
                     [placeholder]="field.placeholder ?? 'Digite a senha'"
-                    class="text-lg w-full bg-transparent text-input-text font-semibold placeholder:text-input-placeholder focus:outline-none border-none"
+                    class="w-full bg-transparent text-[12px] text-(--color-text-primary) placeholder:text-(--color-input-placeholder) outline-none border-none"
                   />
                   <button
                     type="button"
                     (click)="showPassword = !showPassword"
-                    class="ml-2 text-text-muted hover:text-text-secondary transition-colors focus:outline-none cursor-pointer"
+                    class="ml-2 text-(--color-text-muted) hover:text-(--color-text-primary) transition-colors cursor-pointer"
                   >
                     @if (showPassword) {
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
-                        class="w-5 h-5"
+                        class="w-4 h-4"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
@@ -65,7 +69,7 @@
                     } @else {
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
-                        class="w-5 h-5"
+                        class="w-4 h-4"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
@@ -92,7 +96,7 @@
                 <input
                   type="date"
                   [(ngModel)]="entity[field.name]"
-                  class="text-lg w-full p-2 rounded-md bg-input-bg border border-input-border text-input-text font-semibold focus:border-input-border-focus outline-hidden"
+                  class="bg-(--color-input-bg) border border-(--color-input-border) rounded-lg px-3 py-2 text-[12px] text-(--color-input-text) outline-none focus:border-(--color-input-border-focus) transition-colors"
                 />
               }
 
@@ -100,14 +104,14 @@
                 <input
                   type="datetime-local"
                   [(ngModel)]="entity[field.name]"
-                  class="text-lg w-full p-2 rounded-md bg-input-bg border border-input-border text-input-text font-semibold focus:border-input-border-focus outline-hidden"
+                  class="bg-(--color-input-bg) border border-(--color-input-border) rounded-lg px-3 py-2 text-[12px] text-(--color-input-text) outline-none focus:border-(--color-input-border-focus) transition-colors"
                 />
               }
 
               @if (field.type === 'select') {
                 <select
                   [(ngModel)]="entity[field.name]"
-                  class="text-lg w-full p-2 rounded-md bg-input-bg border border-input-border text-input-text font-semibold focus:border-input-border-focus outline-hidden"
+                  class="bg-(--color-input-bg) border border-(--color-input-border) rounded-lg px-3 py-2 text-[12px] text-(--color-input-text) outline-none focus:border-(--color-input-border-focus) transition-colors"
                 >
                   @for (opt of field.options; track opt) {
                     <option [value]="opt">{{ opt }}</option>
@@ -119,16 +123,16 @@
         }
       </div>
 
-      <div class="flex justify-end gap-4 border-t border-border px-6 py-4 bg-bg-base/50">
+      <div class="flex justify-end gap-2 px-6 py-4">
         <button
-          class="bg-secondary hover:bg-secondary-hover text-secondary-text px-6 py-2 rounded-lg font-bold transition-colors cursor-pointer"
           (click)="onClose()"
+          class="px-4 py-2 rounded-lg text-[12px] font-medium text-(--color-text-secondary) hover:bg-(--color-bg-hover) transition-colors cursor-pointer"
         >
           Cancelar
         </button>
         <button
-          class="bg-btn-primary-bg hover:bg-btn-primary-hover text-btn-primary-text px-6 py-2 rounded-lg font-bold transition-all shadow-md cursor-pointer active:scale-95"
           (click)="onSave()"
+          class="px-4 py-2 rounded-lg text-[12px] font-medium bg-(--color-primary) text-(--color-text-inverse) hover:bg-(--color-primary-hover) transition-colors cursor-pointer"
         >
           Salvar
         </button>
@@ -136,83 +140,3 @@
     </div>
   </div>
 }
-
-<!-- Modal: Cadastrar Usuário
-@if (showAddMemberModal()) {
-  <div
-    class="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-    (click)="closeAddMemberModal()"
-  >
-    <div
-      class="bg-bg-card rounded-2xl border border-(--color-border-md) shadow-xl p-6 w-full max-w-md flex flex-col gap-4"
-      (click)="$event.stopPropagation()"
-    >
-      <div class="flex items-center justify-between">
-        <p class="text-[14px] font-semibold text-(--color-text-primary)">Cadastrar Usuário</p>
-        <button
-          (click)="closeAddMemberModal()"
-          class="w-7 h-7 flex items-center justify-center rounded-lg text-(--color-text-muted) hover:bg-(--color-bg-hover-md) transition-colors"
-        >
-          ✕
-        </button>
-      </div>
-
-      <div class="flex flex-col gap-3">
-        <div class="flex flex-col gap-1">
-          <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)"
-            >Usuário (login) *</label
-          >
-          <input
-            [ngModel]="newMember().username"
-            (ngModelChange)="newMember.update(m => ({ ...m, username: $event }))"
-            type="text"
-            placeholder="Ex: dr.joao"
-            class="bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
-          />
-        </div>
-        <div class="flex flex-col gap-1">
-          <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)"
-            >Senha *</label
-          >
-          <input
-            [ngModel]="newMember().password"
-            (ngModelChange)="newMember.update(m => ({ ...m, password: $event }))"
-            type="password"
-            placeholder="Mínimo 6 caracteres"
-            class="bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
-          />
-        </div>
-        <div class="flex flex-col gap-1">
-          <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)"
-            >Nível de Acesso</label
-          >
-          <select
-            [ngModel]="newMember().role"
-            (ngModelChange)="newMember.update(m => ({ ...m, role: $event }))"
-            class="bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
-          >
-            <option value="medico">Médico</option>
-            <option value="atendimento">Atendimento</option>
-            <option value="admin">Admin</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="flex justify-end gap-2 pt-1">
-        <button
-          (click)="closeAddMemberModal()"
-          class="px-4 py-2 rounded-lg text-[12px] font-medium text-(--color-text-secondary) hover:bg-(--color-bg-hover-md) transition-colors"
-        >
-          Cancelar
-        </button>
-        <button
-          (click)="submitNewMember()"
-          [disabled]="loading()"
-          class="px-4 py-2 rounded-lg text-[12px] font-medium bg-(--color-primary) text-(--color-text-inverse) hover:bg-(--color-primary-hover) transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          {{ loading() ? 'Cadastrando...' : 'Cadastrar' }}
-        </button>
-      </div>
-    </div>
-  </div>
-} -->
