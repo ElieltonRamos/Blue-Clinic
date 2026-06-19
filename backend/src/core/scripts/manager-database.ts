@@ -253,43 +253,25 @@ async function runSeeds(): Promise<void> {
     // Seed Company
     console.log('   ⏳ Executando: company-seed');
     await conn.query(`
-      INSERT INTO companies (
-        cnpj, corporate_name, trade_name, state_registration, tax_regime,
-        street, number, complement, neighborhood, city, city_code, state, zip_code,
-        phone, email, nfce_series, nfce_current_number, nfce_environment,
-        nfce_csc, nfce_csc_id, certificate_path, certificate_password,
-        certificate_expiration_date, ibpt_version, license_key, license_token,
-        created_at, updated_at
-      ) VALUES (
-        '00000000000000', 'Restaurante Bom Sabor LTDA', 'Bom Sabor', '123456789', '1',
-        'Rua das Flores', '456', 'Loja 1', 'Centro', 'São Paulo', '3550308', 'SP', '01310100',
-        '11987654321', 'contato@bomsabor.com.br', '1', 1, 'staging',
-        'HOMOLOGACAO-CSC-EXEMPLO', '1', '/certificates/bomsabor.pfx', 'certificado123',
-        '2026-12-31', '4.0', 'b6a63bc12098bbc81b16e5cc4c8e5dcb8d7506aa8b9a57cc56d72f4d677f13ef', 'TOKEN-XYZ-123',
-        NOW(), NOW()
-      ) ON DUPLICATE KEY UPDATE cnpj = cnpj
-    `);
+  INSERT INTO company (tradeName, corporateName, cnpj, phone, email, street, number, neighborhood, city, state, cityCode, licenseKey, createdAt, updatedAt)
+  VALUES ('Blue Clinic', 'Blue Clinic Ltda', '00000000000100', '(38) 99999-9999', 'contato@blueclinic.com.br', 'Rua Exemplo', '123', 'Centro', 'Espinosa', 'MG', '3124302', '53fd9d55780f1646ed650da9a0b465bbb1fa6da70c88f6f22c50ecf159170642', NOW(), NOW())
+  ON DUPLICATE KEY UPDATE cnpj = cnpj
+`);
     console.log('   ✅ Concluído: company-seed');
 
     // Seed User (admin)
     console.log('   ⏳ Executando: user-seed');
+    const [company] = await conn.query<{ id: number }[]>(
+      `SELECT id FROM company WHERE cnpj = '00000000000100'`,
+    );
     const hashAdmin = await bcrypt.hash('impostoeroubo', 10);
     await conn.query(
-      `INSERT INTO users (username, password, role, workplace, active, created_at, updated_at)
-      VALUES ('root', ?, 'admin', '', true, NOW(), NOW())
+      `INSERT INTO user (companyId, username, password, role, active, createdAt, updatedAt)
+      VALUES (?, 'root', ?, 'admin', true, NOW(), NOW())
       ON DUPLICATE KEY UPDATE username = username`,
-      [hashAdmin],
+      [company.id, hashAdmin],
     );
     console.log('   ✅ Concluído: user-seed');
-
-    // Seed Client
-    console.log('   ⏳ Executando: client-seed');
-    await conn.query(`
-      INSERT INTO clients (id, name, active, created_at, updated_at)
-      VALUES (1, 'Consumidor Final', true, NOW(), NOW())
-      ON DUPLICATE KEY UPDATE id = id
-    `);
-    console.log('   ✅ Concluído: client-seed');
   } finally {
     await conn.end();
   }
@@ -489,7 +471,7 @@ async function restoreBackup(): Promise<void> {
 
 function showMenu(): void {
   console.log('\n╔════════════════════════════════════════╗');
-  console.log('║   🗄️  GERENCIADOR DE BANCO - BLUE ERP  ║');
+  console.log('║   🗄️  GERENCIADOR DE BANCO - BLUE CLINIC  ║');
   console.log('╠════════════════════════════════════════╣');
   console.log('║  1 - Criar banco de dados              ║');
   console.log('║  2 - Rodar migrations                  ║');
@@ -517,7 +499,7 @@ async function promptUser(question: string): Promise<string> {
 }
 
 async function main(): Promise<void> {
-  console.log('\n🚀 Blue ERP - Gerenciador de Banco de Dados\n');
+  console.log('\n🚀 Blue Clinic - Gerenciador de Banco de Dados\n');
   console.log(
     `📍 Banco: ${dbConfig.database}@${dbConfig.host}:${dbConfig.port}`,
   );

@@ -1,0 +1,10 @@
+LICENÇA DE USO - BLUE ERP SERVER
+
+Copyright (c) 2024 BlueERP
+
+Este software é propriedade da BlueERP.
+O uso deste software está sujeito aos termos de licenciamento acordados.
+
+Ao instalar este software, você concorda com os termos de uso.
+
+Para suporte: contato@blueerp.com.br
