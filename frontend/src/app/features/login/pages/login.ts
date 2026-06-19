@@ -69,7 +69,18 @@ export class Login {
       error: (err) => {
         closeLoading();
         localStorage.removeItem('token');
-        this.notification.error(err.error?.message || 'Credenciais inválidas');
+
+        let message = 'Credenciais inválidas';
+
+        if (err.status === 0) {
+          message = 'Não foi possível conectar ao servidor';
+        } else if (err.status === 401 || err.status === 403) {
+          message = err.error?.message || 'Usuário ou senha incorretos';
+        } else if (err.error?.message) {
+          message = err.error.message;
+        }
+
+        this.notification.error(message);
         this.form.reset();
       },
     });

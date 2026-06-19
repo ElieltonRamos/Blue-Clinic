@@ -5,6 +5,9 @@
 /tmp
 /out-tsc
 /bazel-out
+/installer
+nginx-installer-win/dist/
+nginx-installer-win/App-Blue-Clinic-Setup-*.exe
 
 # Node
 /node_modules

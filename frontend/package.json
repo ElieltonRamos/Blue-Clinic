@@ -1,6 +1,6 @@
 {
   "name": "frontend",
-  "version": "0.2.9",
+  "version": "0.3.0",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
@@ -8,6 +8,7 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
+    "build:installer": "npm run build && rm -rf nginx-installer-win/dist/frontend/browser && mkdir -p nginx-installer-win/dist/frontend/browser && cp -r dist/frontend/browser/. nginx-installer-win/dist/frontend/browser && cd nginx-installer-win && bash build.sh",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",
     "tauri:build-windows": "cargo tauri build --target x86_64-pc-windows-gnu",

@@ -1,8 +1,8 @@
 [package]
-name = "app"
+name = "blue-clinic"
 version = "0.1.0"
-description = "A Tauri App"
-authors = ["you"]
+description = "Sistema de Gerenciando de Clinic"
+authors = ["Elielton"]
 license = ""
 repository = ""
 edition = "2021"
