@@ -4,7 +4,7 @@
 /build
 /release
 /nsis-installer-windows/server.js
-/nsis-installer-windows/BlueClinicServer-Setup-1.0.0
+/nsis-installer-windows/BlueClinicServer-Setup-1.0.0.exe
 
 # Logs
 logs
