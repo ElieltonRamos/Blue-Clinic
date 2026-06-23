@@ -180,16 +180,24 @@ Section "Instalar"
         DetailPrint "Serviço ${SERVICE_NAME} já existe. Parando e removendo antes de reinstalar..."
         nsExec::ExecToLog 'net stop ${SERVICE_NAME}'
         Sleep 2000
+        nsExec::ExecToLog 'cmd /c pm2 kill'
         nsExec::ExecToLog '"$INSTDIR\nssm.exe" remove ${SERVICE_NAME} confirm'
     ${EndIf}
 
     ; ---------- PM2 ----------
-    DetailPrint "Instalando PM2 globalmente (requer internet)..."
-    nsExec::ExecToLog 'cmd /c npm install -g pm2'
+    nsExec::ExecToStack 'cmd /c pm2 -v'
     Pop $0
+    Pop $1
     ${If} $0 != 0
-        MessageBox MB_OK|MB_ICONSTOP "Falha ao instalar o PM2 (código $0). Verifique a conexão com a internet."
-        Abort
+        DetailPrint "Instalando PM2 globalmente..."
+        nsExec::ExecToLog 'cmd /c npm install -g pm2'
+        Pop $0
+        ${If} $0 != 0
+            MessageBox MB_OK|MB_ICONSTOP "Falha ao instalar o PM2 (código $0). Verifique a conexão com a internet."
+            Abort
+        ${EndIf}
+    ${Else}
+        DetailPrint "PM2 já instalado (versão $1). Pulando instalação."
     ${EndIf}
 
     ; ---------- SERVIÇO WINDOWS (NSSM + pm2 start --no-daemon) ----------
@@ -240,7 +248,9 @@ SectionEnd
 Section "Uninstall"
     DetailPrint "Parando serviço ${SERVICE_NAME}..."
     nsExec::ExecToLog 'net stop ${SERVICE_NAME}'
-    Sleep 3000
+    Sleep 2000
+    nsExec::ExecToLog 'cmd /c pm2 kill'
+    Sleep 2000
 
     DetailPrint "Removendo serviço..."
     nsExec::ExecToLog '"$INSTDIR\nssm.exe" remove ${SERVICE_NAME} confirm'

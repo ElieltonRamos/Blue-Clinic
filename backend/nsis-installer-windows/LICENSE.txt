@@ -1,10 +1,13 @@
-LICENÇA DE USO - BLUE ERP SERVER
+LICENÇA DE USO - BLUE CLINIC
 
-Copyright (c) 2024 BlueERP
+Copyright (c) 2026 Blue Tech Informatica
 
-Este software é propriedade da BlueERP.
+Este software é propriedade da Blue Tech Informatica.
 O uso deste software está sujeito aos termos de licenciamento acordados.
 
 Ao instalar este software, você concorda com os termos de uso.
 
-Para suporte: contato@blueerp.com.br
+Para suporte:
+  Elielton Ramos
+  (38) 98866-3580
+  elieltonramos14@gmail.com
