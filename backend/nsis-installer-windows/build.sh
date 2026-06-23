@@ -13,6 +13,8 @@ if ! command -v makensis &> /dev/null; then
     exit 1
 fi
 
+VERSION=$(node -p "require('../package.json').version")
+
 REQUIRED_FILES=(
     "server.js"
     "nssm.exe"
@@ -38,10 +40,10 @@ done
 
 echo ""
 echo "Compilando instalador..."
-makensis blue-clinic-server.nsi
+makensis -DAPP_VERSION=$VERSION blue-clinic-server.nsi
 
 echo ""
 echo "================================================"
 echo "  Build concluído com sucesso!"
-echo "  Arquivo gerado: BlueClinicServer-Setup-1.0.0.exe"
+echo "  Arquivo gerado: BlueClinicServer-Setup-$VERSION.exe"
 echo "================================================"

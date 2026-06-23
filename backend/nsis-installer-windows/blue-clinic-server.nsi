@@ -7,7 +7,9 @@
 
 ; ==================== DEFINIÇÕES ====================
 !define APP_NAME "Blue Clinic Server"
-!define APP_VERSION "1.0.0"
+!ifndef APP_VERSION
+  !define APP_VERSION "1.0.0"
+!endif
 !define APP_PUBLISHER "BlueClinic"
 !define SERVICE_NAME "BlueClinicServer"
 !define NODE_MSI "node-v24-x64.msi"
@@ -16,7 +18,7 @@
 ; ==================== CONFIGURAÇÕES GERAIS ====================
 Name "${APP_NAME} ${APP_VERSION}"
 OutFile "BlueClinicServer-Setup-${APP_VERSION}.exe"
-InstallDir "$PROGRAMFILES64\${APP_NAME}"
+InstallDir "C:\blue-clinic-server"
 InstallDirRegKey HKLM "Software\${APP_NAME}" "InstallDir"
 RequestExecutionLevel admin
 Unicode True
@@ -47,7 +49,7 @@ Var Pm2Path
 Function .onInit
     ${If} ${RunningX64}
         SetRegView 64
-        StrCpy $INSTDIR "$PROGRAMFILES64\${APP_NAME}"
+        StrCpy $INSTDIR "C:\blue-clinic-server"
     ${Else}
         MessageBox MB_OK|MB_ICONSTOP "Este instalador requer Windows 64-bit."
         Abort
