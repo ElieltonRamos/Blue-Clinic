@@ -16,10 +16,14 @@ import { CurrentUser } from '../../core/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../core/guards/jwt-auth.guard';
 import { SendTemplateDto } from './dto/send-template.dto';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ReminderJob } from './reminder.job';
 
 @Controller('whatssap')
 export class WhatssapController {
-  constructor(private readonly whatssapService: WhatssapService) {}
+  constructor(
+    private readonly whatssapService: WhatssapService,
+    private readonly reminderJob: ReminderJob,
+  ) {}
 
   @Get('webhook')
   verifyWebhook(
@@ -74,5 +78,12 @@ export class WhatssapController {
   @ApiResponse({ status: 400, description: 'WhatsApp não configurado' })
   async getTemplates(@CurrentUser('companyId') companyId: number) {
     return this.whatssapService.getTemplates(companyId);
+  }
+
+  @Post('reminders/trigger')
+  @UseGuards(JwtAuthGuard)
+  async triggerReminders() {
+    await this.reminderJob.triggerManually();
+    return { ok: true };
   }
 }

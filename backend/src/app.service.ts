@@ -1,5 +1,5 @@
 // app.service.ts
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import * as os from 'os';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -52,7 +52,7 @@ interface DashboardData {
 const execAsync = promisify(exec);
 
 @Injectable()
-export class AppService {
+export class AppService implements OnApplicationBootstrap {
   constructor(
     private prisma: PrismaService,
     private licenseService: LicenseSystemService,
@@ -62,6 +62,37 @@ export class AppService {
   async scheduledBackup() {
     console.log('🕐 Executando backup agendado...');
     await this.execBackup();
+  }
+
+  async onApplicationBootstrap() {
+    const lastBackup = this.getLastBackupDate();
+
+    if (!lastBackup || this.isMoreThanOneDayAgo(lastBackup)) {
+      console.log('🚀 Startup: backup necessário, executando...');
+      await this.execBackup();
+    } else {
+      console.log('✅ Startup: backup recente encontrado, pulando.');
+    }
+  }
+
+  private getLastBackupDate(): Date | null {
+    const backupDir = path.join(process.cwd(), 'backups');
+    if (!fs.existsSync(backupDir)) return null;
+
+    const backups = fs
+      .readdirSync(backupDir)
+      .filter((f) => f.endsWith('.sql') && f.startsWith('backup-'))
+      .sort();
+
+    if (backups.length === 0) return null;
+
+    const latest = backups[backups.length - 1];
+    return fs.statSync(path.join(backupDir, latest)).mtime;
+  }
+
+  private isMoreThanOneDayAgo(date: Date): boolean {
+    const oneDayMs = 24 * 60 * 60 * 1000;
+    return Date.now() - date.getTime() > oneDayMs;
   }
 
   async getDashboardData() {

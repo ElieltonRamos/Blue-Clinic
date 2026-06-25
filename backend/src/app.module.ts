@@ -12,9 +12,11 @@ import { ReportsModule } from './features/reports/reports.module';
 import { DashboardModule } from './features/dashboard/dashboard.module';
 import { WhatssapModule } from './features/whatssap/whatssap.module';
 import { ChatModule } from './features/chat/chat.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
     LicenseSystemModule,
     UsersModule,
     AppointmentsModule,

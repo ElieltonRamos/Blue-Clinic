@@ -5,6 +5,7 @@
 /release
 /nsis-installer-windows/server.js
 /nsis-installer-windows/BlueClinicServer-Setup-*.exe
+backups
 
 # Logs
 logs
