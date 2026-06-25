@@ -1,0 +1,318 @@
+<div class="flex h-full overflow-hidden" style="height: calc(100vh - 60px)">
+  <!-- ── Coluna 1: Lista de conversas ── -->
+  <div class="w-72 shrink-0 border-r border-(--color-border) bg-bg-sidebar flex flex-col">
+    <div class="p-4 border-b border-(--color-border)">
+      <p class="text-[13px] font-semibold text-(--color-text-primary) mb-3">Conversas Ativas</p>
+      <div class="flex gap-2">
+        <button
+          (click)="setFilter('todas')"
+          class="text-[12px] px-3 py-1 rounded-full font-medium transition-colors"
+          [class]="
+            filterTab() === 'todas'
+              ? 'bg-(--color-primary) text-(--color-text-inverse)'
+              : 'bg-(--color-bg-hover) text-(--color-text-muted) hover:bg-(--color-bg-hover-md)'
+          "
+        >
+          Todas
+        </button>
+        <button
+          (click)="setFilter('aguardando')"
+          class="text-[12px] px-3 py-1 rounded-full font-medium transition-colors"
+          [class]="
+            filterTab() === 'aguardando'
+              ? 'bg-(--color-primary) text-(--color-text-inverse)'
+              : 'bg-(--color-bg-hover) text-(--color-text-muted) hover:bg-(--color-bg-hover-md)'
+          "
+        >
+          Aguardando
+        </button>
+      </div>
+    </div>
+
+    <div class="flex-1 overflow-y-auto">
+      @for (conv of conversations(); track conv.id) {
+        <button
+          (click)="selectConversation(conv.id)"
+          class="w-full text-left px-4 py-3 border-b border-(--color-border) transition-colors flex flex-col gap-1"
+          [class]="
+            activeConversationId() === conv.id
+              ? 'bg-(--color-primary-subtle)'
+              : 'hover:bg-(--color-bg-hover)'
+          "
+        >
+          <div class="flex items-center justify-between">
+            <span class="text-[13px] font-medium text-(--color-text-primary)">
+              {{ conv.patientName ?? conv.phone }}
+            </span>
+            <span class="text-[10px] text-(--color-text-muted)">
+              {{ conv.lastMessageAt | date: 'HH:mm' }}
+            </span>
+          </div>
+          <p class="text-[11px] text-(--color-text-muted) truncate">{{ conv.lastMessage }}</p>
+          <div class="flex items-center justify-between mt-0.5">
+            <span
+              class="text-[10px] font-medium px-2 py-0.5 rounded-full w-fit"
+              [class]="statusClass(conv.status)"
+            >
+              @if (conv.status === 'bot') {
+                🤖
+              }
+              @if (conv.status === 'human') {
+                👤
+              }
+              @if (conv.status === 'waiting') {
+                ⏳
+              }
+              {{ statusLabel(conv.status) }}
+            </span>
+            @if (conv.unread > 0) {
+              <span
+                class="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-(--color-primary) text-(--color-text-inverse)"
+              >
+                {{ conv.unread }}
+              </span>
+            }
+          </div>
+        </button>
+      }
+      @if (conversations().length === 0) {
+        <p class="text-center text-[12px] text-(--color-text-muted) py-8">Nenhuma conversa.</p>
+      }
+    </div>
+  </div>
+
+  <!-- ── Coluna 2: Janela do chat ── -->
+  <div class="flex-1 flex flex-col overflow-hidden">
+    <div
+      class="flex items-center justify-between px-5 py-3 border-b border-(--color-border) bg-bg-sidebar shrink-0"
+    >
+      <div class="flex items-center gap-3">
+        <div
+          class="w-8 h-8 rounded-full avatar-gradient flex items-center justify-center text-[11px] font-bold text-(--color-text-inverse)"
+        >
+          {{ activeConversation()?.patientName?.slice(0, 2)?.toUpperCase() ?? '?' }}
+        </div>
+        <div>
+          <p class="text-[13px] font-semibold text-(--color-text-primary)">
+            {{ activeConversation()?.patientName ?? activeConversation()?.phone }}
+          </p>
+          <p class="text-[11px] text-(--color-text-muted)">
+            {{ isBotActive() ? 'Automação em curso...' : 'Atendimento humano' }}
+          </p>
+        </div>
+      </div>
+
+      @if (isBotActive()) {
+        <button
+          (click)="takeControl()"
+          class="flex items-center gap-2 text-[12px] font-medium px-4 py-2 rounded-lg bg-(--color-primary) text-(--color-text-inverse) hover:bg-(--color-primary-hover) transition-colors"
+        >
+          🖐️ Tomar Controle do Bot
+        </button>
+      } @else {
+        <button
+          (click)="takeControl()"
+          class="flex items-center gap-2 text-[12px] font-medium px-4 py-2 rounded-lg border border-(--color-border-md) bg-bg-card text-(--color-text-primary) hover:bg-(--color-bg-hover-md) transition-colors"
+        >
+          🤖 Devolver ao Bot
+        </button>
+      }
+    </div>
+
+    <div #messagesContainer class="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-4">
+      @for (msg of messages(); track msg.id) {
+        @if (msg.sender === 'patient') {
+          <div class="flex justify-start">
+            <div class="max-w-[60%]">
+              <div
+                class="bg-bg-card border border-(--color-border) rounded-2xl rounded-tl-sm px-4 py-3"
+              >
+                <p class="text-[13px] text-(--color-text-primary) leading-relaxed">
+                  {{ msg.text }}
+                </p>
+              </div>
+              <p class="text-[10px] text-(--color-text-muted) mt-1 ml-1">
+                {{ msg.sentAt | date: 'HH:mm' }}
+              </p>
+            </div>
+          </div>
+        }
+        @if (msg.sender === 'bot' || msg.sender === 'human') {
+          <div class="flex justify-end">
+            <div class="max-w-[65%]">
+              <div class="flex items-center gap-2 mb-2 justify-end">
+                <span
+                  class="text-[10px] text-(--color-text-muted) uppercase tracking-wider font-medium"
+                >
+                  @if (msg.sender === 'bot') {
+                    🤖 BlueClinic AI
+                  } @else {
+                    👤 {{ msg.senderRole ?? 'Atendente' }}: {{ msg.senderName ?? '' }}
+                  }
+                </span>
+              </div>
+              <div
+                class="bg-(--color-bg-overlay) border border-(--color-border-md) rounded-2xl rounded-tr-sm px-4 py-3"
+              >
+                <p
+                  class="text-[13px] text-(--color-text-primary) leading-relaxed whitespace-pre-line"
+                >
+                  {{ msg.text }}
+                </p>
+              </div>
+              <p
+                class="text-[10px] text-(--color-text-muted) mt-1 mr-1 text-right flex items-center justify-end gap-1"
+              >
+                {{ msg.sentAt | date: 'HH:mm' }}
+                @if (msg.status === 'failed') {
+                  <span class="text-(--color-danger)" title="Não entregue">✗</span>
+                }
+                @if (msg.status === 'sent') {
+                  <span title="Enviado">✓</span>
+                }
+                @if (msg.status === 'delivered') {
+                  <span title="Entregue">✓✓</span>
+                }
+                @if (msg.status === 'read') {
+                  <span class="text-(--color-primary)" title="Lido">✓✓</span>
+                }
+              </p>
+            </div>
+          </div>
+        }
+      }
+    </div>
+
+    <div class="px-5 py-4 border-t border-(--color-border) bg-bg-sidebar shrink-0">
+      @if (windowExpiredConversationId() === activeConversationId()) {
+        <div
+          class="mb-3 flex items-center justify-between gap-3 py-3 px-4 rounded-xl bg-warning-subtle border border-warning"
+        >
+          <span class="text-[12px] text-warning font-medium">
+            ⚠️ Janela de 24h expirada — envie um template para retomar
+          </span>
+          <button
+            (click)="openTemplateModal()"
+            class="text-[12px] font-medium px-3 py-1.5 rounded-lg bg-warning text-(--color-text-inverse) hover:opacity-90 transition-opacity"
+          >
+            Enviar Template
+          </button>
+        </div>
+      } @else {
+        <div
+          class="flex items-center gap-3 bg-bg-card border border-(--color-border) rounded-xl px-4 py-2.5"
+        >
+          <input
+            [ngModel]="newMessage()"
+            (ngModelChange)="newMessage.set($event)"
+            (keydown.enter)="sendMessage()"
+            type="text"
+            placeholder="Digite uma mensagem"
+            class="flex-1 bg-transparent text-[13px] text-(--color-text-primary) placeholder:text-(--color-text-muted) outline-none"
+          />
+          <button
+            (click)="sendMessage()"
+            [disabled]="isSending()"
+            class="w-8 h-8 rounded-lg bg-(--color-primary) hover:bg-(--color-primary-hover) transition-colors flex items-center justify-center text-white text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            @if (isSending()) {
+              <span
+                class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"
+              ></span>
+            } @else {
+              ➤
+            }
+          </button>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- ── Coluna 3: Info do paciente ── -->
+  @if (patient(); as p) {
+    <div
+      class="w-64 shrink-0 border-l border-(--color-border) bg-bg-sidebar flex flex-col overflow-y-auto"
+    >
+      <div class="flex flex-col items-center pt-6 pb-5 px-4 border-b border-(--color-border)">
+        <div
+          class="w-20 h-20 rounded-full avatar-gradient flex items-center justify-center text-2xl font-bold text-(--color-text-inverse)"
+        >
+          {{ p.name?.slice(0, 2)?.toUpperCase() ?? '?' }}
+        </div>
+        <p class="text-[14px] font-semibold text-(--color-text-primary) mt-3 text-center">
+          {{ p.name ?? p.phone }}
+        </p>
+        <p class="text-[10px] text-(--color-text-muted) uppercase tracking-wider mt-0.5">
+          Paciente desde {{ p.memberSince | date: 'MMM yyyy' }}
+        </p>
+      </div>
+
+      <div class="flex flex-col gap-2 p-4">
+        <div class="rounded-xl border border-(--color-border) bg-bg-card p-3">
+          <p class="text-[9px] text-(--color-text-muted) uppercase tracking-wider mb-1">
+            Última Consulta
+          </p>
+          <p class="text-[13px] font-semibold text-(--color-text-primary)">
+            {{ p.lastVisit ? (p.lastVisit | date: 'dd MMM, yyyy') : 'Nenhuma' }}
+          </p>
+        </div>
+
+        @if (!p.id) {
+          <button
+            (click)="openRegisterPatientModal()"
+            class="w-full bg-success text-(--color-text-inverse) font-bold py-2.5 rounded-lg text-[12px] flex items-center justify-center gap-2 hover:brightness-110 transition-all active:scale-95"
+          >
+            <span>➕</span>
+            <span>Registrar Paciente</span>
+          </button>
+        }
+
+        <button
+          (click)="openAppointmentModal()"
+          [disabled]="!p.id"
+          class="w-full bg-primary-dark text-(--color-text-inverse) font-bold py-2.5 rounded-lg text-[12px] flex items-center justify-center gap-2 hover:brightness-110 transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          <span>🩺</span>
+          <span>Criar Novo Agendamento</span>
+        </button>
+      </div>
+
+      <div class="px-4 pb-4 flex flex-col gap-2 mt-auto">
+        <button
+          (click)="blockContact()"
+          class="w-full flex items-center gap-2 text-[12px] font-medium px-3 py-2.5 rounded-lg transition-colors"
+          [class]="
+            p.blocked
+              ? 'border border-(--color-border-md) bg-bg-card text-(--color-text-muted)'
+              : 'bg-(--color-danger) text-(--color-text-inverse) hover:bg-(--color-danger-dark)'
+          "
+        >
+          {{ p.blocked ? '✅ Contato Bloqueado' : '🚫 Bloquear Contato' }}
+        </button>
+      </div>
+    </div>
+  }
+</div>
+
+<app-template-modal
+  [isOpen]="isTemplateModalOpen()"
+  [conversationId]="activeConversationId()"
+  (close)="isTemplateModalOpen.set(false)"
+  (sent)="windowExpiredConversationId.set(null)"
+/>
+
+<app-create-appointment-modal
+  [isOpen]="showAppointmentModal()"
+  [prefillPatientId]="patient()?.id ?? null"
+  (close)="showAppointmentModal.set(false)"
+  (appointmentCreated)="onAppointmentCreated($event)"
+/>
+
+<app-modal-edit-entity
+  title="Registrar Paciente"
+  [show]="showRegisterPatientModal()"
+  [fields]="patientFields"
+  [entity]="newPatient()"
+  (close)="showRegisterPatientModal.set(false)"
+  (save)="onSavePatient($event)"
+/>

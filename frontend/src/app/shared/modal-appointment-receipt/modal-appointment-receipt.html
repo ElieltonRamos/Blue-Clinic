@@ -1,0 +1,123 @@
+<div
+  class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50"
+  style="background-color: rgba(0, 0, 0, 0.8)"
+>
+  <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-lg max-h-[90vh] flex flex-col">
+    <div id="receiptContent" class="overflow-y-auto grow">
+      <h2 class="text-xl font-bold mb-4 text-center">-- Não tem Valor Fiscal --</h2>
+
+      @if (companyData) {
+        <div class="mb-4 pb-3 border-b border-gray-300">
+          <p class="text-lg font-bold">{{ companyData.tradeName }}</p>
+          <p><strong>Razão Social:</strong> {{ companyData.corporateName }}</p>
+          <p><strong>CNPJ:</strong> {{ formatCnpj(companyData.cnpj) }}</p>
+          <p>
+            <strong>Endereço:</strong> {{ companyData.street }}, {{ companyData.number }}
+            @if (companyData.complement) {
+              , {{ companyData.complement }}
+            }
+          </p>
+          <p>
+            {{ companyData.neighborhood }} - {{ companyData.city }}/{{ companyData.state }} - CEP:
+            {{ companyData.cityCode }}
+          </p>
+          @if (companyData.phone) {
+            <p><strong>Tel:</strong> {{ formatPhone(companyData.phone) }}</p>
+          }
+        </div>
+      }
+
+      <h1 class="text-2xl font-bold mb-4 mt-2">Recibo de Consulta</h1>
+
+      <p><strong>Paciente:</strong> {{ paymentData.patient }}</p>
+      <p><strong>Médico:</strong> {{ paymentData.doctor }}</p>
+      @if (paymentData.specialty) {
+        <p><strong>Especialidade:</strong> {{ paymentData.specialty }}</p>
+      }
+      @if (paymentData.startTime) {
+        <p><strong>Horário:</strong> {{ paymentData.startTime }}</p>
+      }
+      <p><strong>Data:</strong> {{ getFormattedDate() }}</p>
+
+      <table class="table-auto w-full mt-4">
+        <thead>
+          <tr>
+            <th class="px-4 py-2 border-b text-left">Descrição</th>
+            <th class="px-4 py-2 border-b text-right">Valor</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="px-4 py-2 border-b">
+              @if (paymentData.appointmentTypeName && paymentData.specialty) {
+                {{ paymentData.appointmentTypeName }} - {{ paymentData.specialty }}
+              } @else if (paymentData.appointmentTypeName) {
+                {{ paymentData.appointmentTypeName }}
+              } @else if (paymentData.specialty) {
+                Consulta - {{ paymentData.specialty }}
+              } @else {
+                Consulta médica
+              }
+            </td>
+            <td class="px-4 py-2 border-b text-right">R$ {{ formatNumber(paymentData.value) }}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p class="mt-4 text-lg font-bold">
+        <strong>Total Pago: R$</strong> {{ formatNumber(paymentData.value) }}
+      </p>
+
+      <div class="mt-2">
+        <strong>Pagamento:</strong>
+        @for (entry of paymentData.entries; track entry.method) {
+          <p>
+            {{ methodLabel(entry.method) }}: R$ {{ formatNumber(entry.amount) }}
+            @if (entry.change > 0) {
+              <span> | Troco: R$ {{ formatNumber(entry.change) }}</span>
+            }
+          </p>
+        }
+      </div>
+
+      <div
+        class="mt-8 pt-2 border-t border-gray-200 text-center text-gray-400"
+        style="font-size: 12px"
+      >
+        <p>⚙️ Blue Clinic © 2026 | Email: elieltonramos14&#64;gmail.com</p>
+      </div>
+    </div>
+
+    <div class="mt-6 flex justify-end gap-2 print:hidden">
+      <button
+        (click)="printA4()"
+        class="bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600 transition flex items-center gap-2"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
+          />
+        </svg>
+        <span>Imprimir</span>
+      </button>
+
+      <button
+        (click)="close()"
+        class="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition flex items-center gap-2"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M6 18L18 6M6 6l12 12"
+          />
+        </svg>
+        <span>Fechar</span>
+      </button>
+    </div>
+  </div>
+</div>

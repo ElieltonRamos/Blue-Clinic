@@ -1,0 +1,34 @@
+export type BotStep =
+  | 'MENU'
+  | 'REGISTER_NAME'
+  | 'REGISTER_CPF'
+  | 'SELECT_SPECIALTY'
+  | 'SELECT_APPOINTMENT_TYPE'
+  | 'SELECT_DOCTOR'
+  | 'SELECT_DATE'
+  | 'SELECT_SLOT'
+  | 'CONFIRM_APPOINTMENT'
+  | 'CANCEL_CONFIRM'
+  | 'AWAITING_REMINDER_REPLY'
+  | 'IDLE';
+
+export interface BotData {
+  patientId?: number;
+  name?: string;
+  specialty?: string;
+  appointmentTypeId?: number;
+  appointmentTypeName?: string;
+  appointmentTypeDuration?: number;
+  doctorId?: number;
+  doctorName?: string;
+  date?: string;
+  startTime?: string;
+  endTime?: string;
+  cancelAppointmentId?: number;
+  phone?: string;
+  _suggestedDates?: string[];
+  _awaitingManualDate?: boolean;
+  _pendingConfirmDate?: string;
+}
+
+export type SendFn = (msg: string) => Promise<void>;

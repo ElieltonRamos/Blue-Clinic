@@ -1,0 +1,303 @@
+<section class="mt-14 p-8 flex-1 overflow-y-auto custom-scrollbar flex gap-8">
+  <div class="flex-1 flex flex-col min-w-0">
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h2
+          class="text-3xl font-extrabold text-(--color-primary-text) tracking-tight font-headline"
+        >
+          Gestão de Pacientes
+        </h2>
+        <p class="text-[13px] text-(--color-text-secondary) mt-1">
+          Revisando {{ totalCount() | number: '1.0-0' }} registros clínicos ativos
+        </p>
+      </div>
+      <button
+        (click)="openCreateModal()"
+        class="flex items-center gap-2 bg-primary-dark text-(--color-text-primary) px-5 py-2.5 rounded-lg font-bold shadow-sm hover:brightness-110 transition-all active:scale-95"
+      >
+        <span>➕</span>
+        <span>Registrar Paciente</span>
+      </button>
+    </div>
+
+    <!-- Filtros -->
+    <div class="flex gap-3 mb-4">
+      <input
+        type="text"
+        placeholder="Buscar por nome..."
+        [ngModel]="searchName()"
+        (ngModelChange)="searchName.set($event)"
+        (keydown.enter)="onSearch()"
+        class="w-full p-2 rounded-md bg-input-bg border border-input-border text-input-text placeholder:text-input-placeholder focus:border-input-border-focus outline-hidden text-sm"
+      />
+      <input
+        type="text"
+        placeholder="Buscar por CPF..."
+        [ngModel]="searchCpf()"
+        (ngModelChange)="searchCpf.set($event)"
+        (keydown.enter)="onSearch()"
+        class="w-full p-2 rounded-md bg-input-bg border border-input-border text-input-text placeholder:text-input-placeholder focus:border-input-border-focus outline-hidden text-sm"
+      />
+      <button
+        (click)="onSearch()"
+        class="px-4 py-2 bg-primary hover:bg-primary-hover text-btn-primary-text rounded-md font-bold text-sm transition-colors cursor-pointer whitespace-nowrap"
+      >
+        Buscar
+      </button>
+    </div>
+
+    <div class="bg-bg-card rounded-xl overflow-hidden border border-(--color-border)">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr
+              class="bg-(--color-bg-overlay) text-(--color-text-muted) text-[11px] font-bold uppercase tracking-wider"
+            >
+              <th class="px-6 py-4">Nome</th>
+              <th class="px-6 py-4">Telefone</th>
+              <th class="px-6 py-4">CPF</th>
+              <th class="px-6 py-4">Última Visita</th>
+              <th class="px-6 py-4">Status</th>
+              <th class="px-6 py-4 text-right">Ações</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-(--color-border)">
+            @for (patient of patients(); track patient.id; let odd = $odd) {
+              <tr
+                class="transition-colors cursor-pointer"
+                [class.bg-bg-sidebar]="odd && !isSelected(patient.id)"
+                [class.bg-bg-overlay]="isSelected(patient.id)"
+              >
+                <td class="px-6 py-4">
+                  <div class="flex items-center space-x-3">
+                    <div
+                      class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm"
+                      [ngClass]="patient.avatarColor"
+                    >
+                      {{ patient.initials }}
+                    </div>
+                    <div>
+                      <div class="font-bold text-(--color-text-primary)">{{ patient.name }}</div>
+                      <div class="text-xs text-(--color-text-secondary)">{{ patient.email }}</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-6 py-4 text-sm text-(--color-text-secondary)">{{ patient.phone }}</td>
+                <td class="px-6 py-4 text-sm font-mono text-(--color-text-secondary)">
+                  {{ patient.cpf }}
+                </td>
+                <td class="px-6 py-4 text-sm text-(--color-text-secondary)">
+                  {{ formatDate(patient.lastVisit) }}
+                </td>
+                <td class="px-6 py-4">
+                  @if (patient.status === 'Ativo') {
+                    <span
+                      class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-success-subtle text-success"
+                      >ATIVO</span
+                    >
+                  } @else {
+                    <span
+                      class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-danger-subtle text-danger"
+                      >INATIVO</span
+                    >
+                  }
+                </td>
+                <td class="px-6 py-4 text-right">
+                  <button
+                    (click)="selectPatient(patient.id)"
+                    class="bg-(--color-bg-hover-md) text-(--color-primary-text) px-3 py-1.5 rounded-full text-xs font-bold hover:bg-primary-dark hover:text-(--color-text-inverse) transition-all flex items-center gap-1 ml-auto"
+                  >
+                    <span>👤</span>
+                    Detalhes
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div
+        class="px-6 py-4 flex items-center justify-between bg-bg-sidebar border-t border-(--color-border)"
+      >
+        <p class="text-xs text-(--color-text-secondary)">
+          Exibindo
+          <span class="font-bold">{{ (page() - 1) * itemsPerPage + 1 }}</span> a
+          <span class="font-bold">{{
+            page() * itemsPerPage > totalCount() ? totalCount() : page() * itemsPerPage
+          }}</span>
+          de <span class="font-bold">{{ totalCount() | number: '1.0-0' }}</span> pacientes
+        </p>
+        <app-paginator
+          [page]="page()"
+          [totalItems]="totalCount()"
+          [itemsPerPage]="itemsPerPage"
+          (pageChanged)="onPageChange($event)"
+        />
+      </div>
+    </div>
+  </div>
+
+  @if (selectedDetail(); as detail) {
+    <div class="w-96 flex flex-col gap-6 shrink-0">
+      <div class="bg-bg-card rounded-xl p-6 border border-(--color-border) flex flex-col">
+        <div class="flex justify-between items-start mb-6">
+          <div
+            class="w-20 h-20 rounded-2xl bg-primary flex items-center justify-center border-4 border-(--color-bg-overlay)"
+          >
+            <span class="text-2xl font-extrabold text-btn-primary-text">{{
+              getInitials(detail.name)
+            }}</span>
+          </div>
+          <div class="flex gap-2">
+            <button
+              (click)="openEditModal()"
+              class="text-(--color-text-muted) hover:text-(--color-primary-text) transition-colors text-sm font-bold cursor-pointer px-2 py-1 rounded hover:bg-(--color-bg-hover-md)"
+            >
+              ✏️ Editar
+            </button>
+            <button
+              (click)="clearSelection()"
+              class="text-(--color-text-muted) hover:text-danger transition-colors text-sm font-bold cursor-pointer px-2 py-1 rounded hover:bg-(--color-bg-hover-md)"
+            >
+              ✖
+            </button>
+          </div>
+        </div>
+
+        <h3 class="text-xl font-extrabold text-(--color-primary-text) font-headline">
+          {{ detail.name }}
+        </h3>
+        <p class="text-xs text-(--color-text-secondary) mb-4">
+          Paciente desde {{ formatMemberSince(detail.memberSince) }}
+        </p>
+
+        <div class="space-y-4 flex-1">
+          <div class="flex items-center justify-between border-b border-(--color-border) pb-2">
+            <span class="text-xs font-bold uppercase text-(--color-text-muted) tracking-wider"
+              >Histórico de Consultas</span
+            >
+            <span class="text-sm">🕐</span>
+          </div>
+          <div class="space-y-4">
+            @for (item of detail.consultationHistory; track item.title) {
+              <div class="flex gap-3">
+                <div class="w-px bg-(--color-border) relative">
+                  <div
+                    class="absolute -left-1 top-0 w-2.5 h-2.5 rounded-full border-2 border-bg-card"
+                    [class.bg-primary-subtle]="item.active"
+                    [class.bg-border-md]="!item.active"
+                  ></div>
+                </div>
+                <div>
+                  <p class="text-sm font-bold text-(--color-text-primary)">{{ item.title }}</p>
+                  <p class="text-xs text-(--color-text-secondary)">
+                    {{ formatDate(item.date) }} • {{ item.doctor }}
+                  </p>
+                </div>
+              </div>
+            }
+          </div>
+
+          <div class="mt-8">
+            <div
+              class="flex items-center justify-between border-b border-(--color-border) pb-2 mb-3"
+            >
+              <span class="text-xs font-bold uppercase text-(--color-text-muted) tracking-wider"
+                >Exames Carregados</span
+              >
+              <span class="text-sm">📎</span>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              @for (doc of detail.documents; track doc.name) {
+                <a
+                  [href]="getDocumentUrl(doc.url)"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="p-2 rounded-lg bg-bg-sidebar border border-(--color-border) flex items-center space-x-2 cursor-pointer hover:bg-(--color-bg-overlay) transition-colors"
+                >
+                  <div
+                    class="w-8 h-8 rounded bg-(--color-bg-hover-md) flex items-center justify-center"
+                  >
+                    <span class="text-base">{{ doc.type === 'pdf' ? '📄' : '🖼️' }}</span>
+                  </div>
+                  <div class="overflow-hidden">
+                    <p class="text-[10px] font-bold truncate text-(--color-text-primary)">
+                      {{ doc.name }}
+                    </p>
+                    <p class="text-[8px] text-(--color-text-muted)">{{ doc.size }}</p>
+                  </div>
+                </a>
+              }
+            </div>
+            <label
+              class="w-full mt-4 py-2 border border-dashed border-(--color-border-md) rounded-lg text-xs font-bold text-(--color-text-muted) hover:bg-(--color-bg-overlay) transition-colors cursor-pointer flex items-center justify-center gap-2"
+            >
+              <input
+                type="file"
+                class="hidden"
+                accept=".pdf,image/*"
+                (change)="onUploadDocument($event)"
+              />
+              + Adicionar Documento
+            </label>
+          </div>
+        </div>
+
+        <div class="mt-8 pt-6 border-t border-(--color-border)">
+          <button
+            (click)="openAppointmentModal()"
+            class="w-full bg-primary-dark text-(--color-text-inverse) font-bold py-3 rounded-lg text-sm flex items-center justify-center gap-2 hover:brightness-110 transition-all active:scale-95"
+          >
+            <span>🩺</span>
+            <span>Criar Novo Agendamento</span>
+          </button>
+        </div>
+      </div>
+
+      @if (detail.nextAppointment) {
+        <div
+          class="bg-linear-to-br from-bg-sidebar to-primary-dark p-6 rounded-xl text-(--color-text-inverse) overflow-hidden relative"
+        >
+          <div class="relative z-10">
+            <div class="flex items-center gap-2 opacity-80 mb-1">
+              <span class="text-sm">🕐</span>
+              <span class="text-[10px] font-bold uppercase tracking-widest">Próxima Consulta</span>
+            </div>
+            <p class="text-xl font-bold">
+              {{
+                formatNextAppointment(detail.nextAppointment.date, detail.nextAppointment.startTime)
+              }}
+            </p>
+          </div>
+          <span class="absolute -right-4 -bottom-4 text-8xl opacity-5 rotate-12">📅</span>
+        </div>
+      }
+    </div>
+  }
+</section>
+
+<app-modal-edit-entity
+  title="Registrar Paciente"
+  [show]="showCreateModal()"
+  [fields]="patientFields"
+  [entity]="newPatient()"
+  (close)="showCreateModal.set(false)"
+  (save)="onSavePatient($event)"
+/>
+
+<app-modal-edit-entity
+  title="Editar Paciente"
+  [show]="showEditModal()"
+  [fields]="editFields"
+  [entity]="editPatient()"
+  (close)="showEditModal.set(false)"
+  (save)="onUpdatePatient($event)"
+/>
+
+<app-create-appointment-modal
+  [isOpen]="showAppointmentModal()"
+  [prefillPatientId]="selectedDetail()?.id ?? null"
+  (close)="showAppointmentModal.set(false)"
+  (appointmentCreated)="onAppointmentCreated($event)"
+/>

@@ -1,0 +1,70 @@
+#!/usr/bin/env sh
+
+# post-commit hook para versionamento automático em monorepo
+# ========================================================
+# COPIE este arquivo para: .git-hooks/post-commit
+# Execute: chmod +x .git-hooks/post-commit
+# Configure: git config core.hooksPath .git-hooks
+# Faça um commit para testar
+# ========================================================
+
+# Evita loop infinito
+if [ "$HUSKY_SKIP_HOOKS" = "1" ]; then
+  exit 0
+fi
+
+# Função para incrementar versão
+increment_version() {
+  PACKAGE_JSON="$1"
+  
+  # Lê a versão atual
+  CURRENT_VERSION=$(grep '"version"' "$PACKAGE_JSON" | head -1 | sed 's/.*"version": "\(.*\)".*/\1/')
+  
+  # Separa os números
+  MAJOR=$(echo $CURRENT_VERSION | cut -d'.' -f1)
+  MINOR=$(echo $CURRENT_VERSION | cut -d'.' -f2)
+  PATCH=$(echo $CURRENT_VERSION | cut -d'.' -f3)
+  
+  # Incrementa o patch
+  PATCH=$((PATCH + 1))
+  
+  # Se patch chegar a 10, incrementa minor e zera patch
+  if [ $PATCH -eq 10 ]; then
+    MINOR=$((MINOR + 1))
+    PATCH=0
+  fi
+  
+  # Se minor chegar a 10, incrementa major e zera minor
+  if [ $MINOR -eq 10 ]; then
+    MAJOR=$((MAJOR + 1))
+    MINOR=0
+  fi
+  
+  NEW_VERSION="$MAJOR.$MINOR.$PATCH"
+  
+  # Atualiza o package.json
+  sed -i "s/\"version\": \"$CURRENT_VERSION\"/\"version\": \"$NEW_VERSION\"/" "$PACKAGE_JSON"
+  
+  echo "Versão atualizada: $CURRENT_VERSION → $NEW_VERSION"
+}
+
+MODIFIED_DIRS=$(git diff HEAD~1 HEAD --name-only | cut -d'/' -f1 | sort -u)
+
+# Incrementa versão do frontend se houver mudanças
+if echo "$MODIFIED_DIRS" | grep -q "^frontend$"; then
+  increment_version "frontend/package.json"
+  git add frontend/package.json
+fi
+
+# Incrementa versão do backend se houver mudanças
+if echo "$MODIFIED_DIRS" | grep -q "^backend$"; then
+  increment_version "backend/package.json"
+  git add backend/package.json
+fi
+
+# Commit das mudanças se houver alguma
+if git diff --cached --quiet; then
+  exit 0
+else
+  HUSKY_SKIP_HOOKS=1 git commit --amend --no-edit --no-verify
+fi

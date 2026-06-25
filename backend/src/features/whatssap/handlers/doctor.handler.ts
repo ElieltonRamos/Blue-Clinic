@@ -1,0 +1,88 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+import { PrismaService } from '../../../core/database/prisma.service.js';
+import { BotData, BotStep, SendFn } from '../entities/bot-state.types.js';
+
+export async function askDoctor(
+  companyId: number,
+  specialty: string,
+  sendFn: SendFn,
+  prisma: PrismaService,
+  appointmentTypeId?: number,
+): Promise<void> {
+  const doctors = await prisma.client.doctor.findMany({
+    where: { companyId, specialty, active: true },
+    include: appointmentTypeId
+      ? {
+          appointmentTypeCommissions: {
+            where: { appointmentTypeId },
+            select: { price: true },
+          },
+        }
+      : undefined,
+  });
+
+  if (!doctors.length) {
+    await sendFn('Nenhum médico disponível para esta especialidade.');
+    return;
+  }
+
+  const list = doctors
+    .map((d, i) => {
+      const commission = appointmentTypeId
+        ? (d as any).appointmentTypeCommissions?.[0]
+        : null;
+      const price = commission
+        ? ` - R$ ${Number(commission.price).toFixed(2).replace('.', ',')}`
+        : '';
+      return `${i + 1}️⃣ ${d.name}${price}`;
+    })
+    .join('\n');
+
+  await sendFn(`Escolha o médico:\n\n${list}`);
+}
+
+export async function handleSelectDoctor(
+  text: string,
+  data: BotData,
+  conversationId: number,
+  companyId: number,
+  sendFn: SendFn,
+  prisma: PrismaService,
+  updateConversation: (
+    id: number,
+    step: BotStep,
+    data: BotData,
+  ) => Promise<void>,
+  askDate: (
+    data: BotData,
+    conversationId: number,
+    companyId: number,
+    sendFn: SendFn,
+  ) => Promise<void>,
+): Promise<void> {
+  const doctors = await prisma.client.doctor.findMany({
+    where: { companyId, specialty: data.specialty ?? '', active: true },
+  });
+
+  const idx = parseInt(text) - 1;
+  if (isNaN(idx) || idx < 0 || idx >= doctors.length) {
+    await sendFn('Opção inválida. Digite o número do médico.');
+    return askDoctor(
+      companyId,
+      data.specialty ?? '',
+      sendFn,
+      prisma,
+      data.appointmentTypeId,
+    );
+  }
+
+  const doctor = doctors[idx];
+  const updatedData: BotData = {
+    ...data,
+    doctorId: doctor.id,
+    doctorName: doctor.name,
+  };
+  await updateConversation(conversationId, 'SELECT_DATE', updatedData);
+  return askDate(updatedData, conversationId, companyId, sendFn);
+}

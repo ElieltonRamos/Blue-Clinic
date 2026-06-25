@@ -1,0 +1,371 @@
+<div class="p-6 flex flex-col gap-6">
+  <!-- Header -->
+  <div>
+    <h1 class="text-xl font-semibold text-(--color-text-primary)">Configurações</h1>
+    <p class="text-[13px] text-(--color-text-muted) mt-1 max-w-md">
+      Gerencie os dados da empresa, profissionais e controle de acessos.
+    </p>
+  </div>
+
+  <!-- Main content -->
+  <div class="flex flex-col gap-5">
+    <!-- Dados da Empresa -->
+    <div class="rounded-xl border border-(--color-border) bg-bg-sidebar p-5">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-[13px] font-semibold text-(--color-text-primary)">Dados da Empresa</p>
+        @if (companySaved()) {
+          <span class="text-[11px] text-success flex items-center gap-1">✓ Salvo</span>
+        }
+      </div>
+
+      @if (companyData(); as company) {
+        <div class="grid grid-cols-2 gap-3">
+          <div class="flex flex-col gap-1">
+            <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)"
+              >Nome Fantasia</label
+            >
+            <input
+              [ngModel]="company.tradeName"
+              (ngModelChange)="companyData.update(c => c ? { ...c, tradeName: $event } : c)"
+              type="text"
+              class="bg-bg-card border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
+            />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)"
+              >Razão Social</label
+            >
+            <input
+              [ngModel]="company.corporateName"
+              (ngModelChange)="companyData.update(c => c ? { ...c, corporateName: $event } : c)"
+              type="text"
+              class="bg-bg-card border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
+            />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)"
+              >CNPJ</label
+            >
+            <input
+              [ngModel]="company.cnpj"
+              (ngModelChange)="companyData.update(c => c ? { ...c, cnpj: $event } : c)"
+              type="text"
+              class="bg-bg-card border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
+            />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)"
+              >Telefone</label
+            >
+            <input
+              [ngModel]="company.phone"
+              (ngModelChange)="companyData.update(c => c ? { ...c, phone: $event } : c)"
+              type="text"
+              class="bg-bg-card border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
+            />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)"
+              >E-mail</label
+            >
+            <input
+              [ngModel]="company.email"
+              (ngModelChange)="companyData.update(c => c ? { ...c, email: $event } : c)"
+              type="email"
+              class="bg-bg-card border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
+            />
+          </div>
+          <!-- substitui o div col-span-2 de Endereço -->
+          <div class="flex flex-col gap-1">
+            <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)"
+              >Rua</label
+            >
+            <input
+              [ngModel]="company.street"
+              (ngModelChange)="companyData.update(c => c ? { ...c, street: $event } : c)"
+              type="text"
+              class="bg-bg-card border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
+            />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)"
+              >Número</label
+            >
+            <input
+              [ngModel]="company.number"
+              (ngModelChange)="companyData.update(c => c ? { ...c, number: $event } : c)"
+              type="text"
+              class="bg-bg-card border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
+            />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)"
+              >Complemento</label
+            >
+            <input
+              [ngModel]="company.complement"
+              (ngModelChange)="companyData.update(c => c ? { ...c, complement: $event } : c)"
+              type="text"
+              class="bg-bg-card border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
+            />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)"
+              >Bairro</label
+            >
+            <input
+              [ngModel]="company.neighborhood"
+              (ngModelChange)="companyData.update(c => c ? { ...c, neighborhood: $event } : c)"
+              type="text"
+              class="bg-bg-card border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
+            />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)"
+              >Cidade</label
+            >
+            <input
+              [ngModel]="company.city"
+              (ngModelChange)="companyData.update(c => c ? { ...c, city: $event } : c)"
+              type="text"
+              class="bg-bg-card border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
+            />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)"
+              >Código do Município</label
+            >
+            <input
+              [ngModel]="company.cityCode"
+              (ngModelChange)="companyData.update(c => c ? { ...c, cityCode: $event } : c)"
+              type="text"
+              class="bg-bg-card border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
+            />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)"
+              >Estado</label
+            >
+            <input
+              [ngModel]="company.state"
+              (ngModelChange)="companyData.update(c => c ? { ...c, state: $event } : c)"
+              type="text"
+              class="bg-bg-card border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
+            />
+          </div>
+        </div>
+
+        <div class="flex justify-end mt-4">
+          <button
+            (click)="saveCompany()"
+            class="px-4 py-2 rounded-lg bg-(--color-primary) text-(--color-text-inverse) text-[12px] font-medium hover:bg-(--color-primary-hover) transition-colors"
+          >
+            Salvar alterações
+          </button>
+        </div>
+      } @else {
+        <p class="text-[12px] text-(--color-text-muted)">Carregando dados da empresa...</p>
+      }
+    </div>
+
+    <!-- Profissionais e Recepção -->
+    <div class="rounded-xl border border-(--color-border) bg-bg-sidebar p-5">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-[13px] font-semibold text-(--color-text-primary)">
+          Profissionais e Recepção
+        </p>
+        <div class="flex items-center gap-2">
+          <select
+            [ngModel]="roleFilter()"
+            (ngModelChange)="roleFilter.set($event); onFilterChange()"
+            class="bg-bg-card border border-(--color-border) rounded-lg px-3 py-1.5 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
+          >
+            <option value="">Todos</option>
+            <option value="medico">Médico</option>
+            <option value="atendimento">Atendimento</option>
+            <option value="admin">Admin</option>
+          </select>
+          <div
+            class="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-(--color-border) bg-bg-card"
+          >
+            <span class="text-[12px] text-(--color-text-muted)">🔍</span>
+            <input
+              [ngModel]="memberFilter()"
+              (ngModelChange)="memberFilter.set($event); onFilterChange()"
+              type="text"
+              placeholder="Buscar por usuário..."
+              class="bg-transparent text-[12px] text-(--color-text-primary) placeholder:text-(--color-text-muted) outline-none w-36"
+            />
+          </div>
+          <button
+            (click)="openCreateModal()"
+            class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-(--color-primary) text-(--color-text-inverse) text-[12px] font-medium hover:bg-(--color-primary-hover) transition-colors"
+          >
+            ＋ Cadastrar
+          </button>
+        </div>
+      </div>
+
+      <div class="flex flex-col divide-y divide-(--color-border)">
+        @for (member of members(); track member.id) {
+          <div class="flex items-center gap-4 py-3 relative">
+            <div
+              class="w-10 h-10 rounded-full bg-(--color-bg-overlay) border border-(--color-border-md) flex items-center justify-center text-lg shrink-0"
+            >
+              👤
+            </div>
+            <div class="flex-1">
+              <p class="text-[13px] font-medium text-(--color-text-primary)">
+                {{ member.username }}
+              </p>
+              <p class="text-[11px] text-(--color-text-muted)">
+                Desde {{ member.createdAt | date: 'dd/MM/yyyy' }}
+              </p>
+            </div>
+            <span
+              class="text-[10px] font-semibold px-3 py-1 rounded-full uppercase tracking-wide"
+              [class]="levelClass(member.role)"
+            >
+              {{ levelLabel(member.role) }}
+            </span>
+            <div class="flex items-center gap-1">
+              <button
+                (click)="openEditModal(member)"
+                class="w-7 h-7 flex items-center justify-center rounded-lg text-(--color-text-muted) hover:bg-(--color-bg-hover-md) hover:text-(--color-text-primary) transition-colors"
+                title="Editar"
+              >
+                ✏️
+              </button>
+              <button
+                (click)="removeMember(member.id)"
+                class="w-7 h-7 flex items-center justify-center rounded-lg text-(--color-danger) hover:bg-danger-subtle transition-colors"
+                title="Remover"
+              >
+                🗑️
+              </button>
+            </div>
+          </div>
+        }
+
+        @if (members().length === 0) {
+          <p class="text-center text-[12px] text-(--color-text-muted) py-6">
+            Nenhum profissional encontrado.
+          </p>
+        }
+      </div>
+    </div>
+
+    <!-- WhatsApp Business -->
+    <div class="rounded-xl border border-(--color-border) bg-bg-sidebar p-4 flex flex-col gap-3">
+      <div class="flex items-center gap-2">
+        <span class="text-xl">💬</span>
+        <p class="text-[13px] font-semibold text-(--color-text-primary)">WhatsApp Business</p>
+      </div>
+      <div class="flex items-center justify-between">
+        <span class="text-[12px] text-(--color-text-muted)">Status da API</span>
+        @if (integration()) {
+          <div class="flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-success"></span>
+            <span class="text-[12px] font-medium text-success">Conectado</span>
+          </div>
+        } @else {
+          <div class="flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-(--color-danger)"></span>
+            <span class="text-[12px] font-medium text-(--color-danger)">Desconectado</span>
+          </div>
+        }
+      </div>
+
+      <div class="grid grid-cols-2 gap-3 pt-1">
+        <div class="flex flex-col gap-1">
+          <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)">
+            Phone Number ID
+          </label>
+          <input
+            [ngModel]="integrationForm().phoneNumberId"
+            (ngModelChange)="integrationForm.update(f => ({ ...f, phoneNumberId: $event }))"
+            type="text"
+            placeholder="Ex: 123456789"
+            class="bg-bg-card border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
+          />
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)">
+            Access Token
+          </label>
+          <input
+            [ngModel]="integrationForm().accessToken"
+            (ngModelChange)="integrationForm.update(f => ({ ...f, accessToken: $event }))"
+            type="password"
+            placeholder="••••••••"
+            class="bg-bg-card border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
+          />
+        </div>
+        <div class="flex flex-col gap-1 col-span-2">
+          <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)">
+            WhatsApp Business Account ID
+          </label>
+          <input
+            [ngModel]="integrationForm().whatsappBusinessAccountId"
+            (ngModelChange)="integrationForm.update(f => ({ ...f, whatsappBusinessAccountId: $event }))"
+            type="text"
+            placeholder="Ex: 123456789"
+            class="bg-bg-card border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
+          />
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2 pt-1">
+        @for (toggle of integrationToggles; track toggle.key) {
+          <label
+            class="flex items-center justify-between px-3 py-2 rounded-lg border border-(--color-border) bg-bg-card cursor-pointer"
+          >
+            <span class="text-[12px] text-(--color-text-primary)">{{ toggle.label }}</span>
+            <input
+              type="checkbox"
+              [ngModel]="integrationForm()[toggle.key]"
+              (ngModelChange)="updateIntegrationToggle(toggle.key, $event)"
+              class="accent-(--color-primary)"
+            />
+          </label>
+        }
+      </div>
+
+      <div class="flex justify-end mt-1">
+        @if (integrationSaved()) {
+          <span class="text-[11px] text-success flex items-center gap-1 mr-3">✓ Salvo</span>
+        }
+        <button
+          (click)="saveIntegration()"
+          class="px-4 py-2 rounded-lg bg-(--color-primary) text-(--color-text-inverse) text-[12px] font-medium hover:bg-(--color-primary-hover) transition-colors"
+        >
+          Salvar integração
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="flex items-center pt-2 border-t border-(--color-border)">
+    <p class="text-[11px] text-(--color-text-muted)">© 2026 BlueClinic. Versão: {{ version }}</p>
+  </div>
+</div>
+
+<!-- modais no final do template, antes de fechar -->
+<app-modal-edit-entity
+  title="Cadastrar Usuário"
+  [show]="showCreateModal()"
+  [entity]="newMember()"
+  [fields]="memberCreateFields"
+  (close)="showCreateModal.set(false)"
+  (save)="onSaveMember($event)"
+/>
+
+<app-modal-edit-entity
+  title="Editar Usuário"
+  [show]="showEditModal()"
+  [entity]="editMember()"
+  [fields]="memberEditFields"
+  (close)="showEditModal.set(false)"
+  (save)="onUpdateMember($event)"
+/>

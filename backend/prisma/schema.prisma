@@ -1,0 +1,420 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+enum Role {
+  admin
+  medico
+  atendimento
+}
+
+enum AppointmentStatus {
+  confirmed
+  pending
+  checkin
+  blocked
+  external
+  paid
+  cancelled
+  rescheduled
+  finished
+}
+
+enum PaymentMethod {
+  pix
+  dinheiro
+  cartao
+  convenio
+}
+
+enum ExpenseStatus {
+  pago
+  pendente
+}
+
+enum ConversationStatus {
+  bot
+  human
+  waiting
+}
+
+enum MessageSender {
+  patient
+  bot
+  human
+}
+
+enum PatientStatus {
+  Ativo
+  Inativo
+}
+
+enum BlockedSlotType {
+  break
+  external
+}
+
+enum RecurrenceType {
+  none
+  daily
+  weekly
+  monthly
+}
+
+enum CommissionType {
+  percentage
+  fixed
+}
+
+enum AppointmentOrigin {
+  whatsapp
+  telefone
+  presencial
+}
+
+enum MessageStatus {
+  sent
+  delivered
+  read
+  failed
+}
+
+model Company {
+  id            Int     @id @default(autoincrement())
+  tradeName     String
+  corporateName String
+  cnpj          String  @unique
+  street        String?
+  number        String?
+  complement    String?
+  neighborhood  String?
+  city          String?
+  state         String?
+  cityCode      String?
+  phone         String?
+  email         String?
+  licenseKey    String?
+  licenseToken  String? @db.Text
+
+  users            User[]
+  doctors          Doctor[]
+  patients         Patient[]
+  expenses         Expense[]
+  blockedSlots     BlockedSlot[]
+  whatsappConfig   WhatsappConfig?
+  appointmentTypes AppointmentType[]
+
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  conversations Conversation[]
+
+  @@map("company")
+}
+
+model DoctorSchedule {
+  id        Int     @id @default(autoincrement())
+  doctorId  Int
+  dayOfWeek Int // 0=Dom, 6=Sáb
+  startTime String
+  endTime   String
+  active    Boolean @default(true)
+
+  doctor Doctor @relation(fields: [doctorId], references: [id])
+
+  @@unique([doctorId, dayOfWeek])
+  @@map("doctor_schedule")
+}
+
+model AppointmentType {
+  id        Int     @id @default(autoincrement())
+  companyId Int
+  name      String
+  duration  Int
+  active    Boolean @default(true)
+
+  company      Company                     @relation(fields: [companyId], references: [id])
+  commissions  AppointmentTypeCommission[]
+  appointments Appointment[]
+
+  @@map("appointment_type")
+}
+
+model AppointmentTypeCommission {
+  id                Int            @id @default(autoincrement())
+  doctorId          Int
+  appointmentTypeId Int
+  price             Decimal        @db.Decimal(10, 2)
+  doctorRateType    CommissionType
+  doctorRate        Decimal        @db.Decimal(10, 2)
+  clinicRateType    CommissionType
+  clinicRate        Decimal        @db.Decimal(10, 2)
+
+  doctor          Doctor          @relation(fields: [doctorId], references: [id])
+  appointmentType AppointmentType @relation(fields: [appointmentTypeId], references: [id])
+
+  @@unique([doctorId, appointmentTypeId])
+  @@map("appointment_type_commission")
+}
+
+model User {
+  id        Int     @id @default(autoincrement())
+  companyId Int
+  username  String  @unique
+  password  String
+  role      Role
+  active    Boolean @default(true)
+
+  company            Company        @relation(fields: [companyId], references: [id])
+  doctor             Doctor?
+  registeredExpenses Expense[]      @relation("ExpenseRegisteredBy")
+  registeredPayments Payment[]      @relation("PaymentRegisteredBy")
+  conversations      Conversation[] @relation("ConversationAssignedTo")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("user")
+}
+
+model Doctor {
+  id        Int     @id @default(autoincrement())
+  companyId Int
+  userId    Int?    @unique
+  name      String
+  specialty String
+  avatarUrl String?
+  active    Boolean @default(true)
+
+  company      Company       @relation(fields: [companyId], references: [id])
+  user         User?         @relation(fields: [userId], references: [id])
+  appointments Appointment[]
+  blockedSlots BlockedSlot[]
+
+  createdAt                  DateTime                    @default(now())
+  updatedAt                  DateTime                    @updatedAt
+  doctorSchedules            DoctorSchedule[]
+  appointmentTypeCommissions AppointmentTypeCommission[]
+
+  @@map("doctor")
+}
+
+model Patient {
+  id             Int           @id @default(autoincrement())
+  companyId      Int
+  name           String
+  email          String?
+  phone          String?
+  cpf            String?
+  birthDate      DateTime?
+  status         PatientStatus @default(Ativo)
+  whatsappActive Boolean       @default(false)
+  lgpdConsent    Boolean       @default(false)
+  memberSince    DateTime      @default(now())
+  blocked        Boolean       @default(false)
+
+  company       Company           @relation(fields: [companyId], references: [id])
+  appointments  Appointment[]
+  documents     PatientDocument[]
+  conversations Conversation[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([companyId, cpf])
+  @@map("patient")
+}
+
+model PatientDocument {
+  id        Int    @id @default(autoincrement())
+  patientId Int
+  name      String
+  size      String
+  type      String
+  url       String
+
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@map("patient_document")
+}
+
+model Appointment {
+  id                 Int                @id @default(autoincrement())
+  doctorId           Int
+  patientId          Int
+  appointmentTypeId  Int?
+  specialty          String
+  date               DateTime
+  startTime          String
+  endTime            String
+  status             AppointmentStatus  @default(pending)
+  feeOverride        Decimal?           @db.Decimal(10, 2)
+  responsible        String?
+  notes              String?
+  cancellationReason String?            @db.Text
+  origin             AppointmentOrigin?
+  rating             Decimal?           @db.Decimal(3, 2)
+  reminderSent       Boolean            @default(false)
+
+  doctor          Doctor           @relation(fields: [doctorId], references: [id])
+  patient         Patient          @relation(fields: [patientId], references: [id])
+  appointmentType AppointmentType? @relation(fields: [appointmentTypeId], references: [id])
+  consultation    Consultation?
+  payments        Payment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("appointment")
+}
+
+model Consultation {
+  id            Int     @id @default(autoincrement())
+  appointmentId Int     @unique
+  title         String
+  notes         String? @db.Text
+  active        Boolean @default(true)
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("consultation")
+}
+
+model BlockedSlot {
+  id         Int             @id @default(autoincrement())
+  companyId  Int
+  doctorId   Int?
+  startDate  DateTime
+  endDate    DateTime?
+  startTime  String
+  endTime    String
+  label      String
+  type       BlockedSlotType
+  recurrence RecurrenceType  @default(none)
+  color      String?
+
+  company Company @relation(fields: [companyId], references: [id])
+  doctor  Doctor? @relation(fields: [doctorId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@map("blocked_slot")
+}
+
+model Payment {
+  id             Int      @id @default(autoincrement())
+  appointmentId  Int
+  date           DateTime
+  patient        String?
+  doctor         String?
+  registeredById Int
+  value          Decimal  @db.Decimal(10, 2)
+  doctorEarnings Decimal  @default(0) @db.Decimal(10, 2)
+  clinicEarnings Decimal  @default(0) @db.Decimal(10, 2)
+  discount       Decimal  @default(0) @db.Decimal(10, 2)
+
+  appointment  Appointment    @relation(fields: [appointmentId], references: [id])
+  registeredBy User           @relation("PaymentRegisteredBy", fields: [registeredById], references: [id])
+  entries      PaymentEntry[]
+
+  @@map("payment")
+}
+
+model PaymentEntry {
+  id        Int           @id @default(autoincrement())
+  paymentId Int           @map("payment_id")
+  method    PaymentMethod
+  amount    Decimal       @db.Decimal(10, 2)
+  change    Decimal       @default(0) @db.Decimal(10, 2)
+
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  @@map("payment_entry")
+}
+
+model Expense {
+  id             Int           @id @default(autoincrement())
+  companyId      Int
+  description    String
+  category       String
+  registeredById Int
+  value          Decimal       @db.Decimal(10, 2)
+  date           DateTime
+  status         ExpenseStatus @default(pendente)
+
+  company      Company @relation(fields: [companyId], references: [id])
+  registeredBy User    @relation("ExpenseRegisteredBy", fields: [registeredById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("expense")
+}
+
+model WhatsappConfig {
+  id            Int     @id @default(autoincrement())
+  companyId     Int     @unique
+  phoneNumberId String?
+  accessToken   String? @db.Text
+  botEnabled    Boolean @default(true)
+  whatsappBusinessAccountId   String? @map("whatsapp_business_account_id")
+  autoReminder  Boolean @default(true)
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("whatsapp_config")
+}
+
+model Conversation {
+  id            Int                @id @default(autoincrement())
+  companyId     Int
+  company       Company            @relation(fields: [companyId], references: [id])
+  patientId     Int?
+  assignedToId  Int?
+  phone         String
+  status        ConversationStatus @default(bot)
+  unread        Int                @default(0)
+  lastMessage   String?
+  lastMessageAt DateTime?
+  botStep       String?
+  botData       Json?
+
+  patient    Patient?      @relation(fields: [patientId], references: [id])
+  assignedTo User?         @relation("ConversationAssignedTo", fields: [assignedToId], references: [id])
+  messages   ChatMessage[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("conversation")
+}
+
+model ChatMessage {
+  id             Int            @id @default(autoincrement())
+  conversationId Int
+  sender         MessageSender
+  text           String         @db.Text
+  sentAt         DateTime       @default(now())
+  read           Boolean        @default(false)
+  senderName     String?
+  senderRole     String?
+  wamid          String?        @unique @map("wamid")
+  status         MessageStatus? @default(sent)
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@map("chat_message")
+}

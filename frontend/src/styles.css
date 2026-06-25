@@ -1,0 +1,215 @@
+@import "tailwindcss";
+@import 'ngx-toastr/toastr';
+
+@theme {
+  /* ── Superfícies ── */
+  --color-bg-base:        #161d2b;
+  --color-bg-sidebar:     #111827;
+  --color-bg-card:        #1a2234;
+  --color-bg-overlay:     #1e2a3a;
+  --color-bg-hover:       rgba(255, 255, 255, 0.04);
+  --color-bg-hover-md:    rgba(255, 255, 255, 0.08);
+
+  /* ── Bordas ── */
+  --color-border:         rgba(255, 255, 255, 0.06);
+  --color-border-md:      rgba(255, 255, 255, 0.10);
+
+  /* ── Texto ── */
+  --color-text-primary:   #e2e8f0;
+  --color-text-secondary: #94a3b8;
+  --color-text-muted:     #64748b;
+  --color-text-disabled:  #475569;
+  --color-text-inverse:   #ffffff;
+
+  /* ── Primária ── */
+  --color-primary:        #3b82f6;
+  --color-primary-dark:   #1d4ed8;
+  --color-primary-hover:  #2563eb;
+  --color-primary-subtle: rgba(59, 130, 246, 0.18);
+  --color-primary-text:   #60a5fa;
+
+  /* ── Secundária ── */
+  --color-secondary:      #1e2a3a;
+  --color-secondary-hover:#253347;
+  --color-secondary-text: #94a3b8;
+
+  /* ── Semânticas ── */
+  --color-success:        #22c55e;
+  --color-success-subtle: rgba(34, 197, 94, 0.15);
+  --color-warning:        #f59e0b;
+  --color-warning-subtle: rgba(245, 158, 11, 0.15);
+  --color-danger:         #ef4444;
+  --color-danger-dark:    #dc2626;
+  --color-danger-subtle:  rgba(239, 68, 68, 0.15);
+  --color-info:           #06b6d4;
+  --color-info-subtle:    rgba(6, 182, 212, 0.15);
+
+  /* ── Botões (aliases — não duplicam valores) ── */
+  --color-btn-primary-bg:       var(--color-primary);
+  --color-btn-primary-hover:    var(--color-primary-hover);
+  --color-btn-primary-text:     var(--color-text-inverse);
+  --color-btn-secondary-bg:     var(--color-secondary);
+  --color-btn-secondary-hover:  var(--color-secondary-hover);
+  --color-btn-secondary-text:   var(--color-secondary-text);
+  --color-btn-secondary-border: var(--color-border-md);
+  --color-btn-ghost-hover:      var(--color-bg-hover-md);
+  --color-btn-ghost-text:       var(--color-text-muted);
+  --color-btn-danger-bg:        var(--color-danger);
+  --color-btn-danger-hover:     var(--color-danger-dark);
+  --color-btn-danger-text:      var(--color-text-inverse);
+
+  /* ── Input ── */
+  --color-input-bg:           var(--color-bg-hover);
+  --color-input-border:       var(--color-border);
+  --color-input-border-focus: var(--color-primary);
+  --color-input-text:         var(--color-text-primary);
+  --color-input-placeholder:  var(--color-text-muted);
+
+  /* ── Nav ── */
+  --color-nav-active-bg:   var(--color-primary-subtle);
+  --color-nav-active-text: var(--color-primary-text);
+
+  /* ── Login ── */
+  --color-login-page-bg-from:  #0f1f3d;
+  --color-login-page-bg-to:    #050d1a;
+  --color-login-panel-bg:      rgba(15, 23, 42, 0.80);
+  --color-login-panel-border:  rgba(147, 197, 253, 0.10);
+
+  /* ── Overlay / Backdrop ── */
+  --color-backdrop:       rgba(0, 0, 0, 0.50);
+
+  /* ── Focus ── */
+  --color-focus-ring:     var(--color-primary);
+
+  /* ── Grid ── */
+  --color-grid:           rgba(59, 130, 246, 0.03);
+
+  /* ── Highlight (stat card destacado) ── */
+  --color-highlight-bg:          var(--color-primary);
+  --color-highlight-text:        var(--color-text-inverse);
+  --color-highlight-icon-bg:     rgba(255, 255, 255, 0.20);
+  --color-highlight-icon-bg-alt: rgba(255, 255, 255, 0.05);
+
+  /* ── Chart ── */
+  --color-chart-primary:   rgba(59, 130, 246, 0.70);
+  --color-chart-secondary: rgba(52, 211, 153, 0.70);
+
+  /* ── Misc ── */
+  --color-dot-neutral:  #94a3b8;
+  --color-ring-track:   rgba(255, 255, 255, 0.06);
+  --color-dev-bg:       rgba(234, 179, 8, 0.10);
+  --color-dev-border:   rgba(234, 179, 8, 0.20);
+  --color-dev-text:     #facc15;
+
+  /* ── Radii e tamanhos ── */
+  --radius-input:  0.5rem;
+  --radius-card:   0.75rem;
+  --radius-badge:  9999px;
+  --grid-size:     40px;
+}
+
+/* ── Light mode ── */
+.light {
+  --color-bg-base:        #f1f5f9;
+  --color-bg-sidebar:     #e2e8f0;
+  --color-bg-card:        #ffffff;
+  --color-bg-overlay:     #f8fafc;
+  --color-bg-hover:       rgba(0, 0, 0, 0.04);
+  --color-bg-hover-md:    rgba(0, 0, 0, 0.08);
+
+  --color-border:         rgba(0, 0, 0, 0.08);
+  --color-border-md:      rgba(0, 0, 0, 0.12);
+
+  --color-text-primary:   #0f172a;
+  --color-text-secondary: #475569;
+  --color-text-muted:     #64748b;
+  --color-text-disabled:  #94a3b8;
+  /* --color-text-inverse: #ffffff — invariante, não sobrescreve */
+
+  --color-primary:        #2563eb;
+  --color-primary-dark:   #1d4ed8;
+  --color-primary-hover:  #1d4ed8;
+  --color-primary-subtle: rgba(37, 99, 235, 0.10);
+  --color-primary-text:   #1d4ed8;
+
+  --color-secondary:      #e2e8f0;
+  --color-secondary-hover:#cbd5e1;
+  --color-secondary-text: #475569;
+
+  --color-success:        #16a34a;
+  --color-success-subtle: rgba(22, 163, 74, 0.12);
+  --color-warning:        #d97706;
+  --color-warning-subtle: rgba(217, 119, 6, 0.12);
+  --color-danger:         #dc2626;
+  --color-danger-dark:    #b91c1c;
+  --color-danger-subtle:  rgba(220, 38, 38, 0.12);
+  --color-info:           #0891b2;
+  --color-info-subtle:    rgba(8, 145, 178, 0.12);
+
+  /* Botões — aliases resolvem automaticamente via dark tokens acima */
+
+  --color-login-page-bg-from:  #dbeafe;
+  --color-login-page-bg-to:    #f1f5f9;
+  --color-login-panel-bg:      rgba(255, 255, 255, 0.85);
+  --color-login-panel-border:  rgba(37, 99, 235, 0.15);
+
+  --color-backdrop:       rgba(0, 0, 0, 0.40);
+
+  --color-grid:           rgba(37, 99, 235, 0.05);
+
+  --color-highlight-icon-bg:     rgba(255, 255, 255, 0.25);
+  --color-highlight-icon-bg-alt: rgba(0, 0, 0, 0.06);
+
+  --color-chart-primary:   rgba(37, 99, 235, 0.70);
+  --color-chart-secondary: rgba(22, 163, 74, 0.70);
+
+  --color-dot-neutral:  #64748b;
+  --color-ring-track:   rgba(0, 0, 0, 0.08);
+  --color-dev-border:   rgba(234, 179, 8, 0.25);
+  --color-dev-text:     #ca8a04;
+}
+
+/* ── Utilitários ── */
+img {
+  max-width: revert;
+  height: revert;
+}
+
+.nav-active {
+  background-color: var(--color-nav-active-bg);
+  color: var(--color-nav-active-text);
+  font-weight: 500;
+}
+
+.avatar-gradient {
+  background: linear-gradient(to bottom right, var(--color-primary), var(--color-primary-dark));
+}
+
+.bg-grid {
+  background-image:
+    linear-gradient(var(--color-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--color-grid) 1px, transparent 1px);
+  background-size: var(--grid-size) var(--grid-size);
+}
+
+.modal-backdrop-dark {
+  background-color: rgba(0, 0, 0, 0.75);
+}
+
+button {
+  cursor: pointer;
+  transition: scale 150ms ease;
+}
+
+button:hover {
+  scale: 1.05;
+}
+
+button:active {
+  scale: 0.97;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  scale: 1;
+}

@@ -1,0 +1,19 @@
+<div class="flex space-x-2 items-center text-sm text-text-primary">
+  <button
+    class="px-3 py-1 bg-secondary border border-border-md rounded hover:bg-secondary-hover disabled:opacity-50 transition-colors cursor-pointer"
+    [disabled]="page === 1"
+    (click)="changePage(page - 1)"
+  >
+    Anterior
+  </button>
+
+  <span class="font-medium text-text-secondary">Página {{ page }} de {{ totalPages }}</span>
+
+  <button
+    class="px-3 py-1 bg-secondary border border-border-md rounded hover:bg-secondary-hover disabled:opacity-50 transition-colors cursor-pointer"
+    [disabled]="page === totalPages"
+    (click)="changePage(page + 1)"
+  >
+    Próxima
+  </button>
+</div>

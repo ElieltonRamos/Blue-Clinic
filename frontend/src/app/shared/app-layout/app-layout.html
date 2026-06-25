@@ -1,0 +1,260 @@
+<div class="flex h-screen overflow-hidden bg-bg-base">
+  <!-- SIDEBAR -->
+  <aside class="w-50 shrink-0 flex flex-col bg-bg-sidebar border-r border-(--color-border)">
+    <!-- Logo -->
+    <div class="px-4 py-5 border-b border-(--color-border)">
+      <div class="flex items-center gap-2.5">
+        <img src="blue-clinic-logo.png" class="w-8 h-8 rounded-lg shrink-0" alt="Logo" />
+        <div class="leading-tight">
+          <p class="text-[13px] font-semibold text-(--color-text-primary)">Blue Clinic</p>
+          <p class="text-[9px] font-light text-(--color-text-muted) uppercase tracking-widest">
+            {{ company().name }}
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Nav -->
+    <nav class="flex-1 px-2.5 py-3 flex flex-col gap-0.5 overflow-y-auto">
+      @for (item of filteredNav; track item.route) {
+        <a
+          [routerLink]="item.route"
+          routerLinkActive="nav-active"
+          [routerLinkActiveOptions]="{ exact: true }"
+          class="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-[13px] text-(--color-text-muted) hover:bg-(--color-bg-hover) hover:text-(--color-text-primary) transition-all duration-150"
+        >
+          @switch (item.icon) {
+            @case ('grid') {
+              <svg
+                class="w-4 h-4 shrink-0 opacity-80"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+              >
+                <rect x="3" y="3" width="7" height="7" rx="1" />
+                <rect x="14" y="3" width="7" height="7" rx="1" />
+                <rect x="3" y="14" width="7" height="7" rx="1" />
+                <rect x="14" y="14" width="7" height="7" rx="1" />
+              </svg>
+            }
+            @case ('calendar') {
+              <svg
+                class="w-4 h-4 shrink-0 opacity-80"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+              >
+                <rect x="3" y="4" width="18" height="18" rx="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+              </svg>
+            }
+            @case ('clock') {
+              <svg
+                class="w-4 h-4 shrink-0 opacity-80"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12,6 12,12 16,14" />
+              </svg>
+            }
+            @case ('tag') {
+              <svg
+                class="w-4 h-4 shrink-0 opacity-80"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M20.59 13.41 11 3H4v7l9.59 9.59a2 2 0 0 0 2.82 0l4.18-4.18a2 2 0 0 0 0-2.82z"
+                />
+                <circle cx="7.5" cy="7.5" r="1.5" />
+              </svg>
+            }
+            @case ('users') {
+              <svg
+                class="w-4 h-4 shrink-0 opacity-80"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+              >
+                <circle cx="9" cy="7" r="4" />
+                <path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                <path d="M21 21v-2a4 4 0 0 0-3-3.87" />
+              </svg>
+            }
+            @case ('message-square') {
+              <svg
+                class="w-4 h-4 shrink-0 opacity-80"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+              >
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+            }
+            @case ('file-text') {
+              <svg
+                class="w-4 h-4 shrink-0 opacity-80"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+              >
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14,2 14,8 20,8" />
+                <line x1="16" y1="13" x2="8" y2="13" />
+                <line x1="16" y1="17" x2="8" y2="17" />
+              </svg>
+            }
+            @case ('dollar-sign') {
+              <svg
+                class="w-4 h-4 shrink-0 opacity-80"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+              >
+                <line x1="12" y1="1" x2="12" y2="23" />
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+              </svg>
+            }
+          }
+          {{ item.label }}
+        </a>
+      }
+    </nav>
+
+    <!-- Bottom Nav -->
+    <div class="px-2.5 pb-4 pt-2 border-t border-(--color-border) flex flex-col gap-0.5">
+      @for (item of filteredBottomNav; track item.route) {
+        <a
+          [routerLink]="item.route"
+          routerLinkActive="nav-active"
+          class="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-[13px] text-(--color-text-muted) hover:bg-(--color-bg-hover) hover:text-(--color-text-primary) transition-all duration-150"
+        >
+          @switch (item.icon) {
+            @case ('settings') {
+              <svg
+                class="w-4 h-4 shrink-0 opacity-80"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+              >
+                <circle cx="12" cy="12" r="3" />
+                <path
+                  d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"
+                />
+              </svg>
+            }
+            @case ('log-out') {
+              <svg
+                class="w-4 h-4 shrink-0 opacity-80"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+              >
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16,17 21,12 16,7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
+            }
+          }
+          {{ item.label }}
+        </a>
+      }
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="flex flex-1 flex-col overflow-hidden">
+    <!-- TOPBAR -->
+    <header
+      class="h-14 shrink-0 flex items-center gap-3 px-5 bg-bg-sidebar border-b border-(--color-border)"
+    >
+      <span class="text-sm font-semibold text-(--color-text-primary)">
+        {{ currentRouteTitle() }}
+      </span>
+
+      <div class="ml-auto flex items-center gap-2">
+        <!-- Theme toggle -->
+        <button
+          (click)="toggleTheme()"
+          class="w-8 h-8 flex items-center justify-center rounded-lg text-(--color-text-muted) hover:bg-(--color-bg-hover) hover:text-(--color-text-primary) transition-all"
+          [attr.aria-label]="isDark() ? 'Ativar tema claro' : 'Ativar tema escuro'"
+        >
+          @if (isDark()) {
+            <!-- Sun -->
+            <svg
+              class="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+            >
+              <circle cx="12" cy="12" r="5" />
+              <line x1="12" y1="1" x2="12" y2="3" />
+              <line x1="12" y1="21" x2="12" y2="23" />
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+              <line x1="1" y1="12" x2="3" y2="12" />
+              <line x1="21" y1="12" x2="23" y2="12" />
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+            </svg>
+          } @else {
+            <!-- Moon -->
+            <svg
+              class="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+            >
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+            </svg>
+          }
+        </button>
+
+        <!-- User -->
+        <div
+          class="flex items-center gap-2 pl-1 pr-3 py-1 rounded-lg bg-(--color-bg-hover) border border-(--color-border) cursor-pointer hover:bg-(--color-bg-hover-md) transition-all"
+        >
+          <div
+            class="w-7 h-7 rounded-md avatar-gradient flex items-center justify-center text-[11px] font-semibold text-(--color-text-inverse)"
+          >
+            {{ currentUser().initials }}
+          </div>
+          <div class="leading-tight">
+            <p class="text-[11px] font-medium text-(--color-text-primary)">
+              {{ currentUser().name }}
+            </p>
+            <p class="text-[9px] text-(--color-text-muted) uppercase tracking-wider">
+              {{ currentUser().role }}
+            </p>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ROUTER OUTLET -->
+    <main class="flex-1 overflow-y-auto bg-bg-base relative">
+      <div class="bg-grid absolute inset-0 pointer-events-none"></div>
+      <div class="relative z-10 p-6">
+        <router-outlet />
+      </div>
+    </main>
+  </div>
+</div>

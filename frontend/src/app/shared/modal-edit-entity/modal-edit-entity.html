@@ -1,0 +1,142 @@
+@if (show) {
+  <div
+    class="fixed inset-0 z-50 flex items-center justify-center bg-backdrop"
+    (click)="onClose()"
+  >
+    <div
+      class="bg-bg-card w-full max-w-md rounded-2xl border border-(--color-border) shadow-xl overflow-hidden max-h-[90vh] flex flex-col"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="flex items-center justify-between px-6 py-4">
+        <p class="text-[14px] font-semibold text-(--color-text-primary)">{{ title }}</p>
+        <button
+          (click)="onClose()"
+          class="w-7 h-7 flex items-center justify-center rounded-lg text-(--color-text-muted) hover:bg-(--color-bg-hover-md) transition-colors cursor-pointer"
+        >
+          ✕
+        </button>
+      </div>
+
+      <div class="px-6 pb-2 flex flex-col gap-3 overflow-y-auto">
+        <ng-content></ng-content>
+
+        @for (field of fields; track field.name) {
+          @if (!field.visibleWhen || field.visibleWhen(entity)) {
+            <div class="flex flex-col gap-1">
+              <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)">
+                {{ field.label }}
+              </label>
+
+              @if (field.type === 'text' || field.type === 'email' || field.type === 'number') {
+                <input
+                  [type]="field.type"
+                  [(ngModel)]="entity[field.name]"
+                  [placeholder]="field.placeholder ?? ''"
+                  class="bg-(--color-input-bg) border border-(--color-input-border) rounded-lg px-3 py-2 text-[12px] text-(--color-input-text) placeholder:text-(--color-input-placeholder) outline-none focus:border-(--color-input-border-focus) transition-colors"
+                />
+              }
+
+              @if (field.type === 'password') {
+                <div
+                  class="flex items-center bg-(--color-input-bg) border border-(--color-input-border) rounded-lg px-3 py-2 focus-within:border-(--color-input-border-focus) transition-colors"
+                >
+                  <input
+                    [type]="showPassword ? 'text' : 'password'"
+                    [(ngModel)]="entity[field.name]"
+                    [placeholder]="field.placeholder ?? 'Digite a senha'"
+                    class="w-full bg-transparent text-[12px] text-(--color-text-primary) placeholder:text-(--color-input-placeholder) outline-none border-none"
+                  />
+                  <button
+                    type="button"
+                    (click)="showPassword = !showPassword"
+                    class="ml-2 text-(--color-text-muted) hover:text-(--color-text-primary) transition-colors cursor-pointer"
+                  >
+                    @if (showPassword) {
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="w-4 h-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 4.411m0 0L21 21"
+                        />
+                      </svg>
+                    } @else {
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="w-4 h-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                        />
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                        />
+                      </svg>
+                    }
+                  </button>
+                </div>
+              }
+
+              @if (field.type === 'date') {
+                <input
+                  type="date"
+                  [(ngModel)]="entity[field.name]"
+                  class="bg-(--color-input-bg) border border-(--color-input-border) rounded-lg px-3 py-2 text-[12px] text-(--color-input-text) outline-none focus:border-(--color-input-border-focus) transition-colors"
+                />
+              }
+
+              @if (field.type === 'datetime-local') {
+                <input
+                  type="datetime-local"
+                  [(ngModel)]="entity[field.name]"
+                  class="bg-(--color-input-bg) border border-(--color-input-border) rounded-lg px-3 py-2 text-[12px] text-(--color-input-text) outline-none focus:border-(--color-input-border-focus) transition-colors"
+                />
+              }
+
+              @if (field.type === 'select') {
+                <select
+                  [(ngModel)]="entity[field.name]"
+                  class="bg-(--color-input-bg) border border-(--color-input-border) rounded-lg px-3 py-2 text-[12px] text-(--color-input-text) outline-none focus:border-(--color-input-border-focus) transition-colors"
+                >
+                  @for (opt of field.options; track opt) {
+                    <option [value]="opt">{{ opt }}</option>
+                  }
+                </select>
+              }
+            </div>
+          }
+        }
+      </div>
+
+      <div class="flex justify-end gap-2 px-6 py-4">
+        <button
+          (click)="onClose()"
+          class="px-4 py-2 rounded-lg text-[12px] font-medium text-(--color-text-secondary) hover:bg-(--color-bg-hover) transition-colors cursor-pointer"
+        >
+          Cancelar
+        </button>
+        <button
+          (click)="onSave()"
+          class="px-4 py-2 rounded-lg text-[12px] font-medium bg-(--color-primary) text-(--color-text-inverse) hover:bg-(--color-primary-hover) transition-colors cursor-pointer"
+        >
+          Salvar
+        </button>
+      </div>
+    </div>
+  </div>
+}

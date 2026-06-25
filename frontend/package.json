@@ -1,0 +1,61 @@
+{
+  "name": "frontend",
+  "version": "0.3.1",
+  "scripts": {
+    "ng": "ng",
+    "start": "ng serve",
+    "dev": "ng serve",
+    "build": "ng build",
+    "watch": "ng build --watch --configuration development",
+    "test": "ng test",
+    "build:installer": "npm run build && rm -rf nginx-installer-win/dist/frontend/browser && mkdir -p nginx-installer-win/dist/frontend/browser && cp -r dist/frontend/browser/. nginx-installer-win/dist/frontend/browser && cd nginx-installer-win && bash build.sh",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build",
+    "tauri:build-windows": "cargo tauri build --target x86_64-pc-windows-gnu",
+    "tauri:build-linux": "cargo tauri build --bundles deb",
+    "posttauri:build-windows": "mkdir -p installer && cp src-tauri/target/x86_64-pc-windows-gnu/release/bundle/nsis/*.exe installer/",
+    "posttauri:build-linux": "mkdir -p installer && cp src-tauri/target/release/bundle/deb/*.deb installer/"
+  },
+  "prettier": {
+    "printWidth": 100,
+    "singleQuote": true,
+    "overrides": [
+      {
+        "files": "*.html",
+        "options": {
+          "parser": "angular"
+        }
+      }
+    ]
+  },
+  "private": true,
+  "packageManager": "npm@11.6.2",
+  "dependencies": {
+    "@angular/cdk": "^21.2.12",
+    "@angular/common": "^21.0.0",
+    "@angular/compiler": "^21.0.0",
+    "@angular/core": "^21.0.0",
+    "@angular/forms": "^21.0.0",
+    "@angular/platform-browser": "^21.0.0",
+    "@angular/router": "^21.0.0",
+    "@tauri-apps/plugin-dialog": "^2.7.1",
+    "@tauri-apps/plugin-fs": "^2.5.1",
+    "ngx-toastr": "^20.0.5",
+    "rxjs": "~7.8.0",
+    "socket.io-client": "^4.8.3",
+    "sweetalert2": "^11.26.24",
+    "tslib": "^2.3.0"
+  },
+  "devDependencies": {
+    "@angular/build": "^21.0.5",
+    "@angular/cli": "^21.0.5",
+    "@angular/compiler-cli": "^21.0.0",
+    "@tailwindcss/postcss": "^4.1.12",
+    "@tauri-apps/cli": "^2.11.3",
+    "jsdom": "^27.1.0",
+    "postcss": "^8.5.3",
+    "tailwindcss": "^4.1.12",
+    "typescript": "~5.9.2",
+    "vitest": "^4.0.8"
+  }
+}
