@@ -43,7 +43,8 @@ Unicode True
 ; ==================== VARIÁVEIS ====================
 Var NodeMajorVersion
 Var NeedsNodeInstall
-Var Pm2Path
+Var NodePath
+Var NpmGlobalModules
 
 ; ==================== INIT ====================
 Function .onInit
@@ -61,8 +62,8 @@ Function CheckNodeVersion
     StrCpy $NeedsNodeInstall "1"
 
     nsExec::ExecToStack 'cmd /c node -v'
-    Pop $0 ; exit code
-    Pop $1 ; output, ex: "v22.11.0"
+    Pop $0
+    Pop $1
 
     ${If} $0 == 0
         StrCpy $1 $1 "" 1
@@ -74,7 +75,7 @@ Function CheckNodeVersion
 
         IntCmp $NodeMajorVersion ${NODE_MIN_MAJOR} node_ok node_old node_ok
         node_old:
-            DetailPrint "Versão do Node é antiga (< ${NODE_MIN_MAJOR}). Será atualizada para a LTS."
+            DetailPrint "Versão do Node é antiga (< ${NODE_MIN_MAJOR}). Será atualizada."
             Goto node_check_done
         node_ok:
             StrCpy $NeedsNodeInstall "0"
@@ -136,12 +137,14 @@ Section "Instalar"
     SetOutPath "$INSTDIR"
 
     File "server.js"
+    File "pm2-launcher.js"
     File "nssm.exe"
     File "blue-clinic-server-icon.ico"
     File ".env"
     File "${NODE_MSI}"
 
     CreateDirectory "$INSTDIR\logs"
+    CreateDirectory "$INSTDIR\pm2-home"
 
     WriteRegStr HKLM "Software\${APP_NAME}" "InstallDir" "$INSTDIR"
     WriteRegStr HKLM "Software\${APP_NAME}" "Version" "${APP_VERSION}"
@@ -159,7 +162,7 @@ Section "Instalar"
     Call CheckNodeVersion
 
     ${If} $NeedsNodeInstall == "1"
-        DetailPrint "Instalando Node.js LTS..."
+        DetailPrint "Instalando Node.js..."
         nsExec::ExecToLog 'msiexec /i "$INSTDIR\${NODE_MSI}" /qn /norestart'
         Pop $0
         ${If} $0 != 0
@@ -167,8 +170,8 @@ Section "Instalar"
             Abort
         ${EndIf}
 
-        StrCpy $0 "$PROGRAMFILES64\nodejs"
-        System::Call 'Kernel32::SetEnvironmentVariable(t "PATH", t "$0;$%PATH%") i'
+        StrCpy $NodePath "$PROGRAMFILES64\nodejs"
+        System::Call 'Kernel32::SetEnvironmentVariable(t "PATH", t "$NodePath;$%PATH%") i'
     ${EndIf}
 
     Delete "$INSTDIR\${NODE_MSI}"
@@ -180,7 +183,8 @@ Section "Instalar"
         DetailPrint "Serviço ${SERVICE_NAME} já existe. Parando e removendo antes de reinstalar..."
         nsExec::ExecToLog 'net stop ${SERVICE_NAME}'
         Sleep 2000
-        nsExec::ExecToLog 'cmd /c pm2 kill'
+        nsExec::ExecToLog 'cmd /c set PM2_HOME=$INSTDIR\pm2-home && pm2 kill'
+        Sleep 2000
         nsExec::ExecToLog '"$INSTDIR\nssm.exe" remove ${SERVICE_NAME} confirm'
     ${EndIf}
 
@@ -200,32 +204,35 @@ Section "Instalar"
         DetailPrint "PM2 já instalado (versão $1). Pulando instalação."
     ${EndIf}
 
-    ; ---------- SERVIÇO WINDOWS (NSSM + pm2 start --no-daemon) ----------
-    DetailPrint "Instalando serviço ${SERVICE_NAME}..."
-
-    nsExec::ExecToStack 'cmd /c npm prefix -g'
+    ; ---------- CAPTURAR NPM_GLOBAL_MODULES ----------
+    nsExec::ExecToStack 'cmd /c npm root -g'
     Pop $0
     Pop $1
+    Push $1
+    Call TrimTrailingNewline
+    Pop $NpmGlobalModules
+    DetailPrint "NPM global modules: $NpmGlobalModules"
 
+    ; ---------- SERVIÇO WINDOWS (NSSM + node pm2-launcher.js) ----------
+    DetailPrint "Instalando serviço ${SERVICE_NAME}..."
+
+    nsExec::ExecToStack 'cmd /c where node'
+    Pop $0
+    Pop $1
     Push $1
     Call TrimTrailingNewline
     Pop $1
 
-    ; Alterado para buscar o pm2.cmd padrão
-    StrCpy $Pm2Path "$1\pm2.cmd"
+    ${If} $0 != 0
+        StrCpy $1 "$PROGRAMFILES64\nodejs\node.exe"
+    ${EndIf}
 
-    IfFileExists "$Pm2Path" pm2_found pm2_missing
-    pm2_missing:
-        MessageBox MB_OK|MB_ICONSTOP "pm2.cmd não encontrado em $Pm2Path. Instalação abortada."
-        Abort
-    pm2_found:
-
-    ; Modificado o comando de inicialização do NSSM para usar "pm2 start server.js --no-daemon"
-    nsExec::ExecToLog '"$INSTDIR\nssm.exe" install ${SERVICE_NAME} "$WINDIR\System32\cmd.exe" "/c $\"$Pm2Path$\" start server.js --no-daemon"'
+    nsExec::ExecToLog '"$INSTDIR\nssm.exe" install ${SERVICE_NAME} "$1" "$INSTDIR\pm2-launcher.js"'
     nsExec::ExecToLog '"$INSTDIR\nssm.exe" set ${SERVICE_NAME} AppDirectory "$INSTDIR"'
     nsExec::ExecToLog '"$INSTDIR\nssm.exe" set ${SERVICE_NAME} Start SERVICE_AUTO_START'
     nsExec::ExecToLog '"$INSTDIR\nssm.exe" set ${SERVICE_NAME} AppRestartDelay 5000'
-    nsExec::ExecToLog '"$INSTDIR\nssm.exe" set ${SERVICE_NAME} Description "Servidor Blue Clinic - Sistema de Gestão Clínica (via PM2)"'
+    nsExec::ExecToLog '"$INSTDIR\nssm.exe" set ${SERVICE_NAME} AppEnvironmentExtra "PM2_HOME=$INSTDIR\pm2-home" "NPM_GLOBAL_MODULES=$NpmGlobalModules"'
+    nsExec::ExecToLog '"$INSTDIR\nssm.exe" set ${SERVICE_NAME} Description "Servidor Blue Clinic - Sistema de Gestão de Clínicas (via PM2)"'
 
     DetailPrint "Configurando logs..."
     nsExec::ExecToLog '"$INSTDIR\nssm.exe" set ${SERVICE_NAME} AppStdout "$INSTDIR\logs\service.log"'
@@ -249,19 +256,21 @@ Section "Uninstall"
     DetailPrint "Parando serviço ${SERVICE_NAME}..."
     nsExec::ExecToLog 'net stop ${SERVICE_NAME}'
     Sleep 2000
-    nsExec::ExecToLog 'cmd /c pm2 kill'
+    nsExec::ExecToLog 'cmd /c set PM2_HOME=$INSTDIR\pm2-home && pm2 kill'
     Sleep 2000
 
     DetailPrint "Removendo serviço..."
     nsExec::ExecToLog '"$INSTDIR\nssm.exe" remove ${SERVICE_NAME} confirm'
 
     Delete "$INSTDIR\server.js"
+    Delete "$INSTDIR\pm2-launcher.js"
     Delete "$INSTDIR\nssm.exe"
     Delete "$INSTDIR\blue-clinic-server-icon.ico"
     Delete "$INSTDIR\.env"
     Delete "$INSTDIR\uninstall.exe"
     Delete "$INSTDIR\logs\*.log"
     RMDir "$INSTDIR\logs"
+    RMDir /r "$INSTDIR\pm2-home"
     RMDir "$INSTDIR"
 
     SetRegView 64
