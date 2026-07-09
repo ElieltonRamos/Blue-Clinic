@@ -1,6 +1,6 @@
 {
   "name": "frontend",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
@@ -14,7 +14,8 @@
     "tauri:build-windows": "cargo tauri build --target x86_64-pc-windows-gnu",
     "tauri:build-linux": "cargo tauri build --bundles deb",
     "posttauri:build-windows": "mkdir -p installer && cp src-tauri/target/x86_64-pc-windows-gnu/release/bundle/nsis/*.exe installer/",
-    "posttauri:build-linux": "mkdir -p installer && cp src-tauri/target/release/bundle/deb/*.deb installer/"
+    "posttauri:build-linux": "mkdir -p installer && cp src-tauri/target/release/bundle/deb/*.deb installer/",
+    "installer:win": "ng build && rm -rf nginx-installer-win/dist && mkdir -p nginx-installer-win/dist/frontend && cp -r dist/frontend/browser nginx-installer-win/dist/frontend/browser && bash nginx-installer-win/build.sh"
   },
   "prettier": {
     "printWidth": 100,
