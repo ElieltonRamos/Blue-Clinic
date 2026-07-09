@@ -1,6 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
 
 export class ProfessionalRevenueAppointmentDto {
+  @ApiProperty({ example: 42 })
+  paymentId: number;
+
   @ApiProperty({ example: '2025-06-18' })
   date: string;
 
@@ -27,6 +30,9 @@ export class ProfessionalRevenueAppointmentDto {
 
   @ApiProperty({ example: '2025-06-18' })
   paymentDate: string;
+
+  @ApiProperty({ example: false })
+  commissionPaid: boolean;
 }
 
 export class ProfessionalRevenueDto {

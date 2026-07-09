@@ -3,6 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {
   CashClosingRow,
+  CommissionPayment,
   CreateExpenseDto,
   Expense,
   FinanceSummary,
@@ -64,6 +65,16 @@ export class FinanceiroService {
 
   getCashClosing(filter: FinanceFilter): Observable<CashClosingRow[]> {
     return this.http.get<CashClosingRow[]>(`${this.base}/cash-closing`, {
+      params: this.params(filter),
+    });
+  }
+
+  payCommissions(paymentIds: number[]) {
+    return this.http.patch(`${this.base}/commissions/pay`, { paymentIds });
+  }
+
+  getCommissionHistory(filter: FinanceFilter): Observable<CommissionPayment[]> {
+    return this.http.get<CommissionPayment[]>(`${this.base}/commissions/history`, {
       params: this.params(filter),
     });
   }

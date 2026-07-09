@@ -1,3 +1,7 @@
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {
   Injectable,
   BadRequestException,
@@ -16,6 +20,7 @@ import { FinanceFilterDto } from './dto/finance-filter.dto.js';
 import { CreateExpenseDto } from './dto/create-expense.dto.js';
 import { UpdateExpenseDto } from './dto/update-expense.dto.js';
 import { ExpenseWithRegisteredBy } from './entities/financial.entity.js';
+import { CommissionPaymentDto } from './dto/commission-payment.dto.js';
 
 const TZ = 'America/Sao_Paulo';
 const TZ_OFFSET = '-03:00';
@@ -206,10 +211,12 @@ export class FinanceService {
     const payments = await this.prisma.client.payment.findMany({
       where: { date: range, appointment: { doctor: { companyId } } },
       select: {
+        id: true,
         date: true,
         value: true,
         doctorEarnings: true,
         discount: true,
+        commissionPaid: true,
         appointment: {
           select: {
             date: true,
@@ -237,6 +244,7 @@ export class FinanceService {
     for (const p of payments) {
       const doctor = p.appointment.doctor;
       const appointment: ProfessionalRevenueAppointmentDto = {
+        paymentId: p.id,
         date: this.toLocalDateString(p.appointment.date),
         startTime: p.appointment.startTime,
         specialty: p.appointment.specialty,
@@ -246,6 +254,7 @@ export class FinanceService {
         doctorEarnings: Number(p.doctorEarnings),
         discount: Number(p.discount),
         paymentDate: this.toLocalDateString(p.date),
+        commissionPaid: p.commissionPaid,
       };
 
       const existing = map.get(doctor.id);
@@ -322,6 +331,56 @@ export class FinanceService {
     }
 
     return Array.from(map.values());
+  }
+
+  // ── Commissions ────────────────────────────────────────────────────────────
+
+  async payCommissions(
+    companyId: number,
+    paymentIds: number[],
+    paidById: number,
+  ) {
+    return this.prisma.client.payment.updateMany({
+      where: {
+        id: { in: paymentIds },
+        commissionPaid: false,
+        appointment: { doctor: { companyId } },
+      },
+      data: {
+        commissionPaid: true,
+        commissionPaidAt: new Date(),
+        commissionPaidById: paidById,
+      },
+    });
+  }
+
+  async getCommissionHistory(
+    companyId: number,
+    filter: FinanceFilterDto,
+  ): Promise<CommissionPaymentDto[]> {
+    const range = this.parseDateRange(filter);
+
+    const payments = await this.prisma.client.payment.findMany({
+      where: {
+        commissionPaid: true,
+        commissionPaidAt: range,
+        appointment: { doctor: { companyId } },
+      },
+      include: {
+        appointment: { include: { doctor: true, patient: true } },
+        commissionPaidBy: { select: { username: true } },
+      },
+      orderBy: { commissionPaidAt: 'desc' },
+    });
+
+    return payments.map((p) => ({
+      id: p.id,
+      doctorName: p.appointment.doctor.name,
+      patientName: p.appointment.patient.name,
+      value: Number(p.doctorEarnings),
+      paidByName: p.commissionPaidBy?.username ?? '—',
+      paidAt: p.commissionPaidAt!.toISOString(),
+    }));
   }
 
   // ── Create / Update Expense ────────────────────────────────────────────────

@@ -201,10 +201,6 @@ button {
   transition: scale 150ms ease;
 }
 
-button:hover {
-  scale: 1.05;
-}
-
 button:active {
   scale: 0.97;
 }

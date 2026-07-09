@@ -51,6 +51,8 @@ export interface ProfessionalRevenueAppointment {
   doctorEarnings: number;
   discount: number;
   paymentDate: string;
+  commissionPaid: boolean;
+  paymentId: number;
 }
 
 export interface ProfessionalRevenue {
@@ -74,4 +76,13 @@ export interface FinanceSummary {
   entradasChange: number;
   totalSaidas: number;
   saidasCount: number;
+}
+
+export interface CommissionPayment {
+  id: number;
+  doctorName: string;
+  patientName: string;
+  value: number;
+  paidByName: string;
+  paidAt: string;
 }

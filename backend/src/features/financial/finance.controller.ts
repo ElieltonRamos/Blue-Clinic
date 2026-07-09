@@ -30,6 +30,8 @@ import { CurrentUser } from '../../core/decorators/current-user.decorator.js';
 import { Roles } from '../../core/decorators/roles.decorator.js';
 import { CreateExpenseDto } from './dto/create-expense.dto.js';
 import { UpdateExpenseDto } from './dto/update-expense.dto.js';
+import { CommissionPaymentDto } from './dto/commission-payment.dto.js';
+import { PayCommissionsDto } from './dto/pay-commissions.dto.js';
 
 @ApiTags('Financeiro')
 @ApiBearerAuth()
@@ -111,6 +113,37 @@ export class FinanceController {
     @Query() filter: FinanceFilterDto,
   ): Promise<CashClosingRowDto[]> {
     return this.financeService.getCashClosing(companyId, filter);
+  }
+
+  @Patch('commissions/pay')
+  @Roles('admin', 'atendimento')
+  @ApiOperation({ summary: 'Marcar comissões como pagas' })
+  @ApiResponse({ status: HttpStatus.OK })
+  payCommissions(
+    @CurrentUser('companyId') companyId: number,
+    @CurrentUser('userId') paidById: number,
+    @Body() dto: PayCommissionsDto,
+  ) {
+    return this.financeService.payCommissions(
+      companyId,
+      dto.paymentIds,
+      paidById,
+    );
+  }
+
+  @Get('commissions/history')
+  @Roles('admin', 'atendimento')
+  @ApiOperation({ summary: 'Histórico de comissões pagas no período' })
+  @ApiResponse({ status: HttpStatus.OK, type: [CommissionPaymentDto] })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Datas inválidas',
+  })
+  getCommissionHistory(
+    @CurrentUser('companyId') companyId: number,
+    @Query() filter: FinanceFilterDto,
+  ): Promise<CommissionPaymentDto[]> {
+    return this.financeService.getCommissionHistory(companyId, filter);
   }
 
   @Post('expenses')
