@@ -13,6 +13,7 @@ import { DashboardModule } from './features/dashboard/dashboard.module';
 import { WhatssapModule } from './features/whatssap/whatssap.module';
 import { ChatModule } from './features/chat/chat.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { FiscalModule } from './features/fiscal/fiscal.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     DashboardModule,
     WhatssapModule,
     ChatModule,
+    FiscalModule,
   ],
   controllers: [AppController],
   providers: [AppService],

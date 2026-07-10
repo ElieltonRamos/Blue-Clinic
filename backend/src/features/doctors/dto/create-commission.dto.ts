@@ -1,6 +1,12 @@
-// create-commission.dto.ts
-import { ApiProperty } from '@nestjs/swagger';
-import { IsInt, IsNumber, IsPositive, IsEnum, Min } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  IsInt,
+  IsNumber,
+  IsPositive,
+  IsEnum,
+  IsOptional,
+  Min,
+} from 'class-validator';
 import { CommissionType } from '../../../../generated/prisma/client.js';
 import { Type } from 'class-transformer';
 
@@ -42,4 +48,24 @@ export class CreateCommissionDto {
   @IsPositive({ message: 'Valor deve ser maior que zero' })
   @Type(() => Number)
   price: number;
+
+  @ApiPropertyOptional({
+    enum: CommissionType,
+    description:
+      'Tipo de abatimento aplicado à comissão do médico quando há nota fiscal emitida',
+  })
+  @IsOptional()
+  @IsEnum(CommissionType, { message: 'Tipo de abatimento fiscal inválido' })
+  nfDeductionType?: CommissionType;
+
+  @ApiPropertyOptional({
+    description:
+      'Valor abatido da comissão do médico quando há nota fiscal emitida',
+    example: 10,
+  })
+  @IsOptional()
+  @IsNumber({}, { message: 'Valor de abatimento fiscal deve ser um número' })
+  @Min(0, { message: 'Valor de abatimento fiscal não pode ser negativo' })
+  @Type(() => Number)
+  nfDeductionValue?: number;
 }

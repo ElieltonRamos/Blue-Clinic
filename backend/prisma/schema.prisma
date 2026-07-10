@@ -146,14 +146,18 @@ model AppointmentType {
 }
 
 model AppointmentTypeCommission {
-  id                Int            @id @default(autoincrement())
+  id                Int     @id @default(autoincrement())
   doctorId          Int
   appointmentTypeId Int
-  price             Decimal        @db.Decimal(10, 2)
-  doctorRateType    CommissionType
-  doctorRate        Decimal        @db.Decimal(10, 2)
-  clinicRateType    CommissionType
-  clinicRate        Decimal        @db.Decimal(10, 2)
+  price             Decimal @db.Decimal(10, 2)
+
+  doctorRateType CommissionType
+  doctorRate     Decimal        @db.Decimal(10, 2)
+  clinicRateType CommissionType
+  clinicRate     Decimal        @db.Decimal(10, 2)
+
+  nfDeductionType  CommissionType?
+  nfDeductionValue Decimal?        @db.Decimal(10, 2)
 
   doctor          Doctor          @relation(fields: [doctorId], references: [id])
   appointmentType AppointmentType @relation(fields: [appointmentTypeId], references: [id])
@@ -324,6 +328,9 @@ model Payment {
   doctorEarnings Decimal  @default(0) @db.Decimal(10, 2)
   clinicEarnings Decimal  @default(0) @db.Decimal(10, 2)
   discount       Decimal  @default(0) @db.Decimal(10, 2)
+  invoiceIssued  Boolean  @default(false)
+  invoiceXmlUrl  String?
+  invoicePdfUrl  String?
 
   commissionPaid     Boolean   @default(false)
   commissionPaidAt   DateTime?
