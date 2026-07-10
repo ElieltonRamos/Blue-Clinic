@@ -167,6 +167,7 @@ model User {
   companyId Int
   username  String  @unique
   password  String
+  phone     String?
   role      Role
   active    Boolean @default(true)
 
