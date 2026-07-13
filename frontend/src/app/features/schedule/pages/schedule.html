@@ -577,6 +577,18 @@
                         rateLabel(row.commission.clinicRate, row.commission.clinicRateType)
                       }}</span>
                     </span>
+                    @if (row.commission.nfDeductionValue !== null) {
+                      <span class="text-(--color-border-md)">·</span>
+                      <span class="text-(--color-text-muted)">
+                        Abatimento c/ NF:
+                        <span class="text-(--color-danger) font-semibold">{{
+                          rateLabel(
+                            row.commission.nfDeductionValue,
+                            row.commission.nfDeductionType!
+                          )
+                        }}</span>
+                      </span>
+                    }
                   </div>
                   <div class="flex items-center gap-1 ml-auto shrink-0">
                     <button
@@ -657,6 +669,38 @@
                         class="w-full bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-2 py-1.5 text-[12px] text-(--color-input-text) outline-none focus:border-(--color-primary)"
                       />
                     </div>
+                    <div class="col-span-2">
+                      <label
+                        class="flex items-center gap-2 text-[11px] text-(--color-text-secondary) cursor-pointer"
+                      >
+                        <input type="checkbox" [(ngModel)]="row.form.nfDeductionEnabled" />
+                        Abater comissão do médico quando houver nota fiscal
+                      </label>
+                    </div>
+                    @if (row.form.nfDeductionEnabled) {
+                      <div class="col-span-2">
+                        <label class="block text-[10px] text-(--color-text-muted) mb-1"
+                          >Valor do abatimento</label
+                        >
+                        <div class="flex gap-1">
+                          <select
+                            [(ngModel)]="row.form.nfDeductionType"
+                            class="bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-2 py-1.5 text-[11px] text-(--color-input-text) outline-none focus:border-(--color-primary)"
+                          >
+                            @for (rt of rateTypes; track rt.value) {
+                              <option [value]="rt.value">{{ rt.label }}</option>
+                            }
+                          </select>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            [(ngModel)]="row.form.nfDeductionValue"
+                            class="flex-1 bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-2 py-1.5 text-[12px] text-(--color-input-text) outline-none focus:border-(--color-primary)"
+                          />
+                        </div>
+                      </div>
+                    }
                   </div>
                   <div class="flex justify-end gap-2">
                     <button
@@ -760,6 +804,38 @@
                     class="w-full bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-2 py-1.5 text-[12px] text-(--color-input-text) outline-none focus:border-(--color-primary)"
                   />
                 </div>
+                <div class="col-span-2">
+                  <label
+                    class="flex items-center gap-2 text-[11px] text-(--color-text-secondary) cursor-pointer"
+                  >
+                    <input type="checkbox" [(ngModel)]="newCommissionForm.nfDeductionEnabled" />
+                    Abater comissão do médico quando houver nota fiscal
+                  </label>
+                </div>
+                @if (newCommissionForm.nfDeductionEnabled) {
+                  <div class="col-span-2">
+                    <label class="block text-[10px] text-(--color-text-muted) mb-1"
+                      >Valor do abatimento</label
+                    >
+                    <div class="flex gap-1">
+                      <select
+                        [(ngModel)]="newCommissionForm.nfDeductionType"
+                        class="bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-2 py-1.5 text-[11px] text-(--color-input-text) outline-none focus:border-(--color-primary)"
+                      >
+                        @for (rt of rateTypes; track rt.value) {
+                          <option [value]="rt.value">{{ rt.label }}</option>
+                        }
+                      </select>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        [(ngModel)]="newCommissionForm.nfDeductionValue"
+                        class="flex-1 bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-2 py-1.5 text-[12px] text-(--color-input-text) outline-none focus:border-(--color-primary)"
+                      />
+                    </div>
+                  </div>
+                }
               </div>
               <div class="flex justify-end gap-2">
                 <button

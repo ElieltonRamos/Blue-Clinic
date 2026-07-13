@@ -54,6 +54,12 @@ export class CalendarService {
     );
   }
 
+  getPaymentByAppointment(appointmentId: number) {
+    return this.http.get<PaymentResponseDto>(
+      `${this.apiUrl}/appointments/${appointmentId}/payment`,
+    );
+  }
+
   updateStatus(appointmentId: number, status: AppointmentStatus, cancellationReason?: string) {
     const body: Record<string, unknown> = { status };
     if (cancellationReason?.trim()) body['cancellationReason'] = cancellationReason.trim();

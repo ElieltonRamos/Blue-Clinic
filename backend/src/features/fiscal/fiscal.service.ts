@@ -32,12 +32,15 @@ export class FiscalService {
       data.invoicePdfUrl = `/uploads/payments/${paymentId}/${pdfFile.filename}`;
     }
 
+    let deductionExceeded = false;
     if (!payment.commissionPaid) {
-      data.doctorEarnings = await this.calculateDoctorEarnings(
+      const result = await this.calculateDoctorEarnings(
         payment.appointment,
         Number(payment.value),
         true,
       );
+      data.doctorEarnings = result.value;
+      deductionExceeded = result.deductionExceeded;
     }
 
     const updated = await this.prisma.client.payment.update({
@@ -45,7 +48,7 @@ export class FiscalService {
       data,
     });
 
-    return new FiscalDocumentResponseDto(updated);
+    return new FiscalDocumentResponseDto(updated, deductionExceeded);
   }
 
   async removeInvoice(
@@ -68,11 +71,12 @@ export class FiscalService {
     };
 
     if (!payment.commissionPaid) {
-      data.doctorEarnings = await this.calculateDoctorEarnings(
+      const result = await this.calculateDoctorEarnings(
         payment.appointment,
         Number(payment.value),
         false,
       );
+      data.doctorEarnings = result.value;
     }
 
     const updated = await this.prisma.client.payment.update({
@@ -80,7 +84,7 @@ export class FiscalService {
       data,
     });
 
-    return new FiscalDocumentResponseDto(updated);
+    return new FiscalDocumentResponseDto(updated, false);
   }
 
   // ── Helpers ────────────────────────────────────────────────────────────────
@@ -112,8 +116,9 @@ export class FiscalService {
     },
     paymentValue: number,
     applyDeduction: boolean,
-  ): Promise<number> {
-    if (!appointment.appointmentTypeId) return 0;
+  ): Promise<{ value: number; deductionExceeded: boolean }> {
+    if (!appointment.appointmentTypeId)
+      return { value: 0, deductionExceeded: false };
 
     const commission =
       await this.prisma.client.appointmentTypeCommission.findUnique({
@@ -124,7 +129,7 @@ export class FiscalService {
           },
         },
       });
-    if (!commission) return 0;
+    if (!commission) return { value: 0, deductionExceeded: false };
 
     const base = Number(appointment.feeOverride ?? paymentValue);
     let doctorEarnings =
@@ -132,15 +137,22 @@ export class FiscalService {
         ? (base * Number(commission.doctorRate)) / 100
         : Number(commission.doctorRate);
 
+    let deductionExceeded = false;
+
     if (applyDeduction && commission.nfDeductionValue !== null) {
       doctorEarnings =
         commission.nfDeductionType === 'percentage'
           ? doctorEarnings -
             doctorEarnings * (Number(commission.nfDeductionValue) / 100)
           : doctorEarnings - Number(commission.nfDeductionValue);
+
+      if (doctorEarnings < 0) {
+        deductionExceeded = true;
+        doctorEarnings = 0;
+      }
     }
 
-    return doctorEarnings;
+    return { value: doctorEarnings, deductionExceeded };
   }
 
   private async deleteFileIfExists(url: string | null): Promise<void> {

@@ -320,6 +320,38 @@ export class AppointmentsService {
     };
   }
 
+  async findPaymentByAppointment(
+    appointmentId: number,
+    companyId: number,
+  ): Promise<PaymentResponseDto> {
+    const appointment = await this.prisma.client.appointment.findFirst({
+      where: { id: appointmentId, doctor: { companyId } },
+      include: {
+        patient: { select: { name: true } },
+        doctor: { select: { name: true } },
+        appointmentType: { select: { name: true } },
+      },
+    });
+    if (!appointment) throw new NotFoundException('Agendamento não encontrado');
+
+    const payment = await this.prisma.client.payment.findFirst({
+      where: { appointmentId },
+      include: { entries: true },
+      orderBy: { date: 'desc' },
+    });
+    if (!payment)
+      throw new NotFoundException(
+        'Pagamento não encontrado para este agendamento',
+      );
+
+    return new PaymentResponseDto({
+      ...payment,
+      specialty: appointment.specialty,
+      startTime: appointment.startTime,
+      appointmentTypeName: appointment.appointmentType?.name ?? null,
+    });
+  }
+
   // ── Blocked Slots ──────────────────────────────────────────────────────────
 
   async findBlockedSlots(

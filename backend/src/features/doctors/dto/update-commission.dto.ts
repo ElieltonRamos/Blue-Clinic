@@ -51,20 +51,22 @@ export class UpdateCommissionDto {
   @ApiPropertyOptional({
     enum: CommissionType,
     description:
-      'Tipo de abatimento aplicado à comissão do médico quando há nota fiscal emitida',
+      'Tipo de abatimento aplicado à comissão do médico quando há nota fiscal emitida. Envie null para remover o abatimento configurado.',
+    nullable: true,
   })
   @IsOptional()
   @IsEnum(CommissionType, { message: 'Tipo de abatimento fiscal inválido' })
-  nfDeductionType?: CommissionType;
+  nfDeductionType?: CommissionType | null;
 
   @ApiPropertyOptional({
     description:
-      'Valor abatido da comissão do médico quando há nota fiscal emitida',
+      'Valor abatido da comissão do médico quando há nota fiscal emitida. Envie null para remover o abatimento configurado.',
     example: 10,
+    nullable: true,
   })
   @IsOptional()
   @IsNumber({}, { message: 'Valor de abatimento fiscal deve ser um número' })
   @Min(0, { message: 'Valor de abatimento fiscal não pode ser negativo' })
   @Type(() => Number)
-  nfDeductionValue?: number;
+  nfDeductionValue?: number | null;
 }

@@ -5,7 +5,7 @@
   "identifier": "com.bluetech.blue-clinic",
   "build": {
     "frontendDist": "../dist/frontend/browser",
-    "devUrl": "http://localhost:4200",
+    "devUrl": "http://localhost:4300",
     "beforeDevCommand": "npm run dev",
     "beforeBuildCommand": "npm run build"
   },

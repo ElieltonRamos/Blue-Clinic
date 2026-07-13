@@ -46,6 +46,8 @@ export interface DoctorCommission {
   clinicRate: number;
   price: number;
   appointmentType: AppointmentTypeSummary;
+  nfDeductionType: CommissionRateType | null;
+  nfDeductionValue: number | null;
 }
 
 export interface DoctorProfile {
@@ -89,6 +91,8 @@ export interface CreateCommissionRequest {
   clinicRateType: CommissionRateType;
   clinicRate: number;
   price: number;
+  nfDeductionType?: CommissionRateType;
+  nfDeductionValue?: number;
 }
 
 export interface UpdateCommissionRequest {
@@ -97,6 +101,8 @@ export interface UpdateCommissionRequest {
   clinicRateType?: CommissionRateType;
   clinicRate?: number;
   price?: number;
+  nfDeductionType?: CommissionRateType | null;
+  nfDeductionValue?: number | null;
 }
 
 export interface CommissionForm {
@@ -106,6 +112,9 @@ export interface CommissionForm {
   clinicRateType: CommissionRateType;
   clinicRate: number;
   price: number;
+  nfDeductionEnabled: boolean;
+  nfDeductionType: CommissionRateType;
+  nfDeductionValue: number;
 }
 
 export interface BlockedSlot {

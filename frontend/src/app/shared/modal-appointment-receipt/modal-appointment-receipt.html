@@ -80,6 +80,153 @@
         }
       </div>
 
+      <div class="mt-4 pt-3 border-t border-gray-200 no-print">
+        <div class="flex items-center justify-between mb-1">
+          <span class="font-bold text-gray-800">Nota Fiscal</span>
+          @if (invoiceIssued) {
+            <span
+              class="text-xs font-semibold px-2 py-1 rounded-full bg-green-100 text-green-700 flex items-center gap-1"
+            >
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2.5"
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+              Emitida
+            </span>
+          } @else {
+            <span
+              class="text-xs font-semibold px-2 py-1 rounded-full bg-amber-100 text-amber-700 flex items-center gap-1"
+            >
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              Pendente
+            </span>
+          }
+        </div>
+
+        <p class="text-xs text-gray-500 mb-3">
+          @if (invoiceIssued) {
+            XML e PDF da nota fiscal enviados. Comissão do médico já ajustada.
+          } @else {
+            Envie o XML e o PDF da nota após emiti-la no portal da prefeitura. A comissão do médico
+            será ajustada automaticamente.
+          }
+        </p>
+
+        <div class="grid grid-cols-2 gap-2">
+          <label
+            class="cursor-pointer py-2 px-3 rounded text-sm font-medium flex items-center justify-center gap-2 transition"
+            [class.bg-slate-700]="!invoiceXmlUrl"
+            [class.hover:bg-slate-800]="!invoiceXmlUrl"
+            [class.text-white]="!invoiceXmlUrl"
+            [class.bg-green-50]="invoiceXmlUrl"
+            [class.text-green-700]="invoiceXmlUrl"
+            [class.border]="invoiceXmlUrl"
+            [class.border-green-300]="invoiceXmlUrl"
+          >
+            @if (invoiceXmlUrl) {
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2.5"
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+              <span>XML enviado</span>
+            } @else if (uploadingXml) {
+              <span>Enviando...</span>
+            } @else {
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3"
+                />
+              </svg>
+              <span>Upload XML</span>
+            }
+            <input
+              type="file"
+              accept=".xml"
+              class="hidden"
+              (change)="onXmlSelected($event)"
+              [disabled]="uploadingXml"
+            />
+          </label>
+
+          <label
+            class="cursor-pointer py-2 px-3 rounded text-sm font-medium flex items-center justify-center gap-2 transition"
+            [class.bg-slate-700]="!invoicePdfUrl"
+            [class.hover:bg-slate-800]="!invoicePdfUrl"
+            [class.text-white]="!invoicePdfUrl"
+            [class.bg-green-50]="invoicePdfUrl"
+            [class.text-green-700]="invoicePdfUrl"
+            [class.border]="invoicePdfUrl"
+            [class.border-green-300]="invoicePdfUrl"
+          >
+            @if (invoicePdfUrl) {
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2.5"
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+              <span>PDF enviado</span>
+            } @else if (uploadingPdf) {
+              <span>Enviando...</span>
+            } @else {
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3"
+                />
+              </svg>
+              <span>Upload PDF</span>
+            }
+            <input
+              type="file"
+              accept=".pdf"
+              class="hidden"
+              (change)="onPdfSelected($event)"
+              [disabled]="uploadingPdf"
+            />
+          </label>
+        </div>
+
+        @if (!invoiceIssued) {
+          <button
+            (click)="openFiscalEmission()"
+            class="mt-2 w-full bg-amber-500 text-white py-2 px-3 rounded hover:bg-amber-600 transition text-sm font-medium flex items-center justify-center gap-2"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 17V7a2 2 0 012-2h6a2 2 0 012 2v10a2 2 0 01-2 2h-6a2 2 0 01-2-2zM9 7H7a2 2 0 00-2 2v10a2 2 0 002 2h6a2 2 0 002-2v-1"
+              />
+            </svg>
+            <span>Emitir Nota Fiscal</span>
+          </button>
+        }
+      </div>
+
       <div
         class="mt-8 pt-2 border-t border-gray-200 text-center text-gray-400"
         style="font-size: 12px"
