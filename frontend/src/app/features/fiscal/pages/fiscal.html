@@ -1,0 +1,230 @@
+<div class="p-6 flex flex-col gap-6">
+  <div class="flex flex-wrap items-start justify-between gap-4">
+    <div>
+      <h1 class="text-xl font-semibold text-(--color-text-primary)">Gestão Fiscal</h1>
+      <p class="text-[13px] text-(--color-text-muted) mt-1">
+        Controle de notas fiscais emitidas e pendentes.
+      </p>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-3">
+      <div class="flex items-center rounded-lg border border-(--color-border) overflow-hidden">
+        <button
+          (click)="setRange('hoje')"
+          [class.nav-active]="activeRange === 'hoje'"
+          class="px-3 py-1.5 text-[12px] font-medium text-(--color-text-muted) hover:bg-(--color-bg-hover-md) transition-colors"
+        >
+          Hoje
+        </button>
+        <button
+          (click)="setRange('semana')"
+          [class.nav-active]="activeRange === 'semana'"
+          class="px-3 py-1.5 text-[12px] font-medium text-(--color-text-muted) hover:bg-(--color-bg-hover-md) transition-colors border-x border-(--color-border)"
+        >
+          Essa Semana
+        </button>
+        <button
+          (click)="setRange('mes')"
+          [class.nav-active]="activeRange === 'mes'"
+          class="px-3 py-1.5 text-[12px] font-medium text-(--color-text-muted) hover:bg-(--color-bg-hover-md) transition-colors"
+        >
+          Esse Mês
+        </button>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <div class="flex flex-col gap-0.5">
+          <label class="text-[9px] uppercase tracking-wider text-(--color-text-muted)"
+            >Data Início</label
+          >
+          <input
+            [(ngModel)]="dateFrom"
+            (ngModelChange)="onDateChange()"
+            type="date"
+            class="bg-bg-card border border-(--color-border) rounded-lg px-2.5 py-1.5 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
+          />
+        </div>
+        <span class="text-[12px] text-(--color-text-muted) mt-3">até</span>
+        <div class="flex flex-col gap-0.5">
+          <label class="text-[9px] uppercase tracking-wider text-(--color-text-muted)"
+            >Data Fim</label
+          >
+          <input
+            [(ngModel)]="dateTo"
+            (ngModelChange)="onDateChange()"
+            type="date"
+            class="bg-bg-card border border-(--color-border) rounded-lg px-2.5 py-1.5 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  @if (pageLoading()) {
+    <div class="flex items-center justify-center py-12">
+      <div class="flex items-center gap-3 text-(--color-text-muted)">
+        <div
+          class="w-4 h-4 rounded-full border-2 border-(--color-primary) border-t-transparent animate-spin"
+        ></div>
+        <span class="text-[13px]">Carregando dados fiscais...</span>
+      </div>
+    </div>
+  }
+
+  @if (!pageLoading()) {
+    <!-- Cards de resumo -->
+    <div class="grid grid-cols-3 gap-4">
+      <div class="rounded-xl border border-(--color-border) bg-bg-sidebar p-5">
+        <p class="text-[10px] font-semibold uppercase tracking-widest text-success mb-3">
+          Notas Emitidas
+        </p>
+        <p class="text-3xl font-bold text-(--color-text-primary)">{{ summary.issuedCount }}</p>
+        <p class="text-[12px] text-(--color-text-muted) mt-1">no período selecionado</p>
+      </div>
+
+      <div class="rounded-xl border border-(--color-border) bg-bg-sidebar p-5">
+        <p class="text-[10px] font-semibold uppercase tracking-widest text-warning mb-3">
+          Notas Pendentes
+        </p>
+        <p class="text-3xl font-bold text-(--color-text-primary)">{{ summary.pendingCount }}</p>
+        <p class="text-[12px] text-(--color-text-muted) mt-1">atendimentos pagos sem NF</p>
+      </div>
+
+      <div class="rounded-xl border border-(--color-border) bg-bg-sidebar p-5">
+        <p
+          class="text-[10px] font-semibold uppercase tracking-widest text-(--color-primary-text) mb-3"
+        >
+          Comissão Abatida
+        </p>
+        <p class="text-3xl font-bold text-(--color-text-primary)">
+          {{ formatCurrency(summary.totalDeducted) }}
+        </p>
+        <p class="text-[12px] text-(--color-text-muted) mt-1">devido à emissão de NF</p>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="flex gap-1 border-b border-(--color-border)">
+      <button
+        (click)="activeTab = 'emitidas'"
+        class="px-4 py-2 text-[12px] font-medium transition-colors border-b-2 -mb-px"
+        [class]="
+          activeTab === 'emitidas'
+            ? 'border-(--color-primary) text-(--color-primary-text)'
+            : 'border-transparent text-(--color-text-muted) hover:text-(--color-text-secondary)'
+        "
+      >
+        Notas Emitidas ({{ documents.length }})
+      </button>
+      <button
+        (click)="activeTab = 'pendentes'"
+        class="px-4 py-2 text-[12px] font-medium transition-colors border-b-2 -mb-px"
+        [class]="
+          activeTab === 'pendentes'
+            ? 'border-(--color-primary) text-(--color-primary-text)'
+            : 'border-transparent text-(--color-text-muted) hover:text-(--color-text-secondary)'
+        "
+      >
+        Pendentes ({{ pending.length }})
+      </button>
+    </div>
+
+    @if (activeTab === 'emitidas') {
+      <div class="rounded-xl border border-(--color-border) bg-bg-sidebar p-5">
+        <div
+          class="grid grid-cols-[1.5fr_1.5fr_1fr_1fr_1fr_100px_100px] gap-2 pb-2 border-b border-(--color-border)"
+        >
+          @for (
+            col of ['Paciente', 'Médico', 'Valor', 'Comissão', 'Data', 'Documentos', 'Ações'];
+            track col
+          ) {
+            <p class="text-[10px] uppercase tracking-wider text-(--color-text-muted) font-semibold">
+              {{ col }}
+            </p>
+          }
+        </div>
+
+        @for (doc of documents; track doc.paymentId) {
+          <div
+            class="grid grid-cols-[1.5fr_1.5fr_1fr_1fr_1fr_100px_100px] gap-2 py-3 border-b border-(--color-border) items-center"
+          >
+            <p class="text-[12px] font-medium text-(--color-text-primary)">{{ doc.patientName }}</p>
+            <p class="text-[12px] text-(--color-text-secondary)">{{ doc.doctorName }}</p>
+            <p class="text-[12px] text-(--color-text-secondary)">{{ formatCurrency(doc.value) }}</p>
+            <p class="text-[12px] font-semibold text-(--color-primary-text)">
+              {{ formatCurrency(doc.doctorEarnings) }}
+            </p>
+            <p class="text-[12px] text-(--color-text-muted)">{{ doc.date }}</p>
+            <div class="flex items-center gap-1">
+              @if (doc.invoiceXmlUrl) {
+                <button
+                  type="button"
+                  (click)="viewDocument(doc, 'xml')"
+                  class="text-[10px] px-2 py-0.5 rounded-full bg-(--color-bg-overlay) text-(--color-text-secondary) hover:opacity-80"
+                >
+                  XML
+                </button>
+              }
+              @if (doc.invoicePdfUrl) {
+                <button
+                  type="button"
+                  (click)="viewDocument(doc, 'pdf')"
+                  class="text-[10px] px-2 py-0.5 rounded-full bg-(--color-bg-overlay) text-(--color-text-secondary) hover:opacity-80"
+                >
+                  PDF
+                </button>
+              }
+            </div>
+            <button
+              (click)="removeInvoice(doc)"
+              class="text-[10px] px-2 py-0.5 rounded-full bg-danger-subtle text-(--color-danger) hover:opacity-80 font-semibold"
+            >
+              Remover
+            </button>
+          </div>
+        }
+
+        @if (documents.length === 0) {
+          <p class="text-[12px] text-(--color-text-muted) text-center py-6">
+            Nenhuma nota emitida no período
+          </p>
+        }
+      </div>
+    }
+
+    @if (activeTab === 'pendentes') {
+      <div class="rounded-xl border border-(--color-border) bg-bg-sidebar p-5">
+        <div
+          class="grid grid-cols-[1.5fr_1.5fr_1fr_1fr] gap-2 pb-2 border-b border-(--color-border)"
+        >
+          @for (col of ['Paciente', 'Médico', 'Valor', 'Data']; track col) {
+            <p class="text-[10px] uppercase tracking-wider text-(--color-text-muted) font-semibold">
+              {{ col }}
+            </p>
+          }
+        </div>
+
+        @for (item of pending; track item.paymentId) {
+          <div
+            class="grid grid-cols-[1.5fr_1.5fr_1fr_1fr] gap-2 py-3 border-b border-(--color-border) items-center"
+          >
+            <p class="text-[12px] font-medium text-(--color-text-primary)">
+              {{ item.patientName }}
+            </p>
+            <p class="text-[12px] text-(--color-text-secondary)">{{ item.doctorName }}</p>
+            <p class="text-[12px] text-(--color-text-secondary)">
+              {{ formatCurrency(item.value) }}
+            </p>
+            <p class="text-[12px] text-(--color-text-muted)">{{ item.date }}</p>
+          </div>
+        }
+
+        @if (pending.length === 0) {
+          <p class="text-[12px] text-(--color-text-muted) text-center py-6">
+            Nenhum pagamento pendente de nota fiscal no período
+          </p>
+        }
+      </div>
+    }
+  }
+</div>

@@ -23,6 +23,9 @@ export class ConsultationHistoryDto {
 }
 
 export class PatientDocumentDto {
+  @ApiProperty({ example: 12 })
+  id: number;
+
   @ApiProperty({ example: 'exame-sangue.pdf' })
   name: string;
 
@@ -87,6 +90,7 @@ export class PatientDetailResponseDto {
     }));
 
     this.documents = patient.documents.map((d: any) => ({
+      id: d.id,
       name: d.name,
       size: d.size,
       type: d.type,

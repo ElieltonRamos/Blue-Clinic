@@ -82,6 +82,13 @@ export class AppLayout implements OnInit {
       icon: 'dollar-sign',
       roles: ['admin', 'atendimento'], // permite ao atendimento acesso a aba financeiro permitindo gerenciar o pagamento de comissoes
     },
+    {
+      label: 'Fiscal',
+      title: 'Gestão Fiscal',
+      route: '/dashboard/fiscal',
+      icon: 'receipt',
+      roles: ['admin', 'atendimento'],
+    },
   ];
 
   bottomNav: NavItem[] = [

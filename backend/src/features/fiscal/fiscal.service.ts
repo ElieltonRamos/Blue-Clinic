@@ -1,9 +1,14 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, StreamableFile } from '@nestjs/common';
 import { unlink } from 'node:fs/promises';
 import { join } from 'node:path';
 import { PrismaService } from '../../core/database/prisma.service.js';
 import { Prisma } from '../../../generated/prisma/client.js';
 import { FiscalDocumentResponseDto } from './dto/fiscal-document-response.dto.js';
+import { FiscalDocumentItemDto } from './dto/fiscal-document-item.dto.js';
+import { FiscalFilterDto } from './dto/fiscal-filter.dto.js';
+import { FiscalSummaryDto } from './dto/fiscal-summary.dto.js';
+import { FiscalPendingItemDto } from './dto/fiscal-pending-item.dto.js';
+import { createReadStream, existsSync } from 'node:fs';
 
 export interface UploadedFileCustom {
   originalname: string;
@@ -155,6 +160,30 @@ export class FiscalService {
     return { value: doctorEarnings, deductionExceeded };
   }
 
+  async streamFile(
+    paymentId: number,
+    companyId: number,
+    type: 'xml' | 'pdf',
+  ): Promise<StreamableFile> {
+    const payment = await this.findPaymentOrThrow(paymentId, companyId);
+
+    const url = type === 'xml' ? payment.invoiceXmlUrl : payment.invoicePdfUrl;
+    if (!url) {
+      throw new NotFoundException(
+        `Arquivo ${type.toUpperCase()} não encontrado.`,
+      );
+    }
+
+    const filePath = join(process.cwd(), url.replace(/^\//, ''));
+    if (!existsSync(filePath)) {
+      throw new NotFoundException('Arquivo não encontrado no servidor.');
+    }
+
+    return new StreamableFile(createReadStream(filePath), {
+      type: type === 'xml' ? 'application/xml' : 'application/pdf',
+    });
+  }
+
   private async deleteFileIfExists(url: string | null): Promise<void> {
     if (!url) return;
     const filePath = join(process.cwd(), url.replace(/^\//, ''));
@@ -163,5 +192,157 @@ export class FiscalService {
     } catch {
       // arquivo já não existe no disco, ignora
     }
+  }
+
+  async getSummary(
+    companyId: number,
+    filter: FiscalFilterDto,
+  ): Promise<FiscalSummaryDto> {
+    const range = this.parseDateRange(filter);
+
+    const [issuedCount, pendingCount, payments] = await Promise.all([
+      this.prisma.client.payment.count({
+        where: {
+          invoiceIssued: true,
+          date: range,
+          appointment: { doctor: { companyId } },
+        },
+      }),
+      this.prisma.client.payment.count({
+        where: {
+          invoiceIssued: false,
+          date: range,
+          appointment: {
+            doctor: { companyId },
+            status: { in: ['paid', 'finished'] },
+          },
+        },
+      }),
+      this.prisma.client.payment.findMany({
+        where: {
+          invoiceIssued: true,
+          date: range,
+          appointment: { doctor: { companyId } },
+        },
+        select: {
+          value: true,
+          doctorEarnings: true,
+          appointment: {
+            select: {
+              doctorId: true,
+              appointmentTypeId: true,
+              feeOverride: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    let totalDeducted = 0;
+    for (const p of payments) {
+      const full = await this.calculateDoctorEarnings(
+        p.appointment,
+        Number(p.value),
+        false,
+      );
+      totalDeducted += Math.max(0, full.value - Number(p.doctorEarnings));
+    }
+
+    return { issuedCount, pendingCount, totalDeducted };
+  }
+
+  async getDocuments(
+    companyId: number,
+    filter: FiscalFilterDto,
+  ): Promise<FiscalDocumentItemDto[]> {
+    const range = this.parseDateRange(filter);
+
+    const payments = await this.prisma.client.payment.findMany({
+      where: {
+        invoiceIssued: true,
+        date: range,
+        appointment: {
+          doctor: {
+            companyId,
+            ...(filter.doctorId && { id: filter.doctorId }),
+          },
+        },
+      },
+      include: {
+        appointment: {
+          include: {
+            patient: { select: { name: true } },
+            doctor: { select: { name: true } },
+          },
+        },
+      },
+      orderBy: { date: 'desc' },
+    });
+
+    return payments.map((p) => ({
+      paymentId: p.id,
+      patientName: p.appointment.patient.name,
+      doctorName: p.appointment.doctor.name,
+      value: Number(p.value),
+      doctorEarnings: Number(p.doctorEarnings),
+      date: this.toLocalDateString(p.date),
+      invoiceXmlUrl: p.invoiceXmlUrl,
+      invoicePdfUrl: p.invoicePdfUrl,
+    }));
+  }
+
+  async getPending(
+    companyId: number,
+    filter: FiscalFilterDto,
+  ): Promise<FiscalPendingItemDto[]> {
+    const range = this.parseDateRange(filter);
+
+    const payments = await this.prisma.client.payment.findMany({
+      where: {
+        invoiceIssued: false,
+        date: range,
+        appointment: {
+          doctor: {
+            companyId,
+            ...(filter.doctorId && { id: filter.doctorId }),
+          },
+          status: { in: ['paid', 'finished'] },
+        },
+      },
+      include: {
+        appointment: {
+          include: {
+            patient: { select: { name: true } },
+            doctor: { select: { name: true } },
+          },
+        },
+      },
+      orderBy: { date: 'desc' },
+    });
+
+    return payments.map((p) => ({
+      paymentId: p.id,
+      appointmentId: p.appointmentId,
+      patientName: p.appointment.patient.name,
+      doctorName: p.appointment.doctor.name,
+      value: Number(p.value),
+      date: this.toLocalDateString(p.date),
+    }));
+  }
+
+  // ── Helpers de data (mesmo padrão do FinanceService) ──────────────────────
+
+  private parseDateRange(filter: FiscalFilterDto): { gte: Date; lte: Date } {
+    const gte = new Date(`${filter.dateFrom}T00:00:00.000-03:00`);
+    const lte = new Date(`${filter.dateTo}T23:59:59.999-03:00`);
+    return { gte, lte };
+  }
+
+  private toLocalDateString(date: Date): string {
+    return date
+      .toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })
+      .split('/')
+      .reverse()
+      .join('-');
   }
 }

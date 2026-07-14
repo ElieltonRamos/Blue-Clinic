@@ -9,6 +9,7 @@ export interface PatientFilters {
 }
 
 export interface UploadDocumentResponse {
+  id: number;
   name: string;
   size: string;
   type: string;
@@ -42,6 +43,7 @@ export interface ConsultationHistory {
 }
 
 export interface PatientDocument {
+  id: number;
   name: string;
   size: string;
   type: string;

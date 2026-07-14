@@ -4,7 +4,6 @@ import {
   OnInit,
   ChangeDetectionStrategy,
   signal,
-  computed,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -15,13 +14,13 @@ import {
   PatientDetail,
   CreatePatientRequest,
   UpdatePatientRequest,
+  PatientDocument,
 } from '../types/patients.types';
 import { FormField, ModalEditEntity } from '../../../shared/modal-edit-entity/modal-edit-entity';
 import { NotificationService } from '../../../shared/toastr/notification.service';
 import { PaginatorComponent } from '../../../shared/paginator/paginator.component';
-import { environment } from '../../../core/services/environment';
 import { AppointmentResponse } from '../../../shared/create-appointment-modal/types/create-appointment.types';
-import { CreateAppointmentModal } from "../../../shared/create-appointment-modal/pages/create-appointment-modal";
+import { CreateAppointmentModal } from '../../../shared/create-appointment-modal/pages/create-appointment-modal';
 
 const AVATAR_COLORS = [
   'bg-primary text-btn-primary-text',
@@ -241,8 +240,27 @@ export class Patients implements OnInit {
     input.value = '';
   }
 
-  getDocumentUrl(url: string): string {
-    return `${environment.apiUrl}${url}`;
+  viewDocument(doc: PatientDocument): void {
+    const detail = this.selectedDetail();
+    if (!detail) return;
+
+    this.patientsService.downloadDocument(detail.id, doc.id).subscribe({
+      next: (blob: Blob) => {
+        const mimeType =
+          doc.type === 'pdf' ? 'application/pdf' : `image/${this.getImageExt(doc.url)}`;
+        const url = window.URL.createObjectURL(new Blob([blob], { type: mimeType }));
+        window.open(url, '_blank');
+        setTimeout(() => window.URL.revokeObjectURL(url), 10000);
+      },
+      error: (err: HttpErrorResponse) => {
+        this.notification.error(this.getErrorMessage(err, 'Erro ao abrir documento.'));
+      },
+    });
+  }
+
+  private getImageExt(url: string): string {
+    const ext = url.split('.').pop()?.toLowerCase();
+    return ext === 'png' || ext === 'webp' ? ext : 'jpeg';
   }
 
   private getErrorMessage(err: HttpErrorResponse, defaultMsg: string): string {

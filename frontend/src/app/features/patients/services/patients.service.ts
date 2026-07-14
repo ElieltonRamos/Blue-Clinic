@@ -48,4 +48,10 @@ export class PatientsService {
       form,
     );
   }
+
+  downloadDocument(patientId: number, documentId: number) {
+    return this.http.get(`${this.apiUrl}/patients/${patientId}/documents/${documentId}`, {
+      responseType: 'blob',
+    });
+  }
 }

@@ -8,6 +8,7 @@ import { ChatAutomation } from './features/chat-automation/pages/chat-automation
 import { Reports } from './features/reports/pages/reports';
 import { Settings } from './features/settings/pages/settings';
 import { Financial } from './features/financial/pages/financial';
+import { Fiscal } from './features/fiscal/pages/fiscal';
 import { authGuard } from './core/guards/auth.guard';
 import { Schedule } from './features/schedule/pages/schedule';
 import { AppointmentTypes } from './features/appointment-types/pages/appointment-types';
@@ -49,6 +50,10 @@ export const routes: Routes = [
       {
         path: 'financeiro',
         component: Financial,
+      },
+      {
+        path: 'fiscal',
+        component: Fiscal,
       },
       {
         path: 'agenda-config',

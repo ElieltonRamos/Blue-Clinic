@@ -1,6 +1,7 @@
 import {
   Controller,
   Post,
+  Get,
   Delete,
   Param,
   ParseIntPipe,
@@ -9,6 +10,7 @@ import {
   UploadedFiles,
   BadRequestException,
   HttpStatus,
+  StreamableFile,
 } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -126,6 +128,36 @@ export class FiscalController {
       : null;
 
     return this.fiscalService.uploadInvoice(id, companyId, xmlFile, pdfFile);
+  }
+
+  @Get('xml')
+  @ApiOperation({ summary: 'Baixar XML da nota fiscal' })
+  @ApiParam({ name: 'id', type: Number })
+  @ApiResponse({ status: HttpStatus.OK })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Pagamento ou arquivo não encontrado',
+  })
+  downloadXml(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser('companyId') companyId: number,
+  ): Promise<StreamableFile> {
+    return this.fiscalService.streamFile(id, companyId, 'xml');
+  }
+
+  @Get('pdf')
+  @ApiOperation({ summary: 'Baixar PDF da nota fiscal' })
+  @ApiParam({ name: 'id', type: Number })
+  @ApiResponse({ status: HttpStatus.OK })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Pagamento ou arquivo não encontrado',
+  })
+  downloadPdf(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser('companyId') companyId: number,
+  ): Promise<StreamableFile> {
+    return this.fiscalService.streamFile(id, companyId, 'pdf');
   }
 
   @Delete()
