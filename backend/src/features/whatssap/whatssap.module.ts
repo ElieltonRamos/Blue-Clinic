@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
-import { WhatssapService } from './whatssap.service';
-import { WhatssapController } from './whatssap.controller';
+import { WhatssapService } from './official/whatssap.service';
+import { WhatssapController } from './official/whatssap.controller';
 import { PrismaService } from '../../core/database/prisma.service.js';
-import { BotService } from './bot.service';
-import { ReminderJob } from './reminder.job';
+import { BotService } from '../bot-message/bot.service';
+import { ReminderJob } from '../bot-message/reminder.job';
 import { ChatGatewayModule } from '../chat/chat-gateway.module';
-import { DoctorReminderJob } from './doctor-reminder.job';
+import { DoctorReminderJob } from '../bot-message/doctor-reminder.job';
 
 @Module({
   imports: [ChatGatewayModule],

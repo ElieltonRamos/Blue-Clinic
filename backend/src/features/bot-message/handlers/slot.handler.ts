@@ -1,6 +1,6 @@
 import { PrismaService } from '../../../core/database/prisma.service.js';
 import { BotData, BotStep, SendFn } from '../entities/bot-state.types.js';
-import { generateSlots, timeToMin } from '../bot-helpers.js';
+import { generateSlots, timeToMin } from '../../bot-message/bot-helpers.js';
 
 const DIGIT_EMOJI: Record<string, string> = {
   '0': '0️⃣',

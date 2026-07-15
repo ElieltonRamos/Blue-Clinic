@@ -1,17 +1,18 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../core/database/prisma.service.js';
-import { ConversationStatus } from '../../../generated/prisma/client.js';
+import {
+  ConversationStatus,
+  MessageStatus,
+} from '../../../generated/prisma/client.js';
 import { ConversationResponseDto } from './dto/conversation-response.dto.js';
 import { ChatMessageResponseDto } from './dto/chat-message-response.dto.js';
 import { PatientInfoResponseDto } from './dto/patient-info-response.dto.js';
-import { WhatssapService } from '../whatssap/whatssap.service.js';
 import { ChatGateway } from './chat.gateway.js';
 
 @Injectable()
 export class ChatService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly whatsapp: WhatssapService,
     private readonly gateway: ChatGateway,
   ) {}
 
@@ -132,16 +133,9 @@ export class ChatService {
     text: string,
     senderName: string,
     senderRole: string,
+    wamid?: string | null,
+    status: MessageStatus = 'sent',
   ): Promise<ChatMessageResponseDto> {
-    const conversation = await this.findConversation(companyId, conversationId);
-
-    const formattedText = `${senderRole} - ${senderName}\n\n${text}`;
-    const wamid = await this.trySendWhatsapp(
-      companyId,
-      conversation.phone,
-      formattedText,
-    );
-
     const [message, updatedConv] = await this.prisma.client.$transaction(
       async (tx) => {
         const msg = await tx.chatMessage.create({
@@ -153,7 +147,7 @@ export class ChatService {
             senderName,
             senderRole,
             wamid: wamid ?? null,
-            status: 'sent',
+            status,
           },
         });
 
@@ -205,28 +199,6 @@ export class ChatService {
     });
 
     return new PatientInfoResponseDto({ ...patient, lastVisit: null });
-  }
-
-  private async trySendWhatsapp(
-    companyId: number,
-    phone: string,
-    text: string,
-  ): Promise<string | null> {
-    const config = await this.prisma.client.whatsappConfig.findUnique({
-      where: { companyId },
-      select: { accessToken: true, phoneNumberId: true },
-    });
-
-    if (config?.accessToken && config?.phoneNumberId) {
-      return await this.whatsapp.sendText(
-        phone,
-        text,
-        config.accessToken,
-        config.phoneNumberId,
-      );
-    }
-
-    return null;
   }
 
   private async findConversation(companyId: number, conversationId: number) {
@@ -282,5 +254,121 @@ export class ChatService {
     });
 
     return new ConversationResponseDto(created);
+  }
+
+  // chat.service.ts — MÉTODOS A ADICIONAR
+
+  async findOrCreateConversationByPhone(
+    companyId: number,
+    phone: string,
+    patientId: number | null,
+  ): Promise<{
+    id: number;
+    status: ConversationStatus;
+    botStep: string | null;
+    phone: string;
+    patientId: number | null;
+  }> {
+    const existing = await this.prisma.client.conversation.findFirst({
+      where: { phone, companyId },
+      include: { patient: { select: { blocked: true } } },
+    });
+
+    if (existing) return existing;
+
+    return this.prisma.client.conversation.create({
+      data: {
+        companyId,
+        phone,
+        patientId,
+        status: 'bot',
+        lastMessageAt: new Date(),
+        unread: 1,
+      },
+      include: { patient: { select: { blocked: true } } },
+    });
+  }
+
+  async saveIncomingMessage(
+    companyId: number,
+    conversationId: number,
+    text: string,
+  ): Promise<ChatMessageResponseDto> {
+    const conversation =
+      await this.prisma.client.conversation.findUniqueOrThrow({
+        where: { id: conversationId },
+      });
+
+    const isInactive =
+      conversation.lastMessageAt &&
+      Date.now() - new Date(conversation.lastMessageAt).getTime() >
+        4 * 60 * 60 * 1000;
+
+    const resetData: Record<string, any> = {
+      lastMessage: text,
+      lastMessageAt: new Date(),
+      unread: { increment: 1 },
+    };
+
+    if (isInactive) {
+      if (
+        conversation.status === 'human' ||
+        conversation.status === 'waiting'
+      ) {
+        resetData.status = 'bot';
+      }
+      if (conversation.botStep !== null) {
+        resetData.botStep = null;
+      }
+    }
+
+    const updatedConv = await this.prisma.client.conversation.update({
+      where: { id: conversationId },
+      data: resetData,
+      include: { patient: { select: { name: true } } },
+    });
+
+    this.gateway.emitConversationUpdated(
+      companyId,
+      new ConversationResponseDto(updatedConv),
+    );
+
+    const savedMessage = await this.prisma.client.chatMessage.create({
+      data: { conversationId, sender: 'patient', text, read: false },
+    });
+
+    const msgDto = new ChatMessageResponseDto(savedMessage);
+    this.gateway.emitNewMessage(companyId, conversationId, msgDto);
+
+    return msgDto;
+  }
+
+  async updateMessageStatusByWamid(
+    companyId: number,
+    wamid: string,
+    status: 'sent' | 'delivered' | 'read' | 'failed',
+    errorCode?: number,
+    errorMessage?: string,
+  ): Promise<void> {
+    const message = await this.prisma.client.chatMessage.findFirst({
+      where: { wamid },
+    });
+    if (!message) return;
+
+    await this.prisma.client.chatMessage.update({
+      where: { id: message.id },
+      data: { status },
+    });
+
+    this.gateway.emitMessageStatusUpdated(companyId, message.conversationId, {
+      messageId: message.id,
+      status,
+      errorCode,
+      errorMessage: errorCode === 131047 ? undefined : errorMessage,
+    });
+  }
+
+  async findMessageByWamid(wamid: string) {
+    return this.prisma.client.chatMessage.findFirst({ where: { wamid } });
   }
 }

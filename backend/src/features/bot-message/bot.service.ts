@@ -1,13 +1,12 @@
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
+
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../core/database/prisma.service.js';
+import { ChatGateway } from '../chat/chat.gateway.js';
+import { ConversationResponseDto } from '../chat/dto/conversation-response.dto.js';
 import { BotData, BotStep, SendFn } from './entities/bot-state.types.js';
 import { handleMenu, MENU_TEXT } from './handlers/menu.handler.js';
-import {
-  handleRegisterName,
-  handleRegisterCpf,
-} from './handlers/register.handler.js';
 import {
   askSpecialty,
   handleSelectSpecialty,
@@ -18,15 +17,17 @@ import {
 } from './handlers/appointment-type.handler.js';
 import { askDoctor, handleSelectDoctor } from './handlers/doctor.handler.js';
 import { askDate, handleSelectDate } from './handlers/date.handler.js';
-import { askSlot, handleSelectSlot } from './handlers/slot.handler.js';
-import { handleConfirmAppointment } from './handlers/confirm.handler.js';
 import {
-  showCancelAppointment,
   handleCancelConfirm,
+  showCancelAppointment,
   showNextAppointment,
 } from './handlers/cancel.handler.js';
-import { ChatGateway } from '../chat/chat.gateway.js';
-import { ConversationResponseDto } from '../chat/dto/conversation-response.dto.js';
+import {
+  handleRegisterCpf,
+  handleRegisterName,
+} from './handlers/register.handler.js';
+import { askSlot, handleSelectSlot } from './handlers/slot.handler.js';
+import { handleConfirmAppointment } from './handlers/confirm.handler.js';
 
 const PREVIOUS_STEP: Partial<Record<BotStep, BotStep>> = {
   SELECT_APPOINTMENT_TYPE: 'SELECT_SPECIALTY',

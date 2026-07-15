@@ -12,12 +12,12 @@ import {
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { WhatssapService } from './whatssap.service';
-import { CurrentUser } from '../../core/decorators/current-user.decorator';
-import { JwtAuthGuard } from '../../core/guards/jwt-auth.guard';
-import { SendTemplateDto } from './dto/send-template.dto';
+import { CurrentUser } from '../../../core/decorators/current-user.decorator';
+import { JwtAuthGuard } from '../../../core/guards/jwt-auth.guard';
+import { SendTemplateDto } from '../dto/send-template.dto';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { ReminderJob } from './reminder.job';
-import { DoctorReminderJob } from './doctor-reminder.job';
+import { ReminderJob } from '../../bot-message/reminder.job';
+import { DoctorReminderJob } from '../../bot-message/doctor-reminder.job';
 
 @Controller('whatssap')
 export class WhatssapController {

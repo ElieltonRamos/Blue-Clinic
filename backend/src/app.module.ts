@@ -14,6 +14,7 @@ import { WhatssapModule } from './features/whatssap/whatssap.module';
 import { ChatModule } from './features/chat/chat.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { FiscalModule } from './features/fiscal/fiscal.module';
+import { BotMessageModule } from './features/bot-message/bot-message.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { FiscalModule } from './features/fiscal/fiscal.module';
     WhatssapModule,
     ChatModule,
     FiscalModule,
+    BotMessageModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -85,6 +85,11 @@ enum MessageStatus {
   failed
 }
 
+enum WhatsappProvider {
+  official
+  baileys
+}
+
 model Company {
   id            Int     @id @default(autoincrement())
   tradeName     String
@@ -377,13 +382,18 @@ model Expense {
 }
 
 model WhatsappConfig {
-  id                        Int     @id @default(autoincrement())
-  companyId                 Int     @unique
+  id                        Int              @id @default(autoincrement())
+  companyId                 Int              @unique
+  provider                  WhatsappProvider @default(official)
+
   phoneNumberId             String?
-  accessToken               String? @db.Text
-  botEnabled                Boolean @default(true)
-  whatsappBusinessAccountId String? @map("whatsapp_business_account_id")
-  autoReminder              Boolean @default(true)
+  accessToken               String?          @db.Text
+  botEnabled                Boolean          @default(true)
+  whatsappBusinessAccountId String?          @map("whatsapp_business_account_id")
+  autoReminder              Boolean          @default(true)
+
+  baileysStatus             String?
+  baileysQr                 String?          @db.Text
 
   company Company @relation(fields: [companyId], references: [id])
 
