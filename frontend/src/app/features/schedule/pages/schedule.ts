@@ -398,10 +398,12 @@ export class Schedule implements OnInit {
         clinicRateType: this.newCommissionForm.clinicRateType,
         clinicRate: this.newCommissionForm.clinicRate,
         price: this.newCommissionForm.price,
-        ...(this.newCommissionForm.nfDeductionEnabled && {
-          nfDeductionType: this.newCommissionForm.nfDeductionType,
-          nfDeductionValue: this.newCommissionForm.nfDeductionValue,
-        }),
+        nfDeductionType: this.newCommissionForm.nfDeductionEnabled
+          ? this.newCommissionForm.nfDeductionType
+          : null,
+        nfDeductionValue: this.newCommissionForm.nfDeductionEnabled
+          ? this.newCommissionForm.nfDeductionValue
+          : null,
       })
       .subscribe({
         next: (created) => {
@@ -513,6 +515,10 @@ export class Schedule implements OnInit {
     }
     if (form.price <= 0) {
       this.notification.error('Preço deve ser maior que zero');
+      return false;
+    }
+    if (form.nfDeductionEnabled && form.nfDeductionValue < 0) {
+      this.notification.error('Valor do abatimento deve ser maior ou igual a zero');
       return false;
     }
     return true;

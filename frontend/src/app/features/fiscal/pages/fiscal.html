@@ -195,9 +195,9 @@
     @if (activeTab === 'pendentes') {
       <div class="rounded-xl border border-(--color-border) bg-bg-sidebar p-5">
         <div
-          class="grid grid-cols-[1.5fr_1.5fr_1fr_1fr] gap-2 pb-2 border-b border-(--color-border)"
+          class="grid grid-cols-[1.5fr_1.5fr_1fr_1fr_120px] gap-2 pb-2 border-b border-(--color-border)"
         >
-          @for (col of ['Paciente', 'Médico', 'Valor', 'Data']; track col) {
+          @for (col of ['Paciente', 'Médico', 'Valor', 'Data', 'Ações']; track col) {
             <p class="text-[10px] uppercase tracking-wider text-(--color-text-muted) font-semibold">
               {{ col }}
             </p>
@@ -206,7 +206,7 @@
 
         @for (item of pending; track item.paymentId) {
           <div
-            class="grid grid-cols-[1.5fr_1.5fr_1fr_1fr] gap-2 py-3 border-b border-(--color-border) items-center"
+            class="grid grid-cols-[1.5fr_1.5fr_1fr_1fr_120px] gap-2 py-3 border-b border-(--color-border) items-center"
           >
             <p class="text-[12px] font-medium text-(--color-text-primary)">
               {{ item.patientName }}
@@ -216,6 +216,13 @@
               {{ formatCurrency(item.value) }}
             </p>
             <p class="text-[12px] text-(--color-text-muted)">{{ item.date }}</p>
+            <button
+              (click)="openEmission(item)"
+              [disabled]="loadingEmission()"
+              class="text-[11px] px-2 py-1 rounded-full bg-amber-500 text-white font-semibold hover:opacity-80 disabled:opacity-40"
+            >
+              Emitir NF
+            </button>
           </div>
         }
 
@@ -228,3 +235,10 @@
     }
   }
 </div>
+
+@if (selectedPayment) {
+  <app-modal-appointment-receipt
+    [paymentData]="selectedPayment"
+    (closeModal)="closeEmissionModal()"
+  />
+}

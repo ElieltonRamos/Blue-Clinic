@@ -91,8 +91,8 @@ export interface CreateCommissionRequest {
   clinicRateType: CommissionRateType;
   clinicRate: number;
   price: number;
-  nfDeductionType?: CommissionRateType;
-  nfDeductionValue?: number;
+  nfDeductionType?: CommissionRateType | null;
+  nfDeductionValue?: number | null;
 }
 
 export interface UpdateCommissionRequest {

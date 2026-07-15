@@ -328,6 +328,7 @@ model Payment {
   doctorEarnings Decimal  @default(0) @db.Decimal(10, 2)
   clinicEarnings Decimal  @default(0) @db.Decimal(10, 2)
   discount       Decimal  @default(0) @db.Decimal(10, 2)
+  deductedAmount Decimal  @default(0) @db.Decimal(10, 2)
   invoiceIssued  Boolean  @default(false)
   invoiceXmlUrl  String?
   invoicePdfUrl  String?

@@ -12,20 +12,27 @@ import {
   FiscalSummary,
 } from '../types/fiscal.types';
 import { environment } from '../../../core/services/environment';
+import { ModalAppointmentReceipt } from '../../../shared/modal-appointment-receipt/modal-appointment-receipt';
+import { CalendarService } from '../../calendar/services/calendar.service';
+import { PaymentResponseDto } from '../../calendar/types/calendar.types';
+import { alertConfirm } from '../../../shared/alerts/custom-alerts';
 
 @Component({
   selector: 'app-fiscal',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ModalAppointmentReceipt],
   templateUrl: './fiscal.html',
 })
 export class Fiscal implements OnInit {
   private service = inject(FiscalService);
   private notify = inject(NotificationService);
+  private calendarService = inject(CalendarService);
 
   summary: FiscalSummary = { issuedCount: 0, pendingCount: 0, totalDeducted: 0 };
   documents: FiscalDocumentItem[] = [];
   pending: FiscalPendingItem[] = [];
+  selectedPayment: PaymentResponseDto | null = null;
+  loadingEmission = signal(false);
 
   activeTab: 'emitidas' | 'pendentes' = 'emitidas';
   dateFrom = '';
@@ -39,6 +46,27 @@ export class Fiscal implements OnInit {
 
   private get filter(): FiscalFilter {
     return { dateFrom: this.dateFrom, dateTo: this.dateTo };
+  }
+
+  openEmission(item: FiscalPendingItem): void {
+    if (this.loadingEmission()) return;
+    this.loadingEmission.set(true);
+
+    this.calendarService.getPaymentByAppointment(item.appointmentId).subscribe({
+      next: (payment) => {
+        this.selectedPayment = payment;
+        this.loadingEmission.set(false);
+      },
+      error: (err: HttpErrorResponse) => {
+        this.notify.error(this.getErrorMessage(err, 'Erro ao carregar dados do pagamento'));
+        this.loadingEmission.set(false);
+      },
+    });
+  }
+
+  closeEmissionModal(): void {
+    this.selectedPayment = null;
+    this.loadAll();
   }
 
   private loadAll(): void {
@@ -95,8 +123,9 @@ export class Fiscal implements OnInit {
     this.loadAll();
   }
 
-  removeInvoice(doc: FiscalDocumentItem): void {
-    if (!confirm(`Remover nota fiscal de ${doc.patientName}?`)) return;
+  async removeInvoice(doc: FiscalDocumentItem): Promise<void> {
+    const confirmed = await alertConfirm(`Remover nota fiscal de ${doc.patientName}?`);
+    if (!confirmed) return;
 
     this.service.removeInvoice(doc.paymentId).subscribe({
       next: () => {

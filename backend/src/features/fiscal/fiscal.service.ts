@@ -30,12 +30,10 @@ export class FiscalService {
     const payment = await this.findPaymentOrThrow(paymentId, companyId);
 
     const data: Prisma.PaymentUpdateInput = { invoiceIssued: true };
-    if (xmlFile) {
+    if (xmlFile)
       data.invoiceXmlUrl = `/uploads/payments/${paymentId}/${xmlFile.filename}`;
-    }
-    if (pdfFile) {
+    if (pdfFile)
       data.invoicePdfUrl = `/uploads/payments/${paymentId}/${pdfFile.filename}`;
-    }
 
     let deductionExceeded = false;
     if (!payment.commissionPaid) {
@@ -45,6 +43,7 @@ export class FiscalService {
         true,
       );
       data.doctorEarnings = result.value;
+      data.deductedAmount = result.deductedAmount;
       deductionExceeded = result.deductionExceeded;
     }
 
@@ -73,6 +72,7 @@ export class FiscalService {
       invoiceIssued: false,
       invoiceXmlUrl: null,
       invoicePdfUrl: null,
+      deductedAmount: 0,
     };
 
     if (!payment.commissionPaid) {
@@ -121,9 +121,13 @@ export class FiscalService {
     },
     paymentValue: number,
     applyDeduction: boolean,
-  ): Promise<{ value: number; deductionExceeded: boolean }> {
+  ): Promise<{
+    value: number;
+    deductedAmount: number;
+    deductionExceeded: boolean;
+  }> {
     if (!appointment.appointmentTypeId)
-      return { value: 0, deductionExceeded: false };
+      return { value: 0, deductedAmount: 0, deductionExceeded: false };
 
     const commission =
       await this.prisma.client.appointmentTypeCommission.findUnique({
@@ -134,7 +138,8 @@ export class FiscalService {
           },
         },
       });
-    if (!commission) return { value: 0, deductionExceeded: false };
+    if (!commission)
+      return { value: 0, deductedAmount: 0, deductionExceeded: false };
 
     const base = Number(appointment.feeOverride ?? paymentValue);
     let doctorEarnings =
@@ -142,9 +147,11 @@ export class FiscalService {
         ? (base * Number(commission.doctorRate)) / 100
         : Number(commission.doctorRate);
 
+    let deductedAmount = 0;
     let deductionExceeded = false;
 
     if (applyDeduction && commission.nfDeductionValue !== null) {
+      const beforeDeduction = doctorEarnings;
       doctorEarnings =
         commission.nfDeductionType === 'percentage'
           ? doctorEarnings -
@@ -155,9 +162,11 @@ export class FiscalService {
         deductionExceeded = true;
         doctorEarnings = 0;
       }
+
+      deductedAmount = beforeDeduction - doctorEarnings;
     }
 
-    return { value: doctorEarnings, deductionExceeded };
+    return { value: doctorEarnings, deductedAmount, deductionExceeded };
   }
 
   async streamFile(
@@ -200,7 +209,7 @@ export class FiscalService {
   ): Promise<FiscalSummaryDto> {
     const range = this.parseDateRange(filter);
 
-    const [issuedCount, pendingCount, payments] = await Promise.all([
+    const [issuedCount, pendingCount, deductedResult] = await Promise.all([
       this.prisma.client.payment.count({
         where: {
           invoiceIssued: true,
@@ -218,35 +227,17 @@ export class FiscalService {
           },
         },
       }),
-      this.prisma.client.payment.findMany({
+      this.prisma.client.payment.aggregate({
         where: {
           invoiceIssued: true,
           date: range,
           appointment: { doctor: { companyId } },
         },
-        select: {
-          value: true,
-          doctorEarnings: true,
-          appointment: {
-            select: {
-              doctorId: true,
-              appointmentTypeId: true,
-              feeOverride: true,
-            },
-          },
-        },
+        _sum: { deductedAmount: true },
       }),
     ]);
 
-    let totalDeducted = 0;
-    for (const p of payments) {
-      const full = await this.calculateDoctorEarnings(
-        p.appointment,
-        Number(p.value),
-        false,
-      );
-      totalDeducted += Math.max(0, full.value - Number(p.doctorEarnings));
-    }
+    const totalDeducted = Number(deductedResult._sum.deductedAmount ?? 0);
 
     return { issuedCount, pendingCount, totalDeducted };
   }
