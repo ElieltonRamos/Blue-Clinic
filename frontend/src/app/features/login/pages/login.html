@@ -57,10 +57,11 @@
               </svg>
             </span>
             <input
+              #usernameInput
               type="text"
               formControlName="username"
               placeholder="admin"
-              (keydown.enter)="passwordInput.focus()"
+              (keydown.enter)="$event.preventDefault(); passwordInput.focus()"
               class="w-full h-11 pl-10 pr-4 rounded-lg text-sm text-(--color-input-text) placeholder:text-(--color-input-placeholder) outline-none transition-all bg-(--color-input-bg) border border-(--color-input-border) focus:border-(--color-input-border-focus)"
               [class.border-danger!]="
                 form.get('username')?.touched && form.get('username')?.invalid

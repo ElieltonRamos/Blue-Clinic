@@ -16,6 +16,7 @@ import { ModalAppointmentReceipt } from '../../../shared/modal-appointment-recei
 import { CalendarService } from '../../calendar/services/calendar.service';
 import { PaymentResponseDto } from '../../calendar/types/calendar.types';
 import { alertConfirm } from '../../../shared/alerts/custom-alerts';
+import { PlatformService } from '../../../core/services/platform.service';
 
 @Component({
   selector: 'app-fiscal',
@@ -27,6 +28,7 @@ export class Fiscal implements OnInit {
   private service = inject(FiscalService);
   private notify = inject(NotificationService);
   private calendarService = inject(CalendarService);
+  private platform = inject(PlatformService);
 
   summary: FiscalSummary = { issuedCount: 0, pendingCount: 0, totalDeducted: 0 };
   documents: FiscalDocumentItem[] = [];
@@ -158,11 +160,15 @@ export class Fiscal implements OnInit {
         : this.service.downloadPdf(doc.paymentId);
 
     request.subscribe({
-      next: (blob: Blob) => {
-        const mime = type === 'xml' ? 'application/xml' : 'application/pdf';
-        const url = window.URL.createObjectURL(new Blob([blob], { type: mime }));
-        window.open(url, '_blank');
-        setTimeout(() => window.URL.revokeObjectURL(url), 10000);
+      next: async (blob: Blob) => {
+        try {
+          const mime = type === 'xml' ? 'application/xml' : 'application/pdf';
+          const fileName = `nf_${doc.paymentId}.${type}`;
+          await this.platform.openBlob(blob, fileName, mime);
+        } catch (e) {
+          console.error('Erro ao abrir documento:', e);
+          this.notify.error(`Erro ao abrir ${type.toUpperCase()}`);
+        }
       },
       error: (err: HttpErrorResponse) => {
         this.notify.error(this.getErrorMessage(err, `Erro ao abrir ${type.toUpperCase()}`));

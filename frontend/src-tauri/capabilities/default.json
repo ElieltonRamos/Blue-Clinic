@@ -2,10 +2,27 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
   "description": "enables the default permissions",
-  "windows": [
-    "main"
-  ],
+  "windows": ["main"],
   "permissions": [
-    "core:default"
+    "core:default",
+    "opener:default",
+    {
+      "identifier": "opener:allow-open-path",
+      "allow": [{ "path": "$TEMP/**" }]
+    },
+    "fs:default",
+    "fs:allow-write",
+    "fs:allow-temp-write",
+    "fs:scope-temp",
+    "fs:allow-exists",
+    "fs:allow-mkdir",
+    "fs:allow-read-text-file",
+    "fs:allow-write-text-file",
+    "fs:allow-appconfig-read",
+    "fs:allow-appconfig-write",
+    {
+      "identifier": "fs:scope-appconfig",
+      "allow": [{ "path": "**" }]
+    }
   ]
 }

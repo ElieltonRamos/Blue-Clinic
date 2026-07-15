@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, ElementRef, inject, signal, ViewChild } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ServiceLogin } from '../services/login.service';
@@ -14,6 +14,7 @@ import { ThemeService } from '../../../core/services/theme.service';
   templateUrl: './login.html',
 })
 export class Login {
+  @ViewChild('usernameInput') usernameInput!: ElementRef<HTMLInputElement>;
   private fb = inject(FormBuilder);
   private serviceLogin = inject(ServiceLogin);
   private router = inject(Router);
@@ -31,6 +32,10 @@ export class Login {
 
   ngOnInit() {
     localStorage.removeItem('token');
+  }
+
+  ngAfterViewInit() {
+    this.usernameInput.nativeElement.focus();
   }
 
   togglePassword() {

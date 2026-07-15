@@ -13,6 +13,7 @@ import { CompanyData } from '../../features/settings/types/settings.types';
 import { SettingsService } from '../../features/settings/services/settings.service';
 import { PaymentMethod } from '../../features/financial/types/financial.types';
 import { FiscalService } from '../../features/fiscal/services/fiscal.service';
+import { PlatformService } from '../../core/services/platform.service';
 
 const METHOD_LABELS: Record<string, string> = {
   pix: 'PIX',
@@ -33,6 +34,7 @@ export class ModalAppointmentReceipt implements OnInit {
   private fiscalService = inject(FiscalService);
   private notification = inject(NotificationService);
   private cdr = inject(ChangeDetectorRef);
+  private platform = inject(PlatformService);
 
   companyData: CompanyData | null = null;
 
@@ -135,8 +137,8 @@ export class ModalAppointmentReceipt implements OnInit {
     });
   }
 
-  openFiscalEmission(): void {
-    window.open('https://espinosa.sintesenotafiscal.com.br/NFSEWeb/', '_blank');
+  async openFiscalEmission() {
+    await this.platform.openExternal('https://espinosa.sintesenotafiscal.com.br/NFSEWeb/');
   }
 
   printA4(): void {
