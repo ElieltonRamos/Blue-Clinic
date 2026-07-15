@@ -209,12 +209,11 @@
               <span class="text-sm">📎</span>
             </div>
             <div class="grid grid-cols-2 gap-2">
-              @for (doc of detail.documents; track doc.name) {
-                <a
-                  [href]="getDocumentUrl(doc.url)"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="p-2 rounded-lg bg-bg-sidebar border border-(--color-border) flex items-center space-x-2 cursor-pointer hover:bg-(--color-bg-overlay) transition-colors"
+              @for (doc of detail.documents; track doc.id) {
+                <button
+                  type="button"
+                  (click)="viewDocument(doc)"
+                  class="p-2 rounded-lg bg-bg-sidebar border border-(--color-border) flex items-center space-x-2 cursor-pointer hover:bg-(--color-bg-overlay) transition-colors text-left w-full"
                 >
                   <div
                     class="w-8 h-8 rounded bg-(--color-bg-hover-md) flex items-center justify-center"
@@ -227,7 +226,7 @@
                     </p>
                     <p class="text-[8px] text-(--color-text-muted)">{{ doc.size }}</p>
                   </div>
-                </a>
+                </button>
               }
             </div>
             <label

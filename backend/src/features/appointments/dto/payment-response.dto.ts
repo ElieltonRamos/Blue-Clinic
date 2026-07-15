@@ -65,6 +65,24 @@ export class PaymentResponseDto {
   @ApiProperty({ type: () => [PaymentEntryDto] })
   entries: PaymentEntryDto[];
 
+  @ApiProperty({
+    description: 'Indica se a nota fiscal foi emitida (XML e PDF enviados)',
+    example: false,
+  })
+  invoiceIssued: boolean;
+
+  @ApiPropertyOptional({
+    example: '/uploads/payments/1/123456-789.xml',
+    nullable: true,
+  })
+  invoiceXmlUrl: string | null;
+
+  @ApiPropertyOptional({
+    example: '/uploads/payments/1/123456-789.pdf',
+    nullable: true,
+  })
+  invoicePdfUrl: string | null;
+
   constructor(p: any) {
     this.id = p.id;
     this.appointmentId = p.appointmentId;
@@ -77,6 +95,9 @@ export class PaymentResponseDto {
     this.specialty = p.specialty ?? null;
     this.startTime = p.startTime ?? null;
     this.appointmentTypeName = p.appointmentTypeName ?? null;
+    this.invoiceIssued = Boolean(p.invoiceIssued);
+    this.invoiceXmlUrl = p.invoiceXmlUrl ?? null;
+    this.invoicePdfUrl = p.invoicePdfUrl ?? null;
     this.entries = (p.entries ?? []).map((e: any) => ({
       id: e.id,
       method: e.method,

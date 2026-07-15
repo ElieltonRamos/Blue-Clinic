@@ -8,9 +8,12 @@ import { ChatAutomation } from './features/chat-automation/pages/chat-automation
 import { Reports } from './features/reports/pages/reports';
 import { Settings } from './features/settings/pages/settings';
 import { Financial } from './features/financial/pages/financial';
+import { Fiscal } from './features/fiscal/pages/fiscal';
 import { authGuard } from './core/guards/auth.guard';
 import { Schedule } from './features/schedule/pages/schedule';
 import { AppointmentTypes } from './features/appointment-types/pages/appointment-types';
+import { OfflineComponent } from './shared/offline/pages/offline.component';
+import { NotFound } from './shared/offline/pages/not-found';
 
 export const routes: Routes = [
   {
@@ -51,6 +54,10 @@ export const routes: Routes = [
         component: Financial,
       },
       {
+        path: 'fiscal',
+        component: Fiscal,
+      },
+      {
         path: 'agenda-config',
         component: Schedule,
       },
@@ -59,5 +66,13 @@ export const routes: Routes = [
         component: AppointmentTypes,
       },
     ],
+  },
+  {
+    path: 'offline',
+    component: OfflineComponent,
+  },
+  {
+    path: '**',
+    component: NotFound,
   },
 ];

@@ -51,6 +51,17 @@ export class WhatssapService {
 
       if (!response.ok) {
         const error = await response.json();
+        const code = error?.error?.code;
+
+        if (code === 132001) {
+          this.logger.warn(
+            `Template "${templateName}" não existe ou ainda não foi aprovado pela Meta (pt_BR)`,
+          );
+          throw new Error(
+            `Template "${templateName}" não aprovado/inexistente`,
+          );
+        }
+
         this.logger.error('Erro ao enviar template WhatsApp', error);
         throw new Error(error?.error?.message ?? 'Erro ao enviar template');
       }

@@ -6,7 +6,9 @@
 
 ; ==================== DEFINIÇÕES ====================
 !define APP_NAME "Blue Clinic"
-!define APP_VERSION "1.0.0"
+!ifndef APP_VERSION
+  !define APP_VERSION "1.0.0"
+!endif
 !define APP_PUBLISHER "BlueERP"
 !define SERVICE_NAME "BlueClinicApp"
 

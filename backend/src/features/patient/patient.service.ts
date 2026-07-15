@@ -4,6 +4,7 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  StreamableFile,
 } from '@nestjs/common';
 import { PrismaService } from '../../core/database/prisma.service.js';
 import { Prisma } from '../../../generated/prisma/client.js';
@@ -13,6 +14,8 @@ import { PatientDetailResponseDto } from './dto/patient-detail-response.dto.js';
 import { CreatePatientDto } from './dto/create-patient.dto.js';
 import { UpdatePatientDto } from './dto/update-patient.dto.js';
 import { PatientDocument } from '../../../generated/prisma/client.js';
+import { createReadStream, existsSync } from 'node:fs';
+import { join } from 'node:path';
 
 export interface UploadedFileCustom {
   originalname: string;
@@ -190,6 +193,42 @@ export class PatientsService {
         url,
       },
     });
+  }
+
+  async streamDocument(
+    patientId: number,
+    documentId: number,
+    companyId: number,
+  ): Promise<StreamableFile> {
+    const document = await this.prisma.client.patientDocument.findFirst({
+      where: { id: documentId, patientId, patient: { companyId } },
+    });
+
+    if (!document) throw new NotFoundException('Documento não encontrado');
+
+    const filePath = join(process.cwd(), document.url.replace(/^\//, ''));
+    if (!existsSync(filePath)) {
+      throw new NotFoundException('Arquivo não encontrado no servidor.');
+    }
+
+    const mimeType =
+      document.type === 'pdf'
+        ? 'application/pdf'
+        : this.getImageMimeType(document.url);
+
+    return new StreamableFile(createReadStream(filePath), { type: mimeType });
+  }
+
+  private getImageMimeType(url: string): string {
+    const ext = url.split('.').pop()?.toLowerCase();
+    switch (ext) {
+      case 'png':
+        return 'image/png';
+      case 'webp':
+        return 'image/webp';
+      default:
+        return 'image/jpeg';
+    }
   }
 
   // ─── private helpers ───────────────────────────────────────────────────────

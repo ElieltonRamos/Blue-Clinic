@@ -1,5 +1,4 @@
-// commission-response.dto.ts
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   AppointmentTypeCommission,
   CommissionType,
@@ -29,6 +28,12 @@ export class CommissionResponseDto {
   @ApiProperty({ description: 'Valor cobrado do paciente' })
   price: number;
 
+  @ApiPropertyOptional({ enum: CommissionType, nullable: true })
+  nfDeductionType: CommissionType | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  nfDeductionValue: number | null;
+
   constructor(c: CommissionWithRelations) {
     this.id = c.id;
     this.doctorId = c.doctorId;
@@ -39,5 +44,8 @@ export class CommissionResponseDto {
     this.clinicRate = Number(c.clinicRate);
     this.appointmentType = c.appointmentType;
     this.price = Number(c.price);
+    this.nfDeductionType = c.nfDeductionType;
+    this.nfDeductionValue =
+      c.nfDeductionValue !== null ? Number(c.nfDeductionValue) : null;
   }
 }

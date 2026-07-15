@@ -76,6 +76,7 @@ export class UsersService {
         companyId: createUserDto.companyId,
         username: createUserDto.username,
         password: hashedPassword,
+        phone: createUserDto.phone,
         role: createUserDto.role ?? Role.atendimento,
         active: createUserDto.active ?? true,
       },

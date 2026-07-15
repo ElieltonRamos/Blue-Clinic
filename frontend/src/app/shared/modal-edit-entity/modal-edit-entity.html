@@ -1,8 +1,5 @@
 @if (show) {
-  <div
-    class="fixed inset-0 z-50 flex items-center justify-center bg-backdrop"
-    (click)="onClose()"
-  >
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-backdrop" (click)="onClose()">
     <div
       class="bg-bg-card w-full max-w-md rounded-2xl border border-(--color-border) shadow-xl overflow-hidden max-h-[90vh] flex flex-col"
       (click)="$event.stopPropagation()"
@@ -114,7 +111,9 @@
                   class="bg-(--color-input-bg) border border-(--color-input-border) rounded-lg px-3 py-2 text-[12px] text-(--color-input-text) outline-none focus:border-(--color-input-border-focus) transition-colors"
                 >
                   @for (opt of field.options; track opt) {
-                    <option [value]="opt">{{ opt }}</option>
+                    <option [value]="opt" class="bg-bg-card text-(--color-text-primary)">
+                      {{ opt }}
+                    </option>
                   }
                 </select>
               }

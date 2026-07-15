@@ -93,6 +93,9 @@ export interface PaymentResponseDto {
   startTime: string | null;
   appointmentTypeName: string | null;
   entries: PaymentEntry[];
+  invoiceIssued: boolean;
+  invoiceXmlUrl: string | null;
+  invoicePdfUrl: string | null;
 }
 
 export interface CreatePaymentRequest {

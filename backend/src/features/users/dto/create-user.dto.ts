@@ -27,6 +27,11 @@ export class CreateUserDto {
   @IsOptional()
   role?: Role;
 
+  @ApiPropertyOptional({ example: '5538988663580' })
+  @IsString()
+  @IsOptional()
+  phone?: string;
+
   @ApiProperty({ required: false, default: true })
   @IsBoolean({ message: ValidationMessages.IS_BOOLEAN('Ativo') })
   @IsOptional()

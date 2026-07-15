@@ -12,6 +12,8 @@ import { NotificationService } from '../toastr/notification.service';
 import { CompanyData } from '../../features/settings/types/settings.types';
 import { SettingsService } from '../../features/settings/services/settings.service';
 import { PaymentMethod } from '../../features/financial/types/financial.types';
+import { FiscalService } from '../../features/fiscal/services/fiscal.service';
+import { PlatformService } from '../../core/services/platform.service';
 
 const METHOD_LABELS: Record<string, string> = {
   pix: 'PIX',
@@ -29,12 +31,24 @@ export class ModalAppointmentReceipt implements OnInit {
   @Output() closeModal = new EventEmitter<void>();
 
   private companyService = inject(SettingsService);
+  private fiscalService = inject(FiscalService);
   private notification = inject(NotificationService);
   private cdr = inject(ChangeDetectorRef);
+  private platform = inject(PlatformService);
 
   companyData: CompanyData | null = null;
 
+  invoiceIssued = false;
+  invoiceXmlUrl: string | null = null;
+  invoicePdfUrl: string | null = null;
+  uploadingXml = false;
+  uploadingPdf = false;
+
   ngOnInit(): void {
+    this.invoiceIssued = this.paymentData.invoiceIssued;
+    this.invoiceXmlUrl = this.paymentData.invoiceXmlUrl;
+    this.invoicePdfUrl = this.paymentData.invoicePdfUrl;
+
     this.companyService.getCompany().subscribe({
       next: (company) => {
         this.companyData = company;
@@ -76,6 +90,55 @@ export class ModalAppointmentReceipt implements OnInit {
 
   close(): void {
     this.closeModal.emit();
+  }
+
+  onXmlSelected(event: Event): void {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    this.uploadFile({ xml: file }, 'xml');
+    (event.target as HTMLInputElement).value = '';
+  }
+
+  onPdfSelected(event: Event): void {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    this.uploadFile({ pdf: file }, 'pdf');
+    (event.target as HTMLInputElement).value = '';
+  }
+
+  private uploadFile(files: { xml?: File; pdf?: File }, kind: 'xml' | 'pdf'): void {
+    if (kind === 'xml') this.uploadingXml = true;
+    else this.uploadingPdf = true;
+
+    this.fiscalService.uploadFiscalDocuments(this.paymentData.id, files).subscribe({
+      next: (res) => {
+        this.invoiceIssued = res.invoiceIssued;
+        this.invoiceXmlUrl = res.invoiceXmlUrl;
+        this.invoicePdfUrl = res.invoicePdfUrl;
+        if (res.deductionExceeded) {
+          this.notification.error(
+            'O abatimento configurado excedeu a comissão do médico. Comissão zerada.',
+          );
+        } else {
+          this.notification.success(
+            kind === 'xml' ? 'XML enviado com sucesso.' : 'PDF enviado com sucesso.',
+          );
+        }
+        if (kind === 'xml') this.uploadingXml = false;
+        else this.uploadingPdf = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.notification.error('Erro ao enviar arquivo da nota fiscal.');
+        if (kind === 'xml') this.uploadingXml = false;
+        else this.uploadingPdf = false;
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  async openFiscalEmission() {
+    await this.platform.openExternal('https://espinosa.sintesenotafiscal.com.br/NFSEWeb/');
   }
 
   printA4(): void {

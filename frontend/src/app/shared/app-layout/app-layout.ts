@@ -80,7 +80,14 @@ export class AppLayout implements OnInit {
       title: 'Financeiro e Controle de Caixa',
       route: '/dashboard/financeiro',
       icon: 'dollar-sign',
-      roles: ['admin'],
+      roles: ['admin', 'atendimento'], // permite ao atendimento acesso a aba financeiro permitindo gerenciar o pagamento de comissoes
+    },
+    {
+      label: 'Fiscal',
+      title: 'Gestão Fiscal',
+      route: '/dashboard/fiscal',
+      icon: 'receipt',
+      roles: ['admin', 'atendimento'],
     },
   ];
 

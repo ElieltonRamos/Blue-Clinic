@@ -67,6 +67,9 @@ const DEFAULT_COMMISSION_FORM = (): CommissionForm => ({
   clinicRateType: 'percentage',
   clinicRate: 0,
   price: 0,
+  nfDeductionEnabled: false,
+  nfDeductionType: 'percentage',
+  nfDeductionValue: 0,
 });
 
 @Component({
@@ -253,6 +256,9 @@ export class Schedule implements OnInit {
         clinicRateType: c.clinicRateType,
         clinicRate: c.clinicRate,
         price: c.price,
+        nfDeductionEnabled: c.nfDeductionValue !== null,
+        nfDeductionType: c.nfDeductionType ?? 'percentage',
+        nfDeductionValue: c.nfDeductionValue ?? 0,
       },
     }));
   }
@@ -392,6 +398,12 @@ export class Schedule implements OnInit {
         clinicRateType: this.newCommissionForm.clinicRateType,
         clinicRate: this.newCommissionForm.clinicRate,
         price: this.newCommissionForm.price,
+        nfDeductionType: this.newCommissionForm.nfDeductionEnabled
+          ? this.newCommissionForm.nfDeductionType
+          : null,
+        nfDeductionValue: this.newCommissionForm.nfDeductionEnabled
+          ? this.newCommissionForm.nfDeductionValue
+          : null,
       })
       .subscribe({
         next: (created) => {
@@ -427,6 +439,8 @@ export class Schedule implements OnInit {
         clinicRateType: row.form.clinicRateType,
         clinicRate: row.form.clinicRate,
         price: row.form.price,
+        nfDeductionType: row.form.nfDeductionEnabled ? row.form.nfDeductionType : null,
+        nfDeductionValue: row.form.nfDeductionEnabled ? row.form.nfDeductionValue : null,
       })
       .subscribe({
         next: (updated) => {
@@ -469,6 +483,9 @@ export class Schedule implements OnInit {
       clinicRateType: row.commission.clinicRateType,
       clinicRate: row.commission.clinicRate,
       price: row.commission.price,
+      nfDeductionEnabled: row.commission.nfDeductionValue !== null,
+      nfDeductionType: row.commission.nfDeductionType ?? 'percentage',
+      nfDeductionValue: row.commission.nfDeductionValue ?? 0,
     };
     row.editing = false;
   }
@@ -498,6 +515,10 @@ export class Schedule implements OnInit {
     }
     if (form.price <= 0) {
       this.notification.error('Preço deve ser maior que zero');
+      return false;
+    }
+    if (form.nfDeductionEnabled && form.nfDeductionValue < 0) {
+      this.notification.error('Valor do abatimento deve ser maior ou igual a zero');
       return false;
     }
     return true;

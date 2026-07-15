@@ -22,6 +22,7 @@ export interface TeamMember {
   id: number;
   companyId: number;
   username: string;
+  phone?: string | null;
   role: UserLevel;
   active: boolean;
   createdAt: Date;
@@ -32,6 +33,7 @@ export interface CreateMemberRequest {
   username: string;
   password: string;
   role: UserLevel;
+  phone?: string | null;
   active?: boolean;
   name?: string;
   specialty?: string;
@@ -40,6 +42,7 @@ export interface CreateMemberRequest {
 export interface NewMemberForm {
   username: string;
   password: string;
+  phone?: string | null;
   role: UserLevel;
   name?: string;
   specialty?: string;

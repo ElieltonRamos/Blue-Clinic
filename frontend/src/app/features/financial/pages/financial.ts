@@ -7,6 +7,7 @@ import { FinanceiroService, FinanceFilter } from '../services/financial.service'
 import { NotificationService } from '../../../shared/toastr/notification.service';
 import {
   CashClosingRow,
+  CommissionPayment,
   Expense,
   FinanceSummary,
   PaymentMethod,
@@ -36,6 +37,8 @@ export class Financial implements OnInit {
   professionals: ProfessionalRevenue[] = [];
   cashClosing: CashClosingRow[] = [];
 
+  commissionHistory: CommissionPayment[] = [];
+  selectedPayments = new Set<number>();
   dateFrom = '';
   dateTo = '';
   activeRange: 'hoje' | 'semana' | 'mes' = 'hoje';
@@ -57,8 +60,7 @@ export class Financial implements OnInit {
     {
       name: 'category',
       label: 'Categoria',
-      type: 'select',
-      options: ['Infraestrutura', 'Insumos', 'Contas Fixas', 'Outros'],
+      type: 'text',
       required: true,
     },
     { name: 'value', label: 'Valor (R$)', type: 'number', placeholder: '0.00', required: true },
@@ -94,6 +96,7 @@ export class Financial implements OnInit {
       transactions: this.service.getTransactions(this.filter),
       professionals: this.service.getProfessionalRevenues(this.filter),
       cashClosing: this.service.getCashClosing(this.filter),
+      commissionHistory: this.service.getCommissionHistory(this.filter),
     }).subscribe({
       next: (data) => {
         this.summary = data.summary;
@@ -101,11 +104,44 @@ export class Financial implements OnInit {
         this.transactions = data.transactions;
         this.professionals = data.professionals;
         this.cashClosing = data.cashClosing;
+        this.commissionHistory = data.commissionHistory;
         this.pageLoading.set(false);
       },
       error: (err: HttpErrorResponse) => {
+        console.log(err, 'mensagem de erro');
         this.notify.error(this.getErrorMessage(err, 'Erro ao carregar dados financeiros'));
         this.pageLoading.set(false);
+      },
+    });
+  }
+
+  togglePaymentSelection(paymentId: number): void {
+    if (this.selectedPayments.has(paymentId)) {
+      this.selectedPayments.delete(paymentId);
+    } else {
+      this.selectedPayments.add(paymentId);
+    }
+  }
+
+  selectedCount(prof: ProfessionalRevenue): number {
+    return prof.appointments.filter((a) => this.selectedPayments.has(a.paymentId)).length;
+  }
+
+  payCommissions(prof: ProfessionalRevenue): void {
+    const ids = prof.appointments
+      .filter((a) => this.selectedPayments.has(a.paymentId) && !a.commissionPaid)
+      .map((a) => a.paymentId);
+
+    if (ids.length === 0) return;
+
+    this.service.payCommissions(ids).subscribe({
+      next: () => {
+        this.notify.success('Comissão(ões) marcada(s) como paga(s)');
+        ids.forEach((id) => this.selectedPayments.delete(id));
+        this.loadAll();
+      },
+      error: (err: HttpErrorResponse) => {
+        this.notify.error(this.getErrorMessage(err, 'Erro ao pagar comissão'));
       },
     });
   }
@@ -359,6 +395,7 @@ export class Financial implements OnInit {
               <td>${apt.appointmentType ?? '—'}</td>
               <td class="amount">${this.formatCurrency(apt.paymentValue)}</td>
               <td class="amount" style="color:#1a6b3c">${this.formatCurrency(apt.doctorEarnings)}</td>
+              <td style="color:${apt.commissionPaid ? '#1a6b3c' : '#c0392b'};font-weight:600">${apt.commissionPaid ? 'Pago' : 'Pendente'}</td>
             </tr>
           `,
           )
@@ -382,12 +419,13 @@ export class Financial implements OnInit {
               <th>Tipo</th>
               <th>Valor Pago</th>
               <th>Comissão</th>
+              <th>Status</th>
             </tr>
           </thead>
           <tbody>${appointmentRows}</tbody>
           <tfoot>
             <tr>
-              <td colspan="5"><strong>Total do Profissional</strong></td>
+              <td colspan="6"><strong>Total do Profissional</strong></td>
               <td class="total">${this.formatCurrency(p.value)}</td>
             </tr>
           </tfoot>
@@ -529,6 +567,98 @@ export class Financial implements OnInit {
       <thead><tr><th>Data/Hora</th><th>Tipo</th><th>Descrição</th><th>Profissional</th><th>Operador</th><th>Método</th><th>Valor</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
+    <div class="print-footer">
+      <span>${this.companyData?.tradeName || ''} — BlueClinic</span>
+      <span>Gerado em ${this.getTodayFormatted()}</span>
+    </div>
+  </body></html>`);
+  }
+
+  exportExpenses(): void {
+    const total = this.expenses.reduce((s, e) => s + e.value, 0);
+    const totalPago = this.expenses
+      .filter((e) => e.status === 'pago')
+      .reduce((s, e) => s + e.value, 0);
+    const totalPendente = this.expenses
+      .filter((e) => e.status === 'pendente')
+      .reduce((s, e) => s + e.value, 0);
+
+    const categories = Array.from(new Set(this.expenses.map((e) => e.category)));
+
+    const categorySections = categories
+      .map((category) => {
+        const items = this.expenses.filter((e) => e.category === category);
+        const categoryTotal = items.reduce((s, e) => s + e.value, 0);
+
+        const rows = items
+          .map(
+            (e) => `
+          <tr>
+            <td>${e.description}</td>
+            <td>${e.date}</td>
+            <td>${e.status === 'pago' ? 'Pago' : 'Pendente'}</td>
+            <td class="amount">${this.formatCurrency(e.value)}</td>
+          </tr>
+        `,
+          )
+          .join('');
+
+        return `
+      <div class="prof-header">
+        <div class="prof-name">${category}</div>
+        <div class="prof-meta">
+          ${items.length} despesa${items.length !== 1 ? 's' : ''}
+          &nbsp;|&nbsp; Total: <strong>${this.formatCurrency(categoryTotal)}</strong>
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Descrição</th>
+            <th>Data</th>
+            <th>Status</th>
+            <th>Valor</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+        <tfoot>
+          <tr>
+            <td colspan="3"><strong>Total da Categoria</strong></td>
+            <td class="total">${this.formatCurrency(categoryTotal)}</td>
+          </tr>
+        </tfoot>
+      </table>
+    `;
+      })
+      .join('');
+
+    this.printViaIframe(`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
+    ${this.baseStyles}
+    .summary-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+    .card { border: 1px solid #d0d0e8; border-radius: 4px; padding: 8px 12px; }
+    .card-label { font-size: 7pt; color: #888; text-transform: uppercase; margin-bottom: 2px; }
+    .card-value { font-size: 11pt; font-weight: 700; color: #1a1a2e; }
+    .prof-header { display: flex; justify-content: space-between; align-items: baseline; margin: 16px 0 6px; padding-bottom: 4px; border-bottom: 2px solid #1a1a2e; }
+    .prof-name { font-size: 10pt; font-weight: 700; }
+    .prof-meta { font-size: 8pt; color: #555; }
+  </style></head><body>
+    ${this.printHeader}
+    <div class="section-title">Relatório de Despesas por Categoria</div>
+    <div class="summary-cards">
+      <div class="card">
+        <div class="card-label">Total de Despesas</div>
+        <div class="card-value">${this.formatCurrency(total)}</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Pago</div>
+        <div class="card-value" style="color:#1a6b3c">${this.formatCurrency(totalPago)}</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Pendente</div>
+        <div class="card-value" style="color:#c0392b">${this.formatCurrency(totalPendente)}</div>
+      </div>
+    </div>
+    ${categorySections}
     <div class="print-footer">
       <span>${this.companyData?.tradeName || ''} — BlueClinic</span>
       <span>Gerado em ${this.getTodayFormatted()}</span>

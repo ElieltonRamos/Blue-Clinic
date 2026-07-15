@@ -2,6 +2,8 @@
 
 set -e
 
+cd "$(dirname "$0")"
+
 echo "================================================"
 echo "  Blue Clinic - Build do Instalador NSIS"
 echo "================================================"
@@ -12,6 +14,8 @@ if ! command -v makensis &> /dev/null; then
     echo "Instale com: sudo apt install nsis"
     exit 1
 fi
+
+VERSION=$(node -p "require('../package.json').version")
 
 REQUIRED_PATHS=(
     "nssm.exe"
@@ -34,10 +38,10 @@ done
 
 echo ""
 echo "Compilando instalador..."
-makensis Blue-Clinic-installer.nsi
+makensis -DAPP_VERSION=$VERSION Blue-Clinic-installer.nsi
 
 echo ""
 echo "================================================"
 echo "  Build concluído com sucesso!"
-echo "  Arquivo gerado: App-Blue-Clinic-Setup-1.0.0.exe"
+echo "  Arquivo gerado: App-Blue-Clinic-Setup-$VERSION.exe"
 echo "================================================"

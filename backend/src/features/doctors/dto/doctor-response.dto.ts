@@ -48,6 +48,10 @@ export class DoctorCommissionSummaryDto {
     description: 'Tipo de consulta',
   })
   appointmentType: AppointmentTypeSummaryDto;
+  @ApiPropertyOptional({ enum: CommissionType, nullable: true })
+  nfDeductionType: CommissionType | null;
+  @ApiPropertyOptional({ nullable: true })
+  nfDeductionValue: number | null;
 }
 
 export class DoctorResponseDto {
@@ -112,6 +116,11 @@ export class DoctorResponseDto {
         clinicRate: Number(c['clinicRate']),
         price: Number(c['price']),
         appointmentType: c['appointmentType'],
+        nfDeductionType: c['nfDeductionType'] ?? null,
+        nfDeductionValue:
+          c['nfDeductionValue'] !== null && c['nfDeductionValue'] !== undefined
+            ? Number(c['nfDeductionValue'])
+            : null,
       }),
     );
   }

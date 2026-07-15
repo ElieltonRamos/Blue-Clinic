@@ -565,4 +565,20 @@ export class Calendar implements OnInit {
       month: '2-digit',
     });
   }
+
+  reprintReceipt(apt: Appointment): void {
+    if (this.actionLoading()) return;
+    this.actionLoading.set(true);
+
+    this.service.getPaymentByAppointment(apt.id).subscribe({
+      next: (response) => {
+        this.receiptData = response;
+        this.actionLoading.set(false);
+      },
+      error: (err: HttpErrorResponse) => {
+        this.notify.error(this.getErrorMessage(err, 'Erro ao carregar comprovante'));
+        this.actionLoading.set(false);
+      },
+    });
+  }
 }

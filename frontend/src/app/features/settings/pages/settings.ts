@@ -95,6 +95,12 @@ export class Settings implements OnInit {
       required: true,
       visibleWhen: (e) => e.role === 'medico',
     },
+    {
+      name: 'phone',
+      label: 'Telefone (WhatsApp)',
+      type: 'text',
+      placeholder: 'Ex: 5538900000000',
+    },
   ];
 
   memberEditFields: FormField[] = [
@@ -104,6 +110,12 @@ export class Settings implements OnInit {
       label: 'Nova Senha',
       type: 'password',
       placeholder: 'Deixe vazio para manter',
+    },
+    {
+      name: 'phone',
+      label: 'Telefone (WhatsApp)',
+      type: 'text',
+      placeholder: 'Ex: 5538900000000',
     },
     {
       name: 'role',
@@ -222,6 +234,7 @@ export class Settings implements OnInit {
         username: entity.username,
         password: entity.password,
         role: entity.role ?? 'atendimento',
+        phone: entity.phone,
         ...(entity.role === 'medico' && {
           name: entity.name,
           specialty: entity.specialty,
@@ -246,6 +259,7 @@ export class Settings implements OnInit {
     this.editMember.set({
       username: member.username,
       role: member.role,
+      phone: member.phone ?? undefined,
       active: member.active ? 'Ativo' : 'Inativo',
     });
     this.showEditModal.set(true);
@@ -259,6 +273,7 @@ export class Settings implements OnInit {
     if (entity.username?.trim()) dto['username'] = entity.username.trim();
     if (entity.password?.trim()) dto['password'] = entity.password.trim();
     if (entity.role) dto['role'] = entity.role;
+    if (entity.phone !== undefined) dto['phone'] = entity.phone;
     if (entity.active !== undefined) dto['active'] = entity.active;
 
     this.settingsService.updateMember(id, dto as any).subscribe({

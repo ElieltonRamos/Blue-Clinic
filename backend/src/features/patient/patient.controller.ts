@@ -12,6 +12,7 @@ import {
   BadRequestException,
   UseInterceptors,
   UploadedFile,
+  StreamableFile,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -153,5 +154,22 @@ export class PatientsController {
     };
 
     return this.patientsService.uploadDocument(id, companyId, uploadedFile);
+  }
+
+  @Get(':id/documents/:documentId')
+  @ApiOperation({ summary: 'Baixar documento do paciente' })
+  @ApiParam({ name: 'id', type: Number })
+  @ApiParam({ name: 'documentId', type: Number })
+  @ApiResponse({ status: HttpStatus.OK })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Documento não encontrado',
+  })
+  downloadDocument(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('documentId', ParseIntPipe) documentId: number,
+    @CurrentUser('companyId') companyId: number,
+  ): Promise<StreamableFile> {
+    return this.patientsService.streamDocument(id, documentId, companyId);
   }
 }

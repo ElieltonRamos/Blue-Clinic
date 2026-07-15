@@ -168,6 +168,22 @@ export class AppointmentsController {
     return this.appointmentsService.getAvailableSlots(companyId, query);
   }
 
+  @Get(':id/payment')
+  @Roles('admin', 'atendimento')
+  @ApiOperation({ summary: 'Buscar pagamento de um agendamento' })
+  @ApiParam({ name: 'id', type: Number })
+  @ApiResponse({ status: HttpStatus.OK, type: PaymentResponseDto })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Agendamento ou pagamento não encontrado',
+  })
+  findPaymentByAppointment(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser('companyId') companyId: number,
+  ) {
+    return this.appointmentsService.findPaymentByAppointment(id, companyId);
+  }
+
   @Get(':id')
   @Roles('admin', 'atendimento', 'medico')
   @ApiOperation({ summary: 'Buscar agendamento por ID' })
