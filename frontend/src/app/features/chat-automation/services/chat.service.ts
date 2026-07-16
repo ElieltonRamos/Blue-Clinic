@@ -44,10 +44,7 @@ export class ChatService {
   }
 
   sendMessage(conversationId: number, dto: SendMessageDto) {
-    return this.http.post<ChatMessage>(
-      `${this.apiUrl}/chat/conversations/${conversationId}/messages`,
-      dto,
-    );
+    return this.http.post<ChatMessage>(`${this.apiUrl}/whatssap/${conversationId}/messages`, dto);
   }
 
   blockContact(conversationId: number) {
@@ -68,13 +65,13 @@ export class ChatService {
     resolvedText?: string,
   ): Observable<void> {
     return this.http.post<void>(
-      `${this.apiUrl}/whatssap/conversations/${conversationId}/send-template`,
+      `${this.apiUrl}/whatssap/official/conversations/${conversationId}/send-template`,
       { templateName, components, resolvedText },
     );
   }
 
   getTemplates(): Observable<WhatsappTemplate[]> {
-    return this.http.get<WhatsappTemplate[]>(`${this.apiUrl}/whatssap/templates`);
+    return this.http.get<WhatsappTemplate[]>(`${this.apiUrl}/whatssap/official/templates`);
   }
 
   linkPatient(conversationId: number, patientId: number): Observable<void> {

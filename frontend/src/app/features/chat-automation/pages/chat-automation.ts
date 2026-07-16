@@ -146,13 +146,25 @@ export class ChatAutomation implements OnInit, OnDestroy, AfterViewChecked {
       .subscribe((updated) => {
         const previous = this.allConversations().find((c) => c.id === updated.id);
 
-        this.allConversations.update((list) =>
-          list.map((c) => (c.id === updated.id ? updated : c)),
-        );
+        this.allConversations.update((list) => {
+          const exists = list.some((c) => c.id === updated.id);
+          const next = exists
+            ? list.map((c) => (c.id === updated.id ? updated : c))
+            : [updated, ...list];
+
+          return [...next].sort((a, b) => {
+            const timeA = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0;
+            const timeB = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0;
+            return timeB - timeA;
+          });
+        });
+
         this.cdr.markForCheck();
 
         if (updated.id !== this.activeConversationId() && updated.unread > 0) {
-          this.notification.info(`Nova mensagem de ${updated.patientName ?? updated.phone}`);
+          this.notification.info(
+            `Nova mensagem de ${updated.patientName ?? updated.phone}: ${updated.lastMessage ?? ''}`,
+          );
         }
 
         if (previous?.status !== 'waiting' && updated.status === 'waiting') {

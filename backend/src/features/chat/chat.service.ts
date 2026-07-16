@@ -322,6 +322,13 @@ export class ChatService {
       }
     }
 
+    const savedMessage = await this.prisma.client.chatMessage.create({
+      data: { conversationId, sender: 'patient', text, read: false },
+    });
+
+    const msgDto = new ChatMessageResponseDto(savedMessage);
+    this.gateway.emitNewMessage(companyId, conversationId, msgDto);
+
     const updatedConv = await this.prisma.client.conversation.update({
       where: { id: conversationId },
       data: resetData,
@@ -332,13 +339,6 @@ export class ChatService {
       companyId,
       new ConversationResponseDto(updatedConv),
     );
-
-    const savedMessage = await this.prisma.client.chatMessage.create({
-      data: { conversationId, sender: 'patient', text, read: false },
-    });
-
-    const msgDto = new ChatMessageResponseDto(savedMessage);
-    this.gateway.emitNewMessage(companyId, conversationId, msgDto);
 
     return msgDto;
   }

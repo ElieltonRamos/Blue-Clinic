@@ -1,7 +1,6 @@
 import {
   Controller,
   Get,
-  Post,
   Patch,
   Param,
   Query,
@@ -23,7 +22,6 @@ import { CurrentUser } from '../../core/decorators/current-user.decorator.js';
 import { ChatService } from './chat.service.js';
 import { ConversationFiltersDto } from './dto/conversation-filters.dto.js';
 import { UpdateConversationStatusDto } from './dto/update-conversation-status.dto.js';
-import { SendMessageDto } from './dto/send-message.dto.js';
 import { ConversationResponseDto } from './dto/conversation-response.dto.js';
 import { ChatMessageResponseDto } from './dto/chat-message-response.dto.js';
 import { PatientInfoResponseDto } from './dto/patient-info-response.dto.js';
@@ -115,30 +113,6 @@ export class ChatController {
     @Body() dto: UpdateConversationStatusDto,
   ) {
     return this.chatService.updateStatus(companyId, id, dto.status);
-  }
-
-  @Post(':id/messages')
-  @ApiOperation({ summary: 'Enviar mensagem como atendente' })
-  @ApiParam({ name: 'id', type: Number })
-  @ApiResponse({ status: HttpStatus.CREATED, type: ChatMessageResponseDto })
-  @ApiResponse({
-    status: HttpStatus.NOT_FOUND,
-    description: 'Conversa não encontrada',
-  })
-  sendMessage(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser('companyId') companyId: number,
-    @CurrentUser('username') username: string,
-    @CurrentUser('role') role: string,
-    @Body() dto: SendMessageDto,
-  ) {
-    return this.chatService.sendMessage(
-      companyId,
-      id,
-      dto.text,
-      username,
-      role,
-    );
   }
 
   @Patch(':id/block')

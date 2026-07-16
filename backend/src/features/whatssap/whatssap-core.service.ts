@@ -1,24 +1,121 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // whatssap-core.service.ts
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { PrismaService } from '../../core/database/prisma.service.js';
 import { ChatService } from '../chat/chat.service.js';
 import { BotMessageService } from '../bot-message/bot-message.service.js';
-import { WHATSAPP_PROVIDER_REGISTRY } from './whatssap.constants.js';
-import { WhatssapProviderRegistry } from './whatssap-provider.registry.js';
-import { NormalizedIncomingMessage } from './interfaces/whatsapp-provider.interface.js';
+import { WhatssapOfficialService } from './official/whatssap-official.service.js';
+import { WhatssapBaileysProvider } from './baileys/whatssap-baileys.provider.js';
+import {
+  IWhatsappProvider,
+  NormalizedIncomingMessage,
+} from './interfaces/whatsapp-provider.interface.js';
 
 @Injectable()
-export class WhatssapCoreService {
+export class WhatssapCoreService implements OnModuleInit {
   private readonly logger = new Logger(WhatssapCoreService.name);
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly chat: ChatService,
-    private readonly bot2: BotMessageService,
-    @Inject(WHATSAPP_PROVIDER_REGISTRY)
-    private readonly registry: WhatssapProviderRegistry,
+    private readonly bot: BotMessageService,
+    private readonly officialProvider: WhatssapOfficialService,
+    private readonly baileysProvider: WhatssapBaileysProvider,
   ) {}
+
+  onModuleInit(): void {
+    this.baileysProvider.events.on(
+      'message',
+      (companyId: number, msg: NormalizedIncomingMessage) => {
+        this.handleIncomingMessage(companyId, msg).catch((err) => {
+          this.logger.error(
+            `Erro ao processar mensagem Baileys [company ${companyId}]: ${(err as Error).message}`,
+          );
+        });
+      },
+    );
+
+    this.baileysProvider.events.on(
+      'status',
+      (companyId: number, status: string) => {
+        this.logger.log(`Baileys status [company ${companyId}]: ${status}`);
+      },
+    );
+  }
+
+  // ---------------------------------------------------------------------
+  // Registry (ex WhatssapProviderRegistry)
+  // ---------------------------------------------------------------------
+
+  private async getProviderConfig(
+    companyId: number,
+  ): Promise<{ provider: IWhatsappProvider; botEnabled: boolean }> {
+    const config = await this.prisma.client.whatsappConfig.findUnique({
+      where: { companyId },
+      select: { provider: true, botEnabled: true },
+    });
+
+    if (!config) {
+      throw new Error(`WhatsApp não configurado para company ${companyId}`);
+    }
+
+    return {
+      provider:
+        config.provider === 'baileys'
+          ? this.baileysProvider
+          : this.officialProvider,
+      botEnabled: config.botEnabled ?? false,
+    };
+  }
+
+  private async getProvider(companyId: number): Promise<IWhatsappProvider> {
+    return (await this.getProviderConfig(companyId)).provider;
+  }
+
+  async getTemplates(companyId: number): Promise<unknown> {
+    const provider = await this.getProvider(companyId);
+    if (!provider.getTemplates) {
+      throw new Error('Provider atual não suporta templates');
+    }
+    return provider.getTemplates(companyId);
+  }
+
+  /**
+   * Envia texto de teste direto pro provider, sem criar/tocar em
+   * Conversation ou ChatMessage. Uso: smoke test de configuração.
+   */
+  async sendTestMessage(
+    companyId: number,
+    phone: string,
+    text: string,
+  ): Promise<{ wamid: string | null }> {
+    const provider = await this.getProvider(companyId);
+    const wamid = await provider.sendText(companyId, phone, text);
+    return { wamid };
+  }
+
+  /**
+   * Envia template direto pra um telefone, sem conversation/chat associado
+   * (ex: lembrete de agenda pro médico). Não persiste em ChatMessage.
+   */
+  async sendTemplateDirect(
+    companyId: number,
+    phone: string,
+    templateName: string,
+    components: object[],
+  ): Promise<{ wamid: string | null }> {
+    const provider = await this.getProvider(companyId);
+    const wamid = await provider.sendTemplate(
+      companyId,
+      phone,
+      templateName,
+      components,
+    );
+    return { wamid };
+  }
+
+  // ---------------------------------------------------------------------
+  // Core
+  // ---------------------------------------------------------------------
 
   async handleIncomingMessage(
     companyId: number,
@@ -60,7 +157,7 @@ export class WhatssapCoreService {
         return;
       }
     }
-    const { provider, botEnabled } = await this.registry.getConfig(companyId);
+    const { botEnabled } = await this.getProviderConfig(companyId);
     if (conversation.status === 'bot' && botEnabled) {
       await this.dispatchBot(companyId, conversation.id, msg.phone, msg.text);
     }
@@ -113,7 +210,7 @@ export class WhatssapCoreService {
     });
     if (!conversation) throw new Error('Conversa não encontrada');
 
-    const provider = await this.registry.getProvider(companyId);
+    const provider = await this.getProvider(companyId);
 
     let wamid: string | null = null;
     let sendError: string | null = null;
@@ -151,29 +248,68 @@ export class WhatssapCoreService {
   }
 
   /**
-   * Envia template direto pra um telefone, sem conversation/chat associado
-   * (ex: lembrete de agenda pro médico). Não persiste em ChatMessage.
+   * Envia mensagem de texto do atendente para o paciente (via WhatsApp)
+   * e persiste/emite através do ChatService.
    */
-  async sendTemplateDirect(
+  async sendManualMessage(
     companyId: number,
-    phone: string,
-    templateName: string,
-    components: object[],
-  ): Promise<void> {
-    const provider = await this.registry.getProvider(companyId);
-    await provider.sendTemplate(companyId, phone, templateName, components);
+    conversationId: number,
+    text: string,
+    senderName: string,
+    senderRole: string,
+  ): Promise<ReturnType<ChatService['sendMessage']>> {
+    const conversation = await this.prisma.client.conversation.findFirst({
+      where: { id: conversationId, companyId },
+      select: { phone: true },
+    });
+    if (!conversation) throw new Error('Conversa não encontrada');
+
+    return this.sendAndPersist(
+      companyId,
+      conversationId,
+      conversation.phone,
+      text,
+      senderName,
+      senderRole,
+    );
   }
 
   /**
-   * Envia texto livre direto pra um telefone, sem conversation/chat associado.
+   * Envia texto via provider e persiste/emite através do ChatService.
+   * Usado por qualquer fluxo de envio de texto associado a uma conversa
+   * (atendente manual, bot/automático).
    */
-  async sendTextDirect(
+  private async sendAndPersist(
     companyId: number,
+    conversationId: number,
     phone: string,
     text: string,
-  ): Promise<void> {
-    const provider = await this.registry.getProvider(companyId);
-    await provider.sendText(companyId, phone, text);
+    senderName: string,
+    senderRole: string,
+  ): Promise<ReturnType<ChatService['sendMessage']>> {
+    const provider = await this.getProvider(companyId);
+
+    let wamid: string | null = null;
+    let status: 'sent' | 'failed' = 'sent';
+
+    try {
+      wamid = await provider.sendText(companyId, phone, text);
+    } catch (err) {
+      status = 'failed';
+      this.logger.error(
+        `Erro ao enviar mensagem [conversation ${conversationId}]: ${(err as Error).message}`,
+      );
+    }
+
+    return this.chat.sendMessage(
+      companyId,
+      conversationId,
+      text,
+      senderName,
+      senderRole,
+      wamid,
+      status,
+    );
   }
 
   private async handleOutgoingSynced(
@@ -284,28 +420,13 @@ export class WhatssapCoreService {
     phone: string,
     text: string,
   ): Promise<void> {
-    const provider = await this.registry.getProvider(companyId);
-
-    let wamid: string | null = null;
-    let status: 'sent' | 'failed' = 'sent';
-
-    try {
-      wamid = await provider.sendText(companyId, phone, text);
-    } catch (err) {
-      status = 'failed';
-      this.logger.error(
-        `Erro ao enviar resposta [conversation ${conversationId}]: ${(err as Error).message}`,
-      );
-    }
-
-    await this.chat.sendMessage(
+    await this.sendAndPersist(
       companyId,
       conversationId,
+      phone,
       text,
       'Bot',
       'automático',
-      wamid,
-      status,
     );
   }
 }
