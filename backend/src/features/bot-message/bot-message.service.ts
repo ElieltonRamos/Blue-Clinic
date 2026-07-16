@@ -37,8 +37,8 @@ const PREVIOUS_STEP: Partial<Record<BotStep, BotStep>> = {
 };
 
 @Injectable()
-export class BotService {
-  private readonly logger = new Logger(BotService.name);
+export class BotMessageService {
+  private readonly logger = new Logger(BotMessageService.name);
 
   constructor(
     private readonly prisma: PrismaService,

@@ -412,7 +412,7 @@ model Conversation {
   phone         String
   status        ConversationStatus @default(bot)
   unread        Int                @default(0)
-  lastMessage   String?
+  lastMessage   String?   @db.Text
   lastMessageAt DateTime?
   botStep       String?
   botData       Json?

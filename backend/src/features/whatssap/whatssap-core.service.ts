@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // whatssap-core.service.ts
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../core/database/prisma.service.js';
@@ -10,12 +11,11 @@ import { NormalizedIncomingMessage } from './interfaces/whatsapp-provider.interf
 @Injectable()
 export class WhatssapCoreService {
   private readonly logger = new Logger(WhatssapCoreService.name);
-  private readonly INACTIVITY_MS = 4 * 60 * 60 * 1000;
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly chat: ChatService,
-    private readonly bot: BotMessageService,
+    private readonly bot2: BotMessageService,
     @Inject(WHATSAPP_PROVIDER_REGISTRY)
     private readonly registry: WhatssapProviderRegistry,
   ) {}
@@ -29,19 +29,14 @@ export class WhatssapCoreService {
       return;
     }
 
-    const patientId = await this.resolvePatientId(companyId, msg.phone);
+    const patient = await this.findPatientByPhone(companyId, msg.phone);
+    if (patient?.blocked) return; // bloqueia antes de criar qualquer registro
+
     const conversation = await this.chat.findOrCreateConversationByPhone(
       companyId,
       msg.phone,
-      patientId,
+      patient?.id ?? null,
     );
-
-    if ((conversation as any).patient?.blocked) return;
-
-    if (this.isInactive(conversation)) {
-      // reset de status/botStep por inatividade já é tratado dentro de
-      // chat.saveIncomingMessage; aqui só logamos o caso, se necessário
-    }
 
     await this.chat.saveIncomingMessage(companyId, conversation.id, msg.text);
 
@@ -65,10 +60,20 @@ export class WhatssapCoreService {
         return;
       }
     }
-
-    if (conversation.status === 'bot') {
+    const { provider, botEnabled } = await this.registry.getConfig(companyId);
+    if (conversation.status === 'bot' && botEnabled) {
       await this.dispatchBot(companyId, conversation.id, msg.phone, msg.text);
     }
+  }
+
+  private async findPatientByPhone(
+    companyId: number,
+    phone: string,
+  ): Promise<{ id: number; blocked: boolean } | null> {
+    return this.prisma.client.patient.findFirst({
+      where: { companyId, phone: { contains: phone.slice(-8) } },
+      select: { id: true, blocked: true },
+    });
   }
 
   async handleMessageStatus(
@@ -102,6 +107,12 @@ export class WhatssapCoreService {
     components: object[],
     resolvedText?: string,
   ): Promise<void> {
+    const conversation = await this.prisma.client.conversation.findFirst({
+      where: { id: conversationId, companyId },
+      select: { phone: true },
+    });
+    if (!conversation) throw new Error('Conversa não encontrada');
+
     const provider = await this.registry.getProvider(companyId);
 
     let wamid: string | null = null;
@@ -110,7 +121,7 @@ export class WhatssapCoreService {
     try {
       wamid = await provider.sendTemplate(
         companyId,
-        await this.getPhone(conversationId),
+        conversation.phone,
         templateName,
         components,
       );
@@ -139,15 +150,41 @@ export class WhatssapCoreService {
     void saved;
   }
 
+  /**
+   * Envia template direto pra um telefone, sem conversation/chat associado
+   * (ex: lembrete de agenda pro médico). Não persiste em ChatMessage.
+   */
+  async sendTemplateDirect(
+    companyId: number,
+    phone: string,
+    templateName: string,
+    components: object[],
+  ): Promise<void> {
+    const provider = await this.registry.getProvider(companyId);
+    await provider.sendTemplate(companyId, phone, templateName, components);
+  }
+
+  /**
+   * Envia texto livre direto pra um telefone, sem conversation/chat associado.
+   */
+  async sendTextDirect(
+    companyId: number,
+    phone: string,
+    text: string,
+  ): Promise<void> {
+    const provider = await this.registry.getProvider(companyId);
+    await provider.sendText(companyId, phone, text);
+  }
+
   private async handleOutgoingSynced(
     companyId: number,
     msg: NormalizedIncomingMessage,
   ): Promise<void> {
-    const patientId = await this.resolvePatientId(companyId, msg.phone);
+    const patient = await this.findPatientByPhone(companyId, msg.phone);
     const conversation = await this.chat.findOrCreateConversationByPhone(
       companyId,
       msg.phone,
-      patientId,
+      patient?.id ?? null,
     );
 
     await this.chat.sendMessage(
@@ -269,33 +306,6 @@ export class WhatssapCoreService {
       'automático',
       wamid,
       status,
-    );
-  }
-
-  private async resolvePatientId(
-    companyId: number,
-    phone: string,
-  ): Promise<number | null> {
-    const patient = await this.prisma.client.patient.findFirst({
-      where: { companyId, phone: { contains: phone.slice(-8) } },
-      select: { id: true },
-    });
-    return patient?.id ?? null;
-  }
-
-  private async getPhone(conversationId: number): Promise<string> {
-    const conv = await this.prisma.client.conversation.findUnique({
-      where: { id: conversationId },
-      select: { phone: true },
-    });
-    return conv?.phone ?? '';
-  }
-
-  private isInactive(conversation: { lastMessageAt: Date | null }): boolean {
-    return (
-      !!conversation.lastMessageAt &&
-      Date.now() - new Date(conversation.lastMessageAt).getTime() >
-        this.INACTIVITY_MS
     );
   }
 }

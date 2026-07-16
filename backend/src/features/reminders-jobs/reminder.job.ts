@@ -1,7 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../../core/database/prisma.service.js';
-import { WhatssapService } from '../whatssap/official/whatssap.service.js';
+import { WhatssapCoreService } from '../whatssap/whatssap-core.service.js';
+import { ChatService } from '../chat/chat.service.js';
 
 @Injectable()
 export class ReminderJob {
@@ -9,7 +10,8 @@ export class ReminderJob {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly whatsapp: WhatssapService,
+    private readonly whatsapp: WhatssapCoreService,
+    private readonly chat: ChatService,
   ) {}
 
   @Cron('0 9 * * *', { name: 'appointment-reminders' })
@@ -91,28 +93,24 @@ export class ReminderJob {
       where: {
         companyId: { in: companyIds },
         autoReminder: true,
-        accessToken: { not: null },
-        phoneNumberId: { not: null },
       },
-      select: { companyId: true, accessToken: true, phoneNumberId: true },
+      select: { companyId: true },
     });
 
     this.logger.log(
       `[REMINDERS:${mode}] ${configs.length} empresa(s) com configuração WhatsApp ativa`,
     );
 
-    const configMap = new Map(configs.map((c) => [c.companyId, c]));
+    const enabledCompanyIds = new Set(configs.map((c) => c.companyId));
 
     const successIds: number[] = [];
     const failureIds: number[] = [];
     const skippedIds: number[] = [];
 
     for (const appointment of appointments) {
-      const config = configMap.get(appointment.patient.companyId);
-
-      if (!config?.accessToken || !config?.phoneNumberId) {
+      if (!enabledCompanyIds.has(appointment.patient.companyId)) {
         this.logger.warn(
-          `[REMINDERS:${mode}] Appointment ${appointment.id} ignorado — empresa ${appointment.patient.companyId} sem config WhatsApp`,
+          `[REMINDERS:${mode}] Appointment ${appointment.id} ignorado — empresa ${appointment.patient.companyId} sem autoReminder ativo`,
         );
         skippedIds.push(appointment.id);
         continue;
@@ -131,9 +129,18 @@ export class ReminderJob {
         timeZone: 'UTC',
       });
 
+      const resolvedText = `Olá ${appointment.patient.name}, lembrete da sua consulta com ${appointment.doctor.name} em ${dateFormatted} às ${appointment.startTime}.`;
+
       try {
-        await this.whatsapp.sendTemplate(
+        const conversation = await this.chat.findOrCreateConversationByPhone(
+          appointment.patient.companyId,
           phone,
+          appointment.patientId,
+        );
+
+        await this.whatsapp.sendTemplateToConversation(
+          appointment.patient.companyId,
+          conversation.id,
           'lembrete_consulta',
           [
             {
@@ -146,32 +153,13 @@ export class ReminderJob {
               ],
             },
           ],
-          config.accessToken,
-          config.phoneNumberId,
+          resolvedText,
         );
 
         successIds.push(appointment.id);
         this.logger.log(
           `[REMINDERS:${mode}] Lembrete enviado — appointment ${appointment.id} | paciente: ${appointment.patient.name} | ${dateFormatted} ${appointment.startTime}`,
         );
-
-        const updated = await this.prisma.client.conversation.updateMany({
-          where: {
-            phone: { endsWith: phone.slice(-8) },
-            companyId: appointment.patient.companyId,
-          },
-          data: { botStep: 'AWAITING_REMINDER_REPLY' },
-        });
-
-        if (updated.count > 0) {
-          this.logger.log(
-            `[REMINDERS:${mode}] botStep atualizado para AWAITING_REMINDER_REPLY — appointment ${appointment.id}`,
-          );
-        } else {
-          this.logger.warn(
-            `[REMINDERS:${mode}] Nenhuma conversa encontrada para atualizar botStep — appointment ${appointment.id} | phone: ${phone}`,
-          );
-        }
       } catch (err) {
         failureIds.push(appointment.id);
         this.logger.error(

@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../../core/database/prisma.service.js';
-import { WhatssapService } from '../whatssap/official/whatssap.service.js';
+import { WhatssapCoreService } from '../whatssap/whatssap-core.service.js';
 
 @Injectable()
 export class DoctorReminderJob {
@@ -9,7 +9,7 @@ export class DoctorReminderJob {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly whatsapp: WhatssapService,
+    private readonly whatsapp: WhatssapCoreService,
   ) {}
 
   @Cron('0 18 * * *', { name: 'doctor-schedule-reminders' })
@@ -78,33 +78,13 @@ export class DoctorReminderJob {
       byDoctor.set(appt.doctorId, list);
     }
 
-    const companyIds = [
-      ...new Set(appointments.map((a) => a.doctor.companyId)),
-    ];
-    const configs = await this.prisma.client.whatsappConfig.findMany({
-      where: {
-        companyId: { in: companyIds },
-        accessToken: { not: null },
-        phoneNumberId: { not: null },
-      },
-      select: { companyId: true, accessToken: true, phoneNumberId: true },
-    });
-    const configMap = new Map(configs.map((c) => [c.companyId, c]));
-
     for (const [doctorId, appts] of byDoctor) {
       const doctor = appts[0].doctor;
       const phone = doctor.user?.phone;
-      const config = configMap.get(doctor.companyId);
 
       if (!phone) {
         this.logger.warn(
           `[DOCTOR_REMINDERS] Médico ${doctorId} sem telefone cadastrado`,
-        );
-        continue;
-      }
-      if (!config?.accessToken || !config?.phoneNumberId) {
-        this.logger.warn(
-          `[DOCTOR_REMINDERS] Empresa ${doctor.companyId} sem config WhatsApp`,
         );
         continue;
       }
@@ -117,7 +97,8 @@ export class DoctorReminderJob {
         .join('\n');
 
       try {
-        await this.whatsapp.sendTemplate(
+        await this.whatsapp.sendTemplateDirect(
+          doctor.companyId,
           phone,
           'resumo_agenda_medico',
           [
@@ -147,8 +128,6 @@ export class DoctorReminderJob {
               ],
             },
           ],
-          config.accessToken,
-          config.phoneNumberId,
         );
         this.logger.log(
           `[DOCTOR_REMINDERS] Enviado para médico ${doctorId} (${appts.length} atendimentos)`,

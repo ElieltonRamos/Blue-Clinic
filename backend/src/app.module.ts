@@ -15,6 +15,7 @@ import { ChatModule } from './features/chat/chat.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { FiscalModule } from './features/fiscal/fiscal.module';
 import { BotMessageModule } from './features/bot-message/bot-message.module';
+import { RemindersJobsModule } from './features/reminders-jobs/reminders-jobs.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { BotMessageModule } from './features/bot-message/bot-message.module';
     ChatModule,
     FiscalModule,
     BotMessageModule,
+    RemindersJobsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
