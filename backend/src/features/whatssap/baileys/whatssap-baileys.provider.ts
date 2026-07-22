@@ -14,6 +14,10 @@ import P from 'pino';
 import { PrismaService } from '../../../core/database/prisma.service.js';
 import { IWhatsappProvider } from '../interfaces/whatsapp-provider.interface.js';
 import { NormalizedIncomingMessage } from '../interfaces/whatsapp-provider.interface.js';
+import {
+  BAILEYS_TEMPLATES,
+  renderBaileysTemplateText,
+} from './whatsapp-templates.map.js';
 
 const pinoLogger = P({ level: 'silent' });
 
@@ -250,10 +254,24 @@ export class WhatssapBaileysProvider implements IWhatsappProvider {
     return res?.key?.id ?? null;
   }
 
-  sendTemplate(): Promise<string | null> {
-    return Promise.reject(
-      new Error('Baileys não suporta templates aprovados pela Meta'),
+  async sendTemplate(
+    companyId: number,
+    to: string,
+    templateName: string,
+    components: object[],
+  ): Promise<string | null> {
+    const text = renderBaileysTemplateText(
+      templateName,
+      components as {
+        type: string;
+        parameters?: { type: string; parameter_name?: string; text?: string }[];
+      }[],
     );
+    return this.sendText(companyId, to, text);
+  }
+
+  getTemplates(): Promise<typeof BAILEYS_TEMPLATES> {
+    return Promise.resolve(BAILEYS_TEMPLATES);
   }
 
   async getStatus(
