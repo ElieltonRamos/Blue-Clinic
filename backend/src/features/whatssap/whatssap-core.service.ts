@@ -22,7 +22,7 @@ export class WhatssapCoreService implements OnModuleInit {
     private readonly baileysProvider: WhatssapBaileysProvider,
   ) {}
 
-  onModuleInit(): void {
+  async onModuleInit() {
     this.baileysProvider.events.on(
       'message',
       (companyId: number, msg: NormalizedIncomingMessage) => {
@@ -40,6 +40,38 @@ export class WhatssapCoreService implements OnModuleInit {
         this.logger.log(`Baileys status [company ${companyId}]: ${status}`);
       },
     );
+
+    this.baileysProvider.events.on(
+      'message-status',
+      (
+        companyId: number,
+        wamid: string,
+        status: 'sent' | 'delivered' | 'read' | 'failed',
+      ) => {
+        this.handleMessageStatus(companyId, wamid, status).catch((err) => {
+          this.logger.error(
+            `Erro ao processar status Baileys [company ${companyId}]: ${(err as Error).message}`,
+          );
+        });
+      },
+    );
+
+    await this.reconnectBaileysCompanies();
+  }
+
+  private async reconnectBaileysCompanies(): Promise<void> {
+    const configs = await this.prisma.client.whatsappConfig.findMany({
+      where: { provider: 'baileys' },
+      select: { companyId: true },
+    });
+
+    for (const { companyId } of configs) {
+      this.baileysProvider.connect(companyId).catch((err) => {
+        this.logger.error(
+          `Falha ao reconectar Baileys no boot [company ${companyId}]: ${(err as Error).message}`,
+        );
+      });
+    }
   }
 
   // ---------------------------------------------------------------------

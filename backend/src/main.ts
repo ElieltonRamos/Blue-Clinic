@@ -1,10 +1,28 @@
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module.js';
 
+function patchConsoleInfo(): void {
+  const originalConsoleInfo = console.info.bind(console);
+  console.info = (...args: unknown[]) => {
+    if (typeof args[0] === 'string' && args[0].startsWith('Closing session')) {
+      const session = args[1] as { registrationId?: number } | undefined;
+      originalConsoleInfo(
+        `[libsignal] Sessão de criptografia renovada (registrationId: ${session?.registrationId ?? '?'})`,
+      );
+      return;
+    }
+    originalConsoleInfo(...args);
+  };
+}
+
 async function bootstrap() {
+  patchConsoleInfo();
+
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   app.enableCors();

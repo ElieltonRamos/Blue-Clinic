@@ -8,6 +8,7 @@ import makeWASocket, {
   makeCacheableSignalKeyStore,
   DisconnectReason,
   WASocket,
+  WAMessageStatus,
 } from '@whiskeysockets/baileys';
 import P from 'pino';
 import { PrismaService } from '../../../core/database/prisma.service.js';
@@ -16,7 +17,6 @@ import { NormalizedIncomingMessage } from '../interfaces/whatsapp-provider.inter
 
 const pinoLogger = P({ level: 'silent' });
 
-// Fix #4: caminho absoluto e configurável, não depende mais do cwd do processo.
 const SESSIONS_DIR =
   process.env.WHATSAPP_SESSIONS_DIR ?? path.resolve(process.cwd(), 'sessions');
 
@@ -28,20 +28,11 @@ export class WhatssapBaileysProvider implements IWhatsappProvider {
   private readonly logger = new Logger(WhatssapBaileysProvider.name);
   private readonly sockets = new Map<number, WASocket>();
 
-  // Fix #1: promises de conexão em andamento, para deduplicar chamadas concorrentes.
   private readonly connecting = new Map<number, Promise<void>>();
 
-  // Fix #2: contador de tentativas por empresa, para backoff exponencial.
   private readonly reconnectAttempts = new Map<number, number>();
   private readonly reconnectTimers = new Map<number, NodeJS.Timeout>();
 
-  /**
-   * Emite:
-   *  - 'message' (companyId: number, msg: NormalizedIncomingMessage)
-   *  - 'status'  (companyId: number, status: 'qr_pending' | 'connected' | 'disconnected', qr?: string)
-   * Um listener externo (fora deste provider) escuta e encaminha pro WhatssapCoreService,
-   * evitando dependência circular Core <-> BaileysProvider.
-   */
   readonly events = new EventEmitter();
 
   constructor(private readonly prisma: PrismaService) {}
@@ -60,6 +51,24 @@ export class WhatssapBaileysProvider implements IWhatsappProvider {
 
     this.connecting.set(companyId, promise);
     return promise;
+  }
+
+  private mapMessageStatus(
+    waStatus: number,
+  ): 'sent' | 'delivered' | 'read' | 'failed' | null {
+    const status = Number(waStatus);
+    const ERROR = Number(WAMessageStatus.ERROR);
+    const SERVER_ACK = Number(WAMessageStatus.SERVER_ACK);
+    const PENDING = Number(WAMessageStatus.PENDING);
+    const DELIVERY_ACK = Number(WAMessageStatus.DELIVERY_ACK);
+    const READ = Number(WAMessageStatus.READ);
+    const PLAYED = Number(WAMessageStatus.PLAYED);
+
+    if (status === ERROR) return 'failed';
+    if (status === SERVER_ACK || status === PENDING) return 'sent';
+    if (status === DELIVERY_ACK) return 'delivered';
+    if (status === READ || status === PLAYED) return 'read';
+    return null;
   }
 
   private async doConnect(companyId: number): Promise<void> {
@@ -83,20 +92,38 @@ export class WhatssapBaileysProvider implements IWhatsappProvider {
       void this.handleConnectionUpdate(companyId, update);
     });
 
-    sock.ev.on('messages.upsert', ({ messages }) => {
+    sock.ev.on('messages.update', (updates) => {
+      for (const update of updates) {
+        const wamid = update.key?.id;
+        const waStatus = update.update?.status;
+        if (!wamid || waStatus === undefined || waStatus === null) continue;
+
+        const status = this.mapMessageStatus(waStatus);
+        if (!status) continue;
+
+        this.events.emit('message-status', companyId, wamid, status);
+      }
+    });
+
+    sock.ev.on('messages.upsert', ({ messages, type }) => {
+      if (type !== 'notify') return;
       const m = messages[0];
       if (!m.message) return;
 
       const remoteJid = m.key.remoteJid;
       if (!remoteJid) return;
 
-      // Fix #5: ignora mensagens de broadcast/status, que não têm remetente real utilizável.
       if (remoteJid === 'status@broadcast') return;
 
       const isGroup = remoteJid.endsWith('@g.us');
+      const isLid = remoteJid.endsWith('@lid');
 
-      // Em grupos, o remetente real vem em `participant`; em conversas 1:1, é o próprio remoteJid.
-      const senderJid = isGroup ? m.key.participant : remoteJid;
+      const senderJid = isGroup
+        ? (m.key.participantAlt ?? m.key.participant)
+        : isLid
+          ? m.key.remoteJidAlt
+          : remoteJid;
+
       if (!senderJid) return;
 
       const phone = senderJid.split('@')[0].split(':')[0];
@@ -158,14 +185,11 @@ export class WhatssapBaileysProvider implements IWhatsappProvider {
         this.logger.warn(
           `Baileys deslogado (company ${companyId}) — necessário novo QR`,
         );
-        // Fix #3: limpa a sessão inválida em disco para forçar geração de novo QR
-        // na próxima chamada a connect(), em vez de reusar credenciais mortas.
         await this.clearSession(companyId);
       }
     }
   }
 
-  // Fix #2: reconexão com backoff exponencial (1s, 2s, 4s... até 30s) em vez de retry imediato.
   private scheduleReconnect(companyId: number, statusCode?: number): void {
     const existingTimer = this.reconnectTimers.get(companyId);
     if (existingTimer) clearTimeout(existingTimer);
@@ -279,16 +303,12 @@ export class WhatssapBaileysProvider implements IWhatsappProvider {
   }
 
   async resetSession(companyId: number): Promise<void> {
-    // reusa a lógica de disconnect (limpa timers, reconnectAttempts, encerra socket)
     await this.disconnect(companyId);
 
-    // remove qualquer promise de connect em andamento para essa empresa
     this.connecting.delete(companyId);
 
-    // apaga credenciais em disco — força novo QR na próxima conexão
     await this.clearSession(companyId);
 
-    // zera status no banco, sem deixar QR antigo/inválido resgatável pelo polling
     await this.updateStatus(companyId, 'disconnected');
     await this.prisma.client.whatsappConfig.update({
       where: { companyId },
