@@ -1,6 +1,7 @@
 import { Role } from '../../dashboard/types/dashboard.types';
 
 export type UserLevel = Role;
+export type WhatsappProviderType = 'official' | 'baileys';
 
 export interface CompanyData {
   id: number;
@@ -50,6 +51,7 @@ export interface NewMemberForm {
 
 export interface IntegrationStatus {
   id: number;
+  provider: WhatsappProviderType;
   phoneNumberId: string | null;
   whatsappBusinessAccountId: string | null;
   botEnabled: boolean;
@@ -59,9 +61,15 @@ export interface IntegrationStatus {
 }
 
 export interface UpsertIntegrationDto {
+  provider?: WhatsappProviderType;
   phoneNumberId?: string;
   accessToken?: string;
   whatsappBusinessAccountId?: string;
   botEnabled?: boolean;
   autoReminder?: boolean;
+}
+
+export interface BaileysStatus {
+  status: string | null;
+  qr: string | null;
 }

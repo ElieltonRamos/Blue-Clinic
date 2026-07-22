@@ -1,10 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../core/database/prisma.service.js';
-import { Prisma } from '../../../generated/prisma/client.js';
+import { Prisma, WhatsappProvider } from '../../../generated/prisma/client.js';
+import { WhatssapCoreService } from '../whatssap/whatssap-core.service.js';
 
 @Injectable()
 export class CompanyService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private whatssapCore: WhatssapCoreService,
+  ) {}
 
   async getCompany(id: number) {
     const company = await this.prisma.client.company.findUnique({
@@ -27,6 +31,7 @@ export class CompanyService {
       where: { companyId },
       select: {
         id: true,
+        provider: true,
         phoneNumberId: true,
         botEnabled: true,
         autoReminder: true,
@@ -39,6 +44,7 @@ export class CompanyService {
   async upsertIntegration(
     companyId: number,
     dto: {
+      provider?: WhatsappProvider;
       phoneNumberId?: string;
       accessToken?: string;
       whatsappBusinessAccountId?: string;
@@ -46,10 +52,21 @@ export class CompanyService {
       autoReminder?: boolean;
     },
   ) {
+    const current = await this.prisma.client.whatsappConfig.findUnique({
+      where: { companyId },
+      select: { provider: true },
+    });
+
+    const providerChanged =
+      dto.provider !== undefined &&
+      current !== null &&
+      dto.provider !== current.provider;
+
     await this.prisma.client.whatsappConfig.upsert({
       where: { companyId },
       create: {
         companyId,
+        provider: dto.provider ?? 'official',
         phoneNumberId: dto.phoneNumberId,
         accessToken: dto.accessToken,
         whatsappBusinessAccountId: dto.whatsappBusinessAccountId,
@@ -57,6 +74,7 @@ export class CompanyService {
         autoReminder: dto.autoReminder ?? true,
       },
       update: {
+        ...(dto.provider !== undefined && { provider: dto.provider }),
         ...(dto.phoneNumberId !== undefined && {
           phoneNumberId: dto.phoneNumberId,
         }),
@@ -70,6 +88,10 @@ export class CompanyService {
         }),
       },
     });
+
+    if (providerChanged) {
+      await this.whatssapCore.disconnectBaileys(companyId);
+    }
 
     return this.getIntegration(companyId);
   }

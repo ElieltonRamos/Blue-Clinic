@@ -1,7 +1,19 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsBoolean, IsNumber, IsOptional } from 'class-validator';
+import {
+  IsString,
+  IsBoolean,
+  IsNumber,
+  IsOptional,
+  IsEnum,
+} from 'class-validator';
+import { WhatsappProvider } from '../../../../generated/prisma/client.js';
 
 export class UpdateIntegrationDto {
+  @ApiPropertyOptional({ enum: WhatsappProvider, example: 'baileys' })
+  @IsOptional()
+  @IsEnum(WhatsappProvider)
+  provider?: WhatsappProvider;
+
   @ApiPropertyOptional({ example: '1082165641657424' })
   @IsOptional()
   @IsString()

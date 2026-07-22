@@ -8,6 +8,7 @@ import {
   CreateMemberRequest,
   UserLevel,
   UpsertIntegrationDto,
+  BaileysStatus,
 } from '../types/settings.types';
 
 @Injectable({
@@ -50,5 +51,17 @@ export class SettingsService {
 
   upsertIntegration(dto: UpsertIntegrationDto) {
     return this.http.patch<IntegrationStatus>(`${this.apiUrl}/company/integration`, dto);
+  }
+
+  connectBaileys() {
+    return this.http.post<{ ok: true }>(`${this.apiUrl}/whatssap/baileys/connect`, {});
+  }
+
+  getBaileysStatus() {
+    return this.http.get<BaileysStatus>(`${this.apiUrl}/whatssap/baileys/status`);
+  }
+
+  disconnectBaileys() {
+    return this.http.post<{ ok: true }>(`${this.apiUrl}/whatssap/baileys/disconnect`, {});
   }
 }

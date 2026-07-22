@@ -263,57 +263,103 @@
       </div>
       <div class="flex items-center justify-between">
         <span class="text-[12px] text-(--color-text-muted)">Status da API</span>
-        @if (integration()) {
-          <div class="flex items-center gap-1.5">
-            <span class="w-2 h-2 rounded-full bg-success"></span>
-            <span class="text-[12px] font-medium text-success">Conectado</span>
-          </div>
+        @if (integrationForm().provider === 'baileys') {
+          @if (baileysStatus() === 'connected') {
+            <div class="flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-success"></span>
+              <span class="text-[12px] font-medium text-success">Conectado</span>
+            </div>
+          } @else if (baileysStatus() === 'qr_pending') {
+            <div class="flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-warning"></span>
+              <span class="text-[12px] font-medium text-warning">Aguardando QR Code</span>
+            </div>
+          } @else {
+            <div class="flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-(--color-danger)"></span>
+              <span class="text-[12px] font-medium text-(--color-danger)">Desconectado</span>
+            </div>
+          }
         } @else {
-          <div class="flex items-center gap-1.5">
-            <span class="w-2 h-2 rounded-full bg-(--color-danger)"></span>
-            <span class="text-[12px] font-medium text-(--color-danger)">Desconectado</span>
-          </div>
+          @if (integration()) {
+            <div class="flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-success"></span>
+              <span class="text-[12px] font-medium text-success">Conectado</span>
+            </div>
+          } @else {
+            <div class="flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-(--color-danger)"></span>
+              <span class="text-[12px] font-medium text-(--color-danger)">Desconectado</span>
+            </div>
+          }
         }
       </div>
 
-      <div class="grid grid-cols-2 gap-3 pt-1">
-        <div class="flex flex-col gap-1">
-          <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)">
-            Phone Number ID
-          </label>
-          <input
-            [ngModel]="integrationForm().phoneNumberId"
-            (ngModelChange)="integrationForm.update(f => ({ ...f, phoneNumberId: $event }))"
-            type="text"
-            placeholder="Ex: 123456789"
-            class="bg-bg-card border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
-          />
-        </div>
-        <div class="flex flex-col gap-1">
-          <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)">
-            Access Token
-          </label>
-          <input
-            [ngModel]="integrationForm().accessToken"
-            (ngModelChange)="integrationForm.update(f => ({ ...f, accessToken: $event }))"
-            type="password"
-            placeholder="••••••••"
-            class="bg-bg-card border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
-          />
-        </div>
-        <div class="flex flex-col gap-1 col-span-2">
-          <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)">
-            WhatsApp Business Account ID
-          </label>
-          <input
-            [ngModel]="integrationForm().whatsappBusinessAccountId"
-            (ngModelChange)="integrationForm.update(f => ({ ...f, whatsappBusinessAccountId: $event }))"
-            type="text"
-            placeholder="Ex: 123456789"
-            class="bg-bg-card border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
-          />
-        </div>
+      <div class="flex flex-col gap-1">
+        <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)">
+          Provedor
+        </label>
+        <select
+          [ngModel]="integrationForm().provider"
+          (ngModelChange)="onProviderChange($event)"
+          class="bg-bg-card border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
+        >
+          <option value="official">API Oficial (Meta)</option>
+          <option value="baileys">WhatsApp Web (Baileys)</option>
+        </select>
       </div>
+
+      @if (integrationForm().provider === 'baileys') {
+        <div class="flex flex-col items-center gap-2 py-4">
+          @if (baileysStatus() === 'connected') {
+            <p class="text-[12px] text-success">✓ WhatsApp conectado</p>
+          } @else if (baileysQr()) {
+            <img [src]="baileysQr()" alt="QR Code" class="w-48 h-48" />
+            <p class="text-[11px] text-(--color-text-muted)">Escaneie com o WhatsApp</p>
+          } @else {
+            <p class="text-[12px] text-(--color-text-muted)">Gerando QR Code...</p>
+          }
+        </div>
+      } @else {
+        <div class="grid grid-cols-2 gap-3 pt-1">
+          <div class="flex flex-col gap-1">
+            <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)">
+              Phone Number ID
+            </label>
+            <input
+              [ngModel]="integrationForm().phoneNumberId"
+              (ngModelChange)="integrationForm.update(f => ({ ...f, phoneNumberId: $event }))"
+              type="text"
+              placeholder="Ex: 123456789"
+              class="bg-bg-card border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
+            />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)">
+              Access Token
+            </label>
+            <input
+              [ngModel]="integrationForm().accessToken"
+              (ngModelChange)="integrationForm.update(f => ({ ...f, accessToken: $event }))"
+              type="password"
+              placeholder="••••••••"
+              class="bg-bg-card border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
+            />
+          </div>
+          <div class="flex flex-col gap-1 col-span-2">
+            <label class="text-[10px] uppercase tracking-wider text-(--color-text-muted)">
+              WhatsApp Business Account ID
+            </label>
+            <input
+              [ngModel]="integrationForm().whatsappBusinessAccountId"
+              (ngModelChange)="integrationForm.update(f => ({ ...f, whatsappBusinessAccountId: $event }))"
+              type="text"
+              placeholder="Ex: 123456789"
+              class="bg-bg-card border border-(--color-border) rounded-lg px-3 py-2 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
+            />
+          </div>
+        </div>
+      }
 
       <div class="grid grid-cols-2 gap-2 pt-1">
         @for (toggle of integrationToggles; track toggle.key) {

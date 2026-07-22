@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { SettingsService } from '../services/settings.service';
 import { version } from '../../../../../package.json';
+import * as QRCode from 'qrcode';
+import { WhatsappProviderType } from '../types/settings.types';
 import {
   CompanyData,
   IntegrationStatus,
@@ -47,6 +49,10 @@ export class Settings implements OnInit {
 
   integrationForm = signal<UpsertIntegrationDto>({});
   integrationSaved = signal(false);
+
+  baileysQr = signal<string | null>(null);
+  baileysStatus = signal<string | null>(null);
+  private baileysPolling: ReturnType<typeof setInterval> | null = null;
 
   integrationToggles: {
     key: keyof Pick<UpsertIntegrationDto, 'botEnabled' | 'autoReminder'>;
@@ -132,6 +138,56 @@ export class Settings implements OnInit {
     this.loadIntegration();
   }
 
+  onProviderChange(provider: WhatsappProviderType): void {
+    this.integrationForm.update((f) => ({ ...f, provider }));
+
+    this.stopBaileysPolling();
+    this.baileysQr.set(null);
+    this.baileysStatus.set(null);
+
+    if (provider === 'baileys') {
+      this.settingsService.connectBaileys().subscribe({
+        next: () => this.startBaileysPolling(),
+        error: (err: HttpErrorResponse) => {
+          this.notification.error(this.getErrorMessage(err, 'Erro ao iniciar conexão Baileys.'));
+        },
+      });
+    }
+  }
+
+  private startBaileysPolling(): void {
+    this.baileysPolling = setInterval(() => {
+      this.settingsService.getBaileysStatus().subscribe({
+        next: async (res) => {
+          this.baileysStatus.set(res.status);
+
+          if (res.qr) {
+            this.baileysQr.set(await QRCode.toDataURL(res.qr));
+          } else {
+            this.baileysQr.set(null);
+          }
+
+          if (res.status === 'connected') {
+            this.stopBaileysPolling();
+            this.notification.success('WhatsApp conectado com sucesso.');
+          }
+        },
+        error: () => this.stopBaileysPolling(),
+      });
+    }, 2000);
+  }
+
+  private stopBaileysPolling(): void {
+    if (this.baileysPolling) {
+      clearInterval(this.baileysPolling);
+      this.baileysPolling = null;
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.stopBaileysPolling();
+  }
+
   loadMembers(): void {
     this.settingsService
       .getUsers({
@@ -168,11 +224,16 @@ export class Settings implements OnInit {
         this.integration.set(integration);
         if (integration) {
           this.integrationForm.set({
+            provider: integration.provider,
             phoneNumberId: integration.phoneNumberId ?? undefined,
             whatsappBusinessAccountId: integration.whatsappBusinessAccountId ?? undefined,
             botEnabled: integration.botEnabled,
             autoReminder: integration.autoReminder,
           });
+        }
+
+        if (integration?.provider === 'baileys') {
+          this.startBaileysPolling();
         }
       },
       error: (err: HttpErrorResponse) => {

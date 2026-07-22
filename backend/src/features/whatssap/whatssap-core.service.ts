@@ -429,4 +429,8 @@ export class WhatssapCoreService implements OnModuleInit {
       'automático',
     );
   }
+
+  async disconnectBaileys(companyId: number): Promise<void> {
+    await this.baileysProvider.disconnect(companyId);
+  }
 }

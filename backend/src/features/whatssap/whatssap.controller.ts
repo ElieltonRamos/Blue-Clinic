@@ -264,4 +264,17 @@ export class WhatssapController {
   ): Promise<unknown> {
     return this.baileysProvider.getStatus(companyId);
   }
+
+  @Post('baileys/reset')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Reseta sessão Baileys (limpa credenciais e força novo QR)',
+  })
+  async resetBaileys(
+    @CurrentUser('companyId') companyId: number,
+  ): Promise<{ ok: true }> {
+    await this.baileysProvider.resetSession(companyId);
+    return { ok: true };
+  }
 }
