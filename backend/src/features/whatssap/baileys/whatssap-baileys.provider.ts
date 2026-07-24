@@ -93,7 +93,11 @@ export class WhatssapBaileysProvider implements IWhatsappProvider {
     });
 
     sock.ev.on('connection.update', (update) => {
-      void this.handleConnectionUpdate(companyId, update);
+      this.handleConnectionUpdate(companyId, update).catch((err) => {
+        this.logger.error(
+          `Erro ao processar connection.update [company ${companyId}]: ${err instanceof Error ? err.message : err}`,
+        );
+      });
     });
 
     sock.ev.on('messages.update', (updates) => {
@@ -310,9 +314,15 @@ export class WhatssapBaileysProvider implements IWhatsappProvider {
     status: 'qr_pending' | 'connected' | 'disconnected',
     qr?: string,
   ): Promise<void> {
-    await this.prisma.client.whatsappConfig.update({
+    await this.prisma.client.whatsappConfig.upsert({
       where: { companyId },
-      data: {
+      create: {
+        companyId,
+        provider: 'baileys',
+        baileysStatus: status,
+        ...(qr !== undefined && { baileysQr: qr }),
+      },
+      update: {
         baileysStatus: status,
         ...(qr !== undefined && { baileysQr: qr }),
         ...(status === 'connected' && { baileysQr: null }),

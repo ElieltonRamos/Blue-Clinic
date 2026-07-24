@@ -56,6 +56,8 @@ CREATE TABLE `appointment_type_commission` (
     `doctorRate` DECIMAL(10, 2) NOT NULL,
     `clinicRateType` ENUM('percentage', 'fixed') NOT NULL,
     `clinicRate` DECIMAL(10, 2) NOT NULL,
+    `nfDeductionType` ENUM('percentage', 'fixed') NULL,
+    `nfDeductionValue` DECIMAL(10, 2) NULL,
 
     UNIQUE INDEX `appointment_type_commission_doctorId_appointmentTypeId_key`(`doctorId`, `appointmentTypeId`),
     PRIMARY KEY (`id`)
@@ -67,6 +69,7 @@ CREATE TABLE `user` (
     `companyId` INTEGER NOT NULL,
     `username` VARCHAR(191) NOT NULL,
     `password` VARCHAR(191) NOT NULL,
+    `phone` VARCHAR(191) NULL,
     `role` ENUM('admin', 'medico', 'atendimento') NOT NULL,
     `active` BOOLEAN NOT NULL DEFAULT true,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
@@ -105,6 +108,7 @@ CREATE TABLE `patient` (
     `whatsappActive` BOOLEAN NOT NULL DEFAULT false,
     `lgpdConsent` BOOLEAN NOT NULL DEFAULT false,
     `memberSince` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `blocked` BOOLEAN NOT NULL DEFAULT false,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
 
@@ -193,6 +197,13 @@ CREATE TABLE `payment` (
     `doctorEarnings` DECIMAL(10, 2) NOT NULL DEFAULT 0,
     `clinicEarnings` DECIMAL(10, 2) NOT NULL DEFAULT 0,
     `discount` DECIMAL(10, 2) NOT NULL DEFAULT 0,
+    `deductedAmount` DECIMAL(10, 2) NOT NULL DEFAULT 0,
+    `invoiceIssued` BOOLEAN NOT NULL DEFAULT false,
+    `invoiceXmlUrl` VARCHAR(191) NULL,
+    `invoicePdfUrl` VARCHAR(191) NULL,
+    `commissionPaid` BOOLEAN NOT NULL DEFAULT false,
+    `commissionPaidAt` DATETIME(3) NULL,
+    `commissionPaidById` INTEGER NULL,
 
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -228,10 +239,14 @@ CREATE TABLE `expense` (
 CREATE TABLE `whatsapp_config` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `companyId` INTEGER NOT NULL,
+    `provider` ENUM('official', 'baileys') NOT NULL DEFAULT 'official',
     `phoneNumberId` VARCHAR(191) NULL,
     `accessToken` TEXT NULL,
     `botEnabled` BOOLEAN NOT NULL DEFAULT true,
+    `whatsapp_business_account_id` VARCHAR(191) NULL,
     `autoReminder` BOOLEAN NOT NULL DEFAULT true,
+    `baileysStatus` VARCHAR(191) NULL,
+    `baileysQr` TEXT NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
 
@@ -248,7 +263,7 @@ CREATE TABLE `conversation` (
     `phone` VARCHAR(191) NOT NULL,
     `status` ENUM('bot', 'human', 'waiting') NOT NULL DEFAULT 'bot',
     `unread` INTEGER NOT NULL DEFAULT 0,
-    `lastMessage` VARCHAR(191) NULL,
+    `lastMessage` TEXT NULL,
     `lastMessageAt` DATETIME(3) NULL,
     `botStep` VARCHAR(191) NULL,
     `botData` JSON NULL,
@@ -266,7 +281,12 @@ CREATE TABLE `chat_message` (
     `text` TEXT NOT NULL,
     `sentAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `read` BOOLEAN NOT NULL DEFAULT false,
+    `senderName` VARCHAR(191) NULL,
+    `senderRole` VARCHAR(191) NULL,
+    `wamid` VARCHAR(191) NULL,
+    `status` ENUM('sent', 'delivered', 'read', 'failed') NULL DEFAULT 'sent',
 
+    UNIQUE INDEX `chat_message_wamid_key`(`wamid`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -320,6 +340,9 @@ ALTER TABLE `payment` ADD CONSTRAINT `payment_appointmentId_fkey` FOREIGN KEY (`
 
 -- AddForeignKey
 ALTER TABLE `payment` ADD CONSTRAINT `payment_registeredById_fkey` FOREIGN KEY (`registeredById`) REFERENCES `user`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `payment` ADD CONSTRAINT `payment_commissionPaidById_fkey` FOREIGN KEY (`commissionPaidById`) REFERENCES `user`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `payment_entry` ADD CONSTRAINT `payment_entry_payment_id_fkey` FOREIGN KEY (`payment_id`) REFERENCES `payment`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
