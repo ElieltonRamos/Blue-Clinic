@@ -15,7 +15,7 @@
 ; ==================== CONFIGURAÇÕES GERAIS ====================
 Name "${APP_NAME} ${APP_VERSION}"
 OutFile "App-Blue-Clinic-Setup-${APP_VERSION}.exe"
-InstallDir "$PROGRAMFILES64\${APP_NAME}"
+InstallDir "C:\blue-clinic-app"
 InstallDirRegKey HKLM "Software\${APP_NAME}" "InstallDir"
 RequestExecutionLevel admin
 Unicode True
@@ -41,15 +41,32 @@ Unicode True
 Function .onInit
     ${If} ${RunningX64}
         SetRegView 64
-        StrCpy $INSTDIR "$PROGRAMFILES64\${APP_NAME}"
     ${Else}
         MessageBox MB_OK|MB_ICONSTOP "Este instalador requer Windows 64-bit."
         Abort
     ${EndIf}
 FunctionEnd
 
+Function un.onInit
+    ${If} ${RunningX64}
+        SetRegView 64
+    ${Else}
+        MessageBox MB_OK|MB_ICONSTOP "Este desinstalador requer Windows 64-bit."
+        Abort
+    ${EndIf}
+FunctionEnd
+
 ; ==================== INSTALAÇÃO ====================
 Section
+    ; Se já existe uma instalação (reinstalação/upgrade), para e remove o serviço antes de sobrescrever arquivos
+    ${If} ${FileExists} "$INSTDIR\nssm.exe"
+        DetailPrint "Instalação existente detectada. Parando serviço ${SERVICE_NAME}..."
+        nsExec::ExecToLog 'net stop ${SERVICE_NAME}'
+        Sleep 2000
+        nsExec::ExecToLog '"$INSTDIR\nssm.exe" remove ${SERVICE_NAME} confirm'
+        Sleep 1000
+    ${EndIf}
+
     SetOutPath "$INSTDIR\nginx"
     File /r "nginx\*.*"
 
@@ -110,7 +127,6 @@ Section "Uninstall"
     RMDir /r "$INSTDIR\nginx"
     RMDir "$INSTDIR"
 
-    SetRegView 64
     DeleteRegKey HKLM "Software\${APP_NAME}"
     DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}"
 SectionEnd
