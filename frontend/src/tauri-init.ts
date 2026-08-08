@@ -34,6 +34,5 @@ export async function initTauri(bootstrap: () => void): Promise<void> {
     }
   }
 
-  console.log('chamando bootstrap');
   bootstrap();
 }

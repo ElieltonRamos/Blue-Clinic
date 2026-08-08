@@ -108,7 +108,6 @@ export class Financial implements OnInit {
         this.pageLoading.set(false);
       },
       error: (err: HttpErrorResponse) => {
-        console.log(err, 'mensagem de erro');
         this.notify.error(this.getErrorMessage(err, 'Erro ao carregar dados financeiros'));
         this.pageLoading.set(false);
       },

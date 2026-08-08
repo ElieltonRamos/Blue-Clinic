@@ -24,6 +24,7 @@ const dbConfig = {
   password: process.env.DATABASE_PASSWORD || 'password',
   database: process.env.DATABASE_NAME || 'db_blue_clinic',
   port: Number(process.env.DATABASE_PORT) || 3306,
+  allowPublicKeyRetrieval: true,
 };
 
 // ============================================
@@ -66,6 +67,7 @@ async function ensureDatabaseExists(): Promise<void> {
     user: dbConfig.user,
     password: dbConfig.password,
     port: dbConfig.port,
+    allowPublicKeyRetrieval: true,
   });
 
   await conn.query(`CREATE DATABASE IF NOT EXISTS \`${dbConfig.database}\``);
@@ -146,6 +148,7 @@ async function createDatabase(): Promise<void> {
     password: dbConfig.password,
     database: dbConfig.database,
     port: dbConfig.port,
+    allowPublicKeyRetrieval: true,
   });
 
   try {
@@ -175,6 +178,7 @@ async function runMigrations(): Promise<void> {
     database: dbConfig.database,
     port: dbConfig.port,
     multipleStatements: true,
+    allowPublicKeyRetrieval: true,
   });
 
   try {
@@ -247,6 +251,7 @@ async function runSeeds(): Promise<void> {
     password: dbConfig.password,
     database: dbConfig.database,
     port: dbConfig.port,
+    allowPublicKeyRetrieval: true,
   });
 
   try {
@@ -288,6 +293,7 @@ async function dropAllTables(): Promise<void> {
     password: dbConfig.password,
     database: dbConfig.database,
     port: dbConfig.port,
+    allowPublicKeyRetrieval: true,
   });
 
   try {
@@ -339,6 +345,7 @@ async function showStatus(): Promise<void> {
       password: dbConfig.password,
       database: dbConfig.database,
       port: dbConfig.port,
+      allowPublicKeyRetrieval: true,
     });
 
     dbOnline = true;
