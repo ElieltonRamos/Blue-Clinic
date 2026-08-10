@@ -132,15 +132,17 @@ export class Financial implements OnInit {
   }
 
   payCommissions(prof: ProfessionalRevenue): void {
-    const ids = prof.appointments
-      .filter((a) => this.selectedPayments.has(a.paymentId) && !a.commissionPaid)
-      .map((a) => a.paymentId);
+    const paidAppointments = prof.appointments.filter(
+      (a) => this.selectedPayments.has(a.paymentId) && !a.commissionPaid,
+    );
+    const ids = paidAppointments.map((a) => a.paymentId);
 
     if (ids.length === 0) return;
 
     this.service.payCommissions(ids).subscribe({
       next: () => {
         this.notify.success('Comissão(ões) marcada(s) como paga(s)');
+        this.printCommissionReceipt(prof, paidAppointments);
         ids.forEach((id) => this.selectedPayments.delete(id));
         this.loadAll();
       },
@@ -148,6 +150,81 @@ export class Financial implements OnInit {
         this.notify.error(this.getErrorMessage(err, 'Erro ao pagar comissão'));
       },
     });
+  }
+
+  reprintReceipt(
+    prof: ProfessionalRevenue,
+    apt: ProfessionalRevenue['appointments'][number],
+  ): void {
+    this.printCommissionReceipt(prof, [apt]);
+  }
+
+  private printCommissionReceipt(
+    prof: ProfessionalRevenue,
+    appointments: ProfessionalRevenue['appointments'],
+  ): void {
+    const total = appointments.reduce((s, a) => s + a.doctorEarnings, 0);
+
+    const rows = appointments
+      .map(
+        (apt) => `
+    <tr>
+      <td>${apt.date}</td>
+      <td>${apt.patientName}</td>
+      <td>${apt.specialty}</td>
+      <td>${apt.appointmentType ?? '—'}</td>
+      <td class="amount">${this.formatCurrency(apt.paymentValue)}</td>
+      <td class="amount" style="color:#1a6b3c">${this.formatCurrency(apt.doctorEarnings)}</td>
+    </tr>
+  `,
+      )
+      .join('');
+
+    this.printViaIframe(`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
+    ${this.baseStyles}
+    .prof-header { display: flex; justify-content: space-between; align-items: baseline; margin: 16px 0 6px; padding-bottom: 4px; border-bottom: 2px solid #1a1a2e; }
+    .prof-name { font-size: 10pt; font-weight: 700; }
+    .prof-meta { font-size: 8pt; color: #555; }
+    .signature { margin-top: 40px; display: flex; justify-content: space-between; }
+    .signature-line { width: 45%; border-top: 1px solid #1a1a2e; text-align: center; padding-top: 4px; font-size: 8pt; color: #555; }
+  </style></head><body>
+    ${this.printHeader}
+    <div class="section-title">Recibo de Pagamento de Comissão</div>
+    <div class="prof-header">
+      <div class="prof-name">${prof.name}</div>
+      <div class="prof-meta">
+        ${appointments.length} atendimento${appointments.length !== 1 ? 's' : ''}
+        &nbsp;|&nbsp; Pago em: ${this.getTodayFormatted()}
+      </div>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Data</th>
+          <th>Paciente</th>
+          <th>Especialidade</th>
+          <th>Tipo</th>
+          <th>Valor Pago</th>
+          <th>Comissão</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+      <tfoot>
+        <tr>
+          <td colspan="5"><strong>Total Pago</strong></td>
+          <td class="total">${this.formatCurrency(total)}</td>
+        </tr>
+      </tfoot>
+    </table>
+    <div class="signature">
+      <div class="signature-line">${prof.name}</div>
+      <div class="signature-line">Responsável pelo pagamento</div>
+    </div>
+    <div class="print-footer">
+      <span>${this.companyData?.tradeName || ''} — BlueClinic</span>
+      <span>Gerado em ${this.getTodayFormatted()}</span>
+    </div>
+  </body></html>`);
   }
 
   setRange(range: 'hoje' | 'semana' | 'mes'): void {

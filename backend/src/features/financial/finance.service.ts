@@ -1,7 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {
   Injectable,
   BadRequestException,
@@ -340,17 +336,57 @@ export class FinanceService {
     paymentIds: number[],
     paidById: number,
   ) {
-    return this.prisma.client.payment.updateMany({
+    const payments = await this.prisma.client.payment.findMany({
       where: {
         id: { in: paymentIds },
         commissionPaid: false,
         appointment: { doctor: { companyId } },
       },
-      data: {
-        commissionPaid: true,
-        commissionPaidAt: new Date(),
-        commissionPaidById: paidById,
+      select: {
+        id: true,
+        doctorEarnings: true,
+        appointment: {
+          select: {
+            doctor: { select: { name: true } },
+            patient: { select: { name: true } },
+          },
+        },
       },
+    });
+
+    if (payments.length === 0) {
+      return { count: 0 };
+    }
+
+    const now = new Date();
+
+    return this.prisma.client.$transaction(async (tx) => {
+      const updated = await tx.payment.updateMany({
+        where: {
+          id: { in: payments.map((p) => p.id) },
+          commissionPaid: false,
+          appointment: { doctor: { companyId } },
+        },
+        data: {
+          commissionPaid: true,
+          commissionPaidAt: now,
+          commissionPaidById: paidById,
+        },
+      });
+
+      await tx.expense.createMany({
+        data: payments.map((p) => ({
+          companyId,
+          registeredById: paidById,
+          description: `Comissão - ${p.appointment.doctor.name} (${p.appointment.patient.name})`,
+          category: 'Comissões',
+          value: p.doctorEarnings,
+          date: now,
+          status: 'pago' as const,
+        })),
+      });
+
+      return updated;
     });
   }
 

@@ -363,6 +363,13 @@
                           {{ formatCurrency(apt.doctorEarnings) }}
                           @if (apt.commissionPaid) {
                             <span class="text-[9px] uppercase ml-1 text-success">✓ Pago</span>
+                            <button
+                              (click)="reprintReceipt(prof, apt)"
+                              title="Reimprimir recibo"
+                              class="text-[9px] ml-1 px-1.5 py-0.5 rounded-full bg-(--color-bg-overlay) text-(--color-text-muted) hover:opacity-80 transition-opacity"
+                            >
+                              Imprimir Recibo 🖨
+                            </button>
                           }
                         </p>
                       </div>
@@ -475,89 +482,97 @@
       </div>
 
       <!-- Coluna direita: Transações Recentes -->
-      <div class="rounded-xl border border-(--color-border) bg-bg-sidebar p-4 flex flex-col gap-3">
-        <div class="flex items-center justify-between mb-1">
-          <p class="text-[13px] font-semibold text-(--color-text-primary)">Transações Recentes</p>
+      @if (isAdmin()) {
+        <div
+          class="rounded-xl border border-(--color-border) bg-bg-sidebar p-4 flex flex-col gap-3"
+        >
+          <div class="flex items-center justify-between mb-1">
+            <p class="text-[13px] font-semibold text-(--color-text-primary)">Transações Recentes</p>
+            <button
+              class="text-(--color-text-muted) hover:text-(--color-text-primary) transition-colors text-[16px] leading-none"
+            >
+              ≡
+            </button>
+          </div>
+
+          <div class="flex flex-col gap-3">
+            @for (tx of transactions; track tx.id) {
+              <div
+                class="rounded-xl border border-(--color-border) bg-bg-card p-3 flex flex-col gap-2"
+              >
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-1.5">
+                    <span
+                      class="w-2 h-2 rounded-full shrink-0"
+                      [class]="tx.type === 'entrada' ? 'bg-success' : 'bg-(--color-danger)'"
+                    ></span>
+                    <span
+                      class="text-[10px] font-semibold uppercase tracking-wider"
+                      [class]="tx.type === 'entrada' ? 'text-success' : 'text-(--color-danger)'"
+                    >
+                      {{ tx.type }}
+                    </span>
+                    <span class="text-[10px] text-text-disabled"
+                      >{{ tx.date }} • {{ tx.time }}</span
+                    >
+                  </div>
+
+                  <!-- métodos: exibe badges para cada um -->
+                  <div class="flex items-center gap-1 flex-wrap justify-end">
+                    @for (method of tx.methods; track method) {
+                      <span
+                        class="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full"
+                        [class]="methodClass(method)"
+                      >
+                        {{ methodLabel(method) }}
+                      </span>
+                    }
+                  </div>
+                </div>
+
+                <p class="text-[13px] font-semibold text-(--color-text-primary)">
+                  {{ tx.patient }}
+                </p>
+
+                <div class="grid grid-cols-2 gap-1">
+                  <div>
+                    <p class="text-[9px] uppercase tracking-wider text-(--color-text-muted)">
+                      Médico Resp
+                    </p>
+                    <p class="text-[11px] text-(--color-text-secondary)">{{ tx.doctor }}</p>
+                  </div>
+                  <div>
+                    <p class="text-[9px] uppercase tracking-wider text-(--color-text-muted)">
+                      Registrado por
+                    </p>
+                    <p class="text-[11px] text-(--color-text-secondary)">{{ tx.registeredBy }}</p>
+                  </div>
+                </div>
+
+                <p
+                  class="text-[14px] font-bold"
+                  [class]="tx.type === 'entrada' ? 'text-success' : 'text-(--color-danger)'"
+                >
+                  {{ tx.type === 'entrada' ? '+' : '-' }} {{ formatCurrency(tx.value) }}
+                </p>
+              </div>
+            }
+
+            @if (transactions.length === 0) {
+              <p class="text-[12px] text-(--color-text-muted) text-center py-6">
+                Nenhuma transação no período
+              </p>
+            }
+          </div>
+
           <button
-            class="text-(--color-text-muted) hover:text-(--color-text-primary) transition-colors text-[16px] leading-none"
+            (click)="exportTransactions()"
+            class="mt-1 w-full py-2 rounded-lg border border-(--color-border) bg-bg-card text-[12px] font-medium text-(--color-text-secondary) hover:bg-(--color-bg-hover-md) transition-colors"
           >
-            ≡
+            Gerar Extrato em PDF
           </button>
         </div>
-
-        <div class="flex flex-col gap-3">
-          @for (tx of transactions; track tx.id) {
-            <div
-              class="rounded-xl border border-(--color-border) bg-bg-card p-3 flex flex-col gap-2"
-            >
-              <div class="flex items-center justify-between">
-                <div class="flex items-center gap-1.5">
-                  <span
-                    class="w-2 h-2 rounded-full shrink-0"
-                    [class]="tx.type === 'entrada' ? 'bg-success' : 'bg-(--color-danger)'"
-                  ></span>
-                  <span
-                    class="text-[10px] font-semibold uppercase tracking-wider"
-                    [class]="tx.type === 'entrada' ? 'text-success' : 'text-(--color-danger)'"
-                  >
-                    {{ tx.type }}
-                  </span>
-                  <span class="text-[10px] text-text-disabled">{{ tx.date }} • {{ tx.time }}</span>
-                </div>
-
-                <!-- métodos: exibe badges para cada um -->
-                <div class="flex items-center gap-1 flex-wrap justify-end">
-                  @for (method of tx.methods; track method) {
-                    <span
-                      class="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full"
-                      [class]="methodClass(method)"
-                    >
-                      {{ methodLabel(method) }}
-                    </span>
-                  }
-                </div>
-              </div>
-
-              <p class="text-[13px] font-semibold text-(--color-text-primary)">{{ tx.patient }}</p>
-
-              <div class="grid grid-cols-2 gap-1">
-                <div>
-                  <p class="text-[9px] uppercase tracking-wider text-(--color-text-muted)">
-                    Médico Resp
-                  </p>
-                  <p class="text-[11px] text-(--color-text-secondary)">{{ tx.doctor }}</p>
-                </div>
-                <div>
-                  <p class="text-[9px] uppercase tracking-wider text-(--color-text-muted)">
-                    Registrado por
-                  </p>
-                  <p class="text-[11px] text-(--color-text-secondary)">{{ tx.registeredBy }}</p>
-                </div>
-              </div>
-
-              <p
-                class="text-[14px] font-bold"
-                [class]="tx.type === 'entrada' ? 'text-success' : 'text-(--color-danger)'"
-              >
-                {{ tx.type === 'entrada' ? '+' : '-' }} {{ formatCurrency(tx.value) }}
-              </p>
-            </div>
-          }
-
-          @if (transactions.length === 0) {
-            <p class="text-[12px] text-(--color-text-muted) text-center py-6">
-              Nenhuma transação no período
-            </p>
-          }
-        </div>
-
-        <button
-          (click)="exportTransactions()"
-          class="mt-1 w-full py-2 rounded-lg border border-(--color-border) bg-bg-card text-[12px] font-medium text-(--color-text-secondary) hover:bg-(--color-bg-hover-md) transition-colors"
-        >
-          Gerar Extrato em PDF
-        </button>
-      </div>
+      }
     </div>
   }
 </div>
