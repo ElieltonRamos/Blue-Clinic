@@ -17,6 +17,7 @@ import {
 import { FormField, ModalEditEntity } from '../../../shared/modal-edit-entity/modal-edit-entity';
 import { SettingsService } from '../../settings/services/settings.service';
 import { CompanyData } from '../../settings/types/settings.types';
+import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
   selector: 'app-financeiro',
@@ -29,6 +30,9 @@ export class Financial implements OnInit {
   private service = inject(FinanceiroService);
   private notify = inject(NotificationService);
   private settingsService = inject(SettingsService);
+  private auth = inject(AuthService);
+
+  isAdmin = signal(false);
   companyData: CompanyData | null = null;
 
   summary: FinanceSummary = { totalEntradas: 0, entradasChange: 0, totalSaidas: 0, saidasCount: 0 };
@@ -75,6 +79,7 @@ export class Financial implements OnInit {
   ];
 
   ngOnInit(): void {
+    this.isAdmin.set(this.auth.getTokenPayload()?.role === 'admin');
     this.setRange('hoje');
     this.settingsService.getCompany().subscribe({
       next: (company) => (this.companyData = company),

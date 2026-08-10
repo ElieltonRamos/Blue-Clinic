@@ -17,6 +17,7 @@ import {
 import { NotificationService } from '../../../shared/toastr/notification.service';
 import { FormField, ModalEditEntity } from '../../../shared/modal-edit-entity/modal-edit-entity';
 import { alertConfirm } from '../../../shared/alerts/custom-alerts';
+import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
   selector: 'app-settings',
@@ -28,6 +29,9 @@ import { alertConfirm } from '../../../shared/alerts/custom-alerts';
 export class Settings implements OnInit {
   private settingsService = inject(SettingsService);
   private notification = inject(NotificationService);
+  private auth = inject(AuthService);
+
+  isAdmin = signal(false);
 
   version = version;
   members = signal<TeamMember[]>([]);
@@ -133,6 +137,7 @@ export class Settings implements OnInit {
   ];
 
   ngOnInit(): void {
+    this.isAdmin.set(this.auth.getTokenPayload()?.role === 'admin');
     this.loadMembers();
     this.loadCompany();
     this.loadIntegration();

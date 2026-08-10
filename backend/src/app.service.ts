@@ -685,7 +685,7 @@ export class AppService implements OnApplicationBootstrap {
 
       if (!mysqldumpPath) {
         console.log('❌ Variável de ambiente MYSQLDUMP_PATH não definida');
-        throw new Error('MYSQLDUMP_PATH não definida');
+        return;
       }
 
       const command = `"${mysqldumpPath}" -h ${dbHost} -P ${dbPort} -u ${dbUser} -p${dbPassword} ${dbName} > "${backupFile}"`;

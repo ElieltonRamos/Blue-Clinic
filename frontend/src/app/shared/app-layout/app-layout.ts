@@ -27,7 +27,7 @@ export class AppLayout implements OnInit {
 
   mainNav: NavItem[] = [
     {
-      label: 'Dashboard',
+      label: 'Visão Geral',
       title: 'Visão Geral da Clínica',
       route: '/dashboard',
       icon: 'grid',
@@ -97,7 +97,7 @@ export class AppLayout implements OnInit {
       title: 'Configurações',
       route: '/dashboard/configuracoes',
       icon: 'settings',
-      roles: ['admin'],
+      roles: ['admin', 'atendimento'],
     },
     {
       label: 'Sair',
