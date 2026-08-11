@@ -39,6 +39,7 @@ import { UpdateBlockedSlotDto } from './dto/update-blocked-slot.dto.js';
 import { CreateBlockedSlotDto } from './dto/create-blocked-slot.dto.js';
 import { UpdateAppointmentStatusDto } from './dto/update-appointment-status.dto.js';
 import { RateAppointmentDto } from './dto/rate-appointment.dto.js';
+import { UpdatePaymentDto } from './dto/update-payment.dto.js';
 
 @ApiTags('Agendamentos')
 @ApiBearerAuth()
@@ -299,5 +300,50 @@ export class AppointmentsController {
     @Body() dto: RateAppointmentDto,
   ): Promise<AppointmentResponseDto> {
     return this.appointmentsService.rateAppointment(id, companyId, dto.rating);
+  }
+
+  @Put(':id/payments/:paymentId')
+  @Roles('admin')
+  @ApiOperation({ summary: 'Editar pagamento de agendamento (somente admin)' })
+  @ApiParam({ name: 'id', type: Number })
+  @ApiParam({ name: 'paymentId', type: Number })
+  @ApiResponse({ status: HttpStatus.OK, type: PaymentResponseDto })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Agendamento ou pagamento não encontrado',
+  })
+  updatePayment(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('paymentId', ParseIntPipe) paymentId: number,
+    @CurrentUser('companyId') companyId: number,
+    @Body() dto: UpdatePaymentDto,
+  ) {
+    return this.appointmentsService.updatePayment(
+      id,
+      paymentId,
+      companyId,
+      dto,
+    );
+  }
+
+  @Delete(':id/payments/:paymentId')
+  @Roles('admin')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'Estornar pagamento de agendamento (somente admin)',
+  })
+  @ApiParam({ name: 'id', type: Number })
+  @ApiParam({ name: 'paymentId', type: Number })
+  @ApiResponse({ status: HttpStatus.NO_CONTENT })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Agendamento ou pagamento não encontrado',
+  })
+  reversePayment(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('paymentId', ParseIntPipe) paymentId: number,
+    @CurrentUser('companyId') companyId: number,
+  ) {
+    return this.appointmentsService.reversePayment(id, paymentId, companyId);
   }
 }

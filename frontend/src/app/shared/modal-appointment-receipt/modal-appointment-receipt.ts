@@ -7,13 +7,16 @@ import {
   OnInit,
   ChangeDetectorRef,
 } from '@angular/core';
-import { PaymentResponseDto } from '../../features/calendar/types/calendar.types';
+import { PaymentEntry, PaymentResponseDto } from '../../features/calendar/types/calendar.types';
 import { NotificationService } from '../toastr/notification.service';
 import { CompanyData } from '../../features/settings/types/settings.types';
 import { SettingsService } from '../../features/settings/services/settings.service';
 import { PaymentMethod } from '../../features/financial/types/financial.types';
 import { FiscalService } from '../../features/fiscal/services/fiscal.service';
 import { PlatformService } from '../../core/services/platform.service';
+import { CalendarService } from '../../features/calendar/services/calendar.service';
+import { AuthService } from '../../core/services/auth.service';
+import { FormsModule } from '@angular/forms';
 
 const METHOD_LABELS: Record<string, string> = {
   pix: 'PIX',
@@ -23,18 +26,29 @@ const METHOD_LABELS: Record<string, string> = {
 
 @Component({
   selector: 'app-modal-appointment-receipt',
-  imports: [],
+  imports: [FormsModule],
   templateUrl: './modal-appointment-receipt.html',
 })
 export class ModalAppointmentReceipt implements OnInit {
   @Input() paymentData!: PaymentResponseDto;
   @Output() closeModal = new EventEmitter<void>();
+  @Output() paymentUpdated = new EventEmitter<void>();
+  @Output() paymentReversed = new EventEmitter<void>();
 
   private companyService = inject(SettingsService);
   private fiscalService = inject(FiscalService);
   private notification = inject(NotificationService);
   private cdr = inject(ChangeDetectorRef);
   private platform = inject(PlatformService);
+  private calendarService = inject(CalendarService);
+  private authService = inject(AuthService);
+
+  isAdmin = false;
+  editMode = false;
+  editEntries: PaymentEntry[] = [];
+  editDiscount = 0;
+  saving = false;
+  reversing = false;
 
   companyData: CompanyData | null = null;
 
@@ -48,6 +62,7 @@ export class ModalAppointmentReceipt implements OnInit {
     this.invoiceIssued = this.paymentData.invoiceIssued;
     this.invoiceXmlUrl = this.paymentData.invoiceXmlUrl;
     this.invoicePdfUrl = this.paymentData.invoicePdfUrl;
+    this.isAdmin = this.authService.getTokenPayload()?.role === 'admin';
 
     this.companyService.getCompany().subscribe({
       next: (company) => {
@@ -56,6 +71,77 @@ export class ModalAppointmentReceipt implements OnInit {
       },
       error: () => this.notification.error('Erro ao carregar dados da empresa'),
     });
+  }
+
+  startEdit(): void {
+    this.editEntries = this.paymentData.entries.map((e) => ({ ...e }));
+    this.editDiscount = this.paymentData.discount ?? 0;
+    this.editMode = true;
+  }
+
+  cancelEdit(): void {
+    this.editMode = false;
+  }
+
+  saveEdit(): void {
+    if (this.saving) return;
+    this.saving = true;
+    this.calendarService
+      .updatePayment(
+        this.paymentData.appointmentId,
+        this.paymentData.id,
+        this.editEntries,
+        this.editDiscount,
+      )
+      .subscribe({
+        next: (updated) => {
+          this.paymentData = { ...this.paymentData, ...updated };
+          this.editMode = false;
+          this.saving = false;
+          this.notification.success('Pagamento atualizado com sucesso.');
+          this.paymentUpdated.emit();
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          this.notification.error('Erro ao atualizar pagamento.');
+          this.saving = false;
+          this.cdr.detectChanges();
+        },
+      });
+  }
+
+  addEntry(): void {
+    this.editEntries.push({ method: 'pix', amount: 0, change: 0 } as PaymentEntry);
+  }
+
+  removeEntry(index: number): void {
+    this.editEntries.splice(index, 1);
+  }
+
+  reversePayment(): void {
+    if (this.reversing) return;
+    if (
+      !confirm(
+        'Estornar este pagamento? O agendamento voltará para cancelado e esta ação não pode ser desfeita.',
+      )
+    )
+      return;
+
+    this.reversing = true;
+    this.calendarService
+      .reversePayment(this.paymentData.appointmentId, this.paymentData.id)
+      .subscribe({
+        next: () => {
+          this.notification.success('Pagamento estornado com sucesso.');
+          this.paymentReversed.emit();
+          this.close();
+        },
+        error: () => {
+          this.notification.error('Erro ao estornar pagamento.');
+          this.reversing = false;
+          this.cdr.detectChanges();
+        },
+      });
   }
 
   getFormattedDate(): string {

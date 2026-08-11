@@ -21,6 +21,7 @@ import {
   SlotStatus,
 } from './dto/available-slots.dto.js';
 import { UpdateAppointmentStatusDto } from './dto/update-appointment-status.dto.js';
+import { UpdatePaymentDto } from './dto/update-payment.dto.js';
 
 @Injectable()
 export class AppointmentsService {
@@ -641,6 +642,107 @@ export class AppointmentsService {
     });
 
     return new AppointmentResponseDto(appointment);
+  }
+
+  async updatePayment(
+    appointmentId: number,
+    paymentId: number,
+    companyId: number,
+    dto: UpdatePaymentDto,
+  ): Promise<PaymentResponseDto> {
+    const appointment = await this.prisma.client.appointment.findFirst({
+      where: { id: appointmentId, doctor: { companyId } },
+      include: {
+        patient: { select: { name: true } },
+        doctor: { select: { name: true } },
+        appointmentType: { select: { name: true } },
+      },
+    });
+    if (!appointment) throw new NotFoundException('Agendamento não encontrado');
+
+    const existingPayment = await this.prisma.client.payment.findFirst({
+      where: { id: paymentId, appointmentId },
+    });
+    if (!existingPayment)
+      throw new NotFoundException('Pagamento não encontrado');
+
+    const discount = Number(dto.discount ?? 0);
+    const total = dto.entries.reduce(
+      (sum, e) => sum + Number(e.amount) - Number(e.change ?? 0),
+      0,
+    );
+    if (total <= 0)
+      throw new BadRequestException('Valor total deve ser maior que zero');
+
+    const { doctorEarnings, clinicEarnings } = await this.resolveCommissions(
+      { ...appointment, feeOverride: null }, // recalcula com base no novo total
+      total,
+    );
+
+    const updated = await this.prisma.client.$transaction(
+      async (tx: Prisma.TransactionClient) => {
+        await tx.paymentEntry.deleteMany({ where: { paymentId } });
+
+        const payment = await tx.payment.update({
+          where: { id: paymentId },
+          data: {
+            value: total,
+            discount,
+            doctorEarnings,
+            clinicEarnings,
+            entries: {
+              create: dto.entries.map((e) => ({
+                method: e.method,
+                amount: e.amount,
+                change: e.change ?? 0,
+              })),
+            },
+          },
+          include: { entries: true },
+        });
+
+        // mantém o valor do agendamento consistente com o novo pagamento
+        await tx.appointment.update({
+          where: { id: appointmentId },
+          data: { feeOverride: total + discount },
+        });
+
+        return payment;
+      },
+    );
+
+    return new PaymentResponseDto({
+      ...updated,
+      specialty: appointment.specialty,
+      startTime: appointment.startTime,
+      appointmentTypeName: appointment.appointmentType?.name ?? null,
+    });
+  }
+
+  async reversePayment(
+    appointmentId: number,
+    paymentId: number,
+    companyId: number,
+  ): Promise<void> {
+    const appointment = await this.prisma.client.appointment.findFirst({
+      where: { id: appointmentId, doctor: { companyId } },
+    });
+    if (!appointment) throw new NotFoundException('Agendamento não encontrado');
+
+    const payment = await this.prisma.client.payment.findFirst({
+      where: { id: paymentId, appointmentId },
+    });
+    if (!payment) throw new NotFoundException('Pagamento não encontrado');
+
+    await this.prisma.client.$transaction(
+      async (tx: Prisma.TransactionClient) => {
+        await tx.payment.delete({ where: { id: paymentId } });
+        await tx.appointment.update({
+          where: { id: appointmentId },
+          data: { status: 'cancelled' },
+        });
+      },
+    );
   }
 
   // ── Helpers ────────────────────────────────────────────────────────────────

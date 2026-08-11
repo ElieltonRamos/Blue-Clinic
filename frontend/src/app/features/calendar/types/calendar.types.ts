@@ -87,6 +87,7 @@ export interface PaymentResponseDto {
   patient: string;
   doctor: string;
   value: number;
+  discount: number;
   doctorEarnings: number;
   clinicEarnings: number;
   specialty: string | null;

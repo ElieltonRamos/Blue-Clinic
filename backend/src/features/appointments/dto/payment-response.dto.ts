@@ -53,6 +53,9 @@ export class PaymentResponseDto {
   @ApiProperty({ example: 90.0 })
   clinicEarnings: number;
 
+  @ApiProperty({ example: 10.0 })
+  discount: number;
+
   @ApiPropertyOptional({ example: 'Cardiologia', nullable: true })
   specialty: string | null;
 
@@ -90,6 +93,7 @@ export class PaymentResponseDto {
     this.patient = p.patient;
     this.doctor = p.doctor;
     this.value = Number(p.value);
+    this.discount = Number(p.discount ?? 0);
     this.doctorEarnings = Number(p.doctorEarnings);
     this.clinicEarnings = Number(p.clinicEarnings);
     this.specialty = p.specialty ?? null;

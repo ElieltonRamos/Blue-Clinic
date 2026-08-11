@@ -68,17 +68,97 @@
         <strong>Total Pago: R$</strong> {{ formatNumber(paymentData.value) }}
       </p>
 
-      <div class="mt-2">
-        <strong>Pagamento:</strong>
-        @for (entry of paymentData.entries; track entry.method) {
-          <p>
-            {{ methodLabel(entry.method) }}: R$ {{ formatNumber(entry.amount) }}
-            @if (entry.change > 0) {
-              <span> | Troco: R$ {{ formatNumber(entry.change) }}</span>
-            }
-          </p>
+      @if (!editMode) {
+        <div class="mt-2">
+          <strong>Pagamento:</strong>
+          @for (entry of paymentData.entries; track entry.method) {
+            <p>
+              {{ methodLabel(entry.method) }}: R$ {{ formatNumber(entry.amount) }}
+              @if (entry.change > 0) {
+                <span> | Troco: R$ {{ formatNumber(entry.change) }}</span>
+              }
+            </p>
+          }
+          @if (paymentData.discount > 0) {
+            <p><strong>Desconto:</strong> R$ {{ formatNumber(paymentData.discount) }}</p>
+          }
+        </div>
+
+        @if (isAdmin) {
+          <div class="mt-3 flex gap-2 no-print">
+            <button
+              (click)="startEdit()"
+              class="flex-1 bg-slate-700 text-white py-2 px-3 rounded hover:bg-slate-800 transition text-sm font-medium"
+            >
+              Editar pagamento
+            </button>
+            <button
+              (click)="reversePayment()"
+              [disabled]="reversing"
+              class="flex-1 bg-red-600 text-white py-2 px-3 rounded hover:bg-red-700 transition text-sm font-medium disabled:opacity-50"
+            >
+              {{ reversing ? 'Estornando...' : 'Estornar pagamento' }}
+            </button>
+          </div>
         }
-      </div>
+      } @else {
+        <div class="mt-2 no-print">
+          <strong>Editar pagamento:</strong>
+          @for (entry of editEntries; track $index) {
+            <div class="flex gap-2 items-center mt-2">
+              <select [(ngModel)]="entry.method" class="border rounded px-2 py-1 text-sm">
+                <option value="pix">PIX</option>
+                <option value="dinheiro">Dinheiro</option>
+                <option value="cartao">Cartão</option>
+              </select>
+              <input
+                type="number"
+                step="0.01"
+                [(ngModel)]="entry.amount"
+                class="border rounded px-2 py-1 text-sm w-24"
+                placeholder="Valor"
+              />
+              <input
+                type="number"
+                step="0.01"
+                [(ngModel)]="entry.change"
+                class="border rounded px-2 py-1 text-sm w-24"
+                placeholder="Troco"
+              />
+              <button (click)="removeEntry($index)" class="text-red-600 text-sm">Remover</button>
+            </div>
+          }
+          <button (click)="addEntry()" class="mt-2 text-sm text-blue-600">
+            + Adicionar forma de pagamento
+          </button>
+
+          <div class="mt-3">
+            <label class="text-sm font-medium">Desconto:</label>
+            <input
+              type="number"
+              step="0.01"
+              [(ngModel)]="editDiscount"
+              class="border rounded px-2 py-1 text-sm w-24 ml-2"
+            />
+          </div>
+
+          <div class="mt-3 flex gap-2">
+            <button
+              (click)="saveEdit()"
+              [disabled]="saving"
+              class="flex-1 bg-green-600 text-white py-2 px-3 rounded hover:bg-green-700 transition text-sm font-medium disabled:opacity-50"
+            >
+              {{ saving ? 'Salvando...' : 'Salvar' }}
+            </button>
+            <button
+              (click)="cancelEdit()"
+              class="flex-1 bg-gray-300 text-gray-800 py-2 px-3 rounded hover:bg-gray-400 transition text-sm font-medium"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      }
 
       <div class="mt-4 pt-3 border-t border-gray-200 no-print">
         <div class="flex items-center justify-between mb-1">

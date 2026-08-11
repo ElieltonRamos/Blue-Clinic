@@ -75,4 +75,26 @@ export class CalendarService {
       `${this.apiUrl}/chat/conversations/by-patient/${patientId}`,
     );
   }
+
+  updatePayment(
+    appointmentId: number,
+    paymentId: number,
+    entries: PaymentEntry[],
+    discount: number,
+  ) {
+    const body: CreatePaymentRequest = {
+      entries: entries.map(({ method, amount, change }) => ({ method, amount, change })),
+      discount,
+    };
+    return this.http.put<PaymentResponseDto>(
+      `${this.apiUrl}/appointments/${appointmentId}/payments/${paymentId}`,
+      body,
+    );
+  }
+
+  reversePayment(appointmentId: number, paymentId: number) {
+    return this.http.delete<void>(
+      `${this.apiUrl}/appointments/${appointmentId}/payments/${paymentId}`,
+    );
+  }
 }
