@@ -53,6 +53,7 @@ export interface Appointment {
   notes?: string;
   cancellationReason?: string;
   price?: number;
+  appointmentTypeName?: string;
 }
 
 export interface BlockedSlot {

@@ -513,8 +513,10 @@ export class Schedule implements OnInit {
       this.notification.error('Taxas devem ser maiores ou iguais a zero');
       return false;
     }
-    if (form.price <= 0) {
-      this.notification.error('Preço deve ser maior que zero');
+    const type = this.appointmentTypes.find((t) => t.id === form.appointmentTypeId);
+    const isRetorno = type?.name.toLowerCase() === 'retorno';
+    if (form.price < 0 || (form.price === 0 && !isRetorno)) {
+      this.notification.error('Preço deve ser maior que zero2');
       return false;
     }
     if (form.nfDeductionEnabled && form.nfDeductionValue < 0) {

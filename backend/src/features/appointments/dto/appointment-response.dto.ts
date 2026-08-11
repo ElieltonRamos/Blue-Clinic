@@ -52,6 +52,9 @@ export class AppointmentResponseDto {
   })
   cancellationReason?: string;
 
+  @ApiPropertyOptional({ example: 'Retorno', description: 'Tipo de consulta' })
+  appointmentTypeName?: string;
+
   constructor(data: any) {
     this.id = String(data.id);
     this.doctorId = String(data.doctorId);
@@ -59,6 +62,7 @@ export class AppointmentResponseDto {
     this.patientId = String(data.patient?.id);
     this.specialty = data.specialty;
     this.date = data.date.toISOString().split('T')[0];
+    this.appointmentTypeName = data.appointmentType?.name ?? undefined;
     this.startTime = data.startTime;
     this.endTime = data.endTime;
     this.status = data.status;

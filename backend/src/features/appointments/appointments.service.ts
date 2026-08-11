@@ -23,6 +23,12 @@ import {
 import { UpdateAppointmentStatusDto } from './dto/update-appointment-status.dto.js';
 import { UpdatePaymentDto } from './dto/update-payment.dto.js';
 
+const APPOINTMENT_INCLUDE = {
+  patient: { select: { id: true, name: true } },
+  doctor: { select: { id: true, name: true, specialty: true } },
+  appointmentType: { select: { name: true } },
+} satisfies Prisma.AppointmentInclude;
+
 @Injectable()
 export class AppointmentsService {
   constructor(private prisma: PrismaService) {}
@@ -57,10 +63,7 @@ export class AppointmentsService {
 
     const appointments = await this.prisma.client.appointment.findMany({
       where,
-      include: {
-        patient: { select: { id: true, name: true } },
-        doctor: { select: { id: true, name: true, specialty: true } },
-      },
+      include: APPOINTMENT_INCLUDE,
       orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
     });
 
@@ -73,10 +76,7 @@ export class AppointmentsService {
   ): Promise<AppointmentResponseDto> {
     const appointment = await this.prisma.client.appointment.findFirst({
       where: { id, doctor: { companyId } },
-      include: {
-        patient: { select: { id: true, name: true } },
-        doctor: { select: { id: true, name: true, specialty: true } },
-      },
+      include: APPOINTMENT_INCLUDE,
     });
 
     if (!appointment) throw new NotFoundException('Agendamento não encontrado');
@@ -117,10 +117,7 @@ export class AppointmentsService {
         origin: dto.origin ?? 'presencial',
         ...(feeOverride !== null && { feeOverride }),
       },
-      include: {
-        patient: { select: { id: true, name: true } },
-        doctor: { select: { id: true, name: true, specialty: true } },
-      },
+      include: APPOINTMENT_INCLUDE,
     });
 
     return new AppointmentResponseDto(appointment);
@@ -150,10 +147,7 @@ export class AppointmentsService {
     const updated = await this.prisma.client.appointment.update({
       where: { id },
       data: { rating },
-      include: {
-        patient: { select: { id: true, name: true } },
-        doctor: { select: { id: true, name: true, specialty: true } },
-      },
+      include: APPOINTMENT_INCLUDE,
     });
 
     return new AppointmentResponseDto(updated);
@@ -192,10 +186,7 @@ export class AppointmentsService {
     const appointment = await this.prisma.client.appointment.update({
       where: { id },
       data,
-      include: {
-        patient: { select: { id: true, name: true } },
-        doctor: { select: { id: true, name: true, specialty: true } },
-      },
+      include: APPOINTMENT_INCLUDE,
     });
 
     return new AppointmentResponseDto(appointment);
@@ -621,7 +612,11 @@ export class AppointmentsService {
     companyId: number,
     dto: UpdateAppointmentStatusDto,
   ): Promise<AppointmentResponseDto> {
-    await this.findOne(id, companyId);
+    const appointment = await this.prisma.client.appointment.findFirst({
+      where: { id, doctor: { companyId } },
+      include: { appointmentType: { select: { name: true } } },
+    });
+    if (!appointment) throw new NotFoundException('Agendamento não encontrado');
 
     const data: Prisma.AppointmentUpdateInput = { status: dto.status };
 
@@ -632,16 +627,32 @@ export class AppointmentsService {
       data.cancellationReason = dto.cancellationReason.trim();
     }
 
-    const appointment = await this.prisma.client.appointment.update({
+    if (
+      dto.status === 'paid' &&
+      appointment.appointmentType?.name.toLowerCase() !== 'retorno'
+    ) {
+      throw new BadRequestException(
+        'Este tipo de consulta deve ser pago via registro de pagamento',
+      );
+    }
+
+    if (
+      dto.status === 'finished' &&
+      appointment.status !== 'paid' &&
+      appointment.appointmentType?.name.toLowerCase() !== 'retorno'
+    ) {
+      throw new BadRequestException(
+        'Este tipo de consulta precisa ser pago antes de ser finalizado',
+      );
+    }
+
+    const updated = await this.prisma.client.appointment.update({
       where: { id },
       data,
-      include: {
-        patient: { select: { id: true, name: true } },
-        doctor: { select: { id: true, name: true, specialty: true } },
-      },
+      include: APPOINTMENT_INCLUDE,
     });
 
-    return new AppointmentResponseDto(appointment);
+    return new AppointmentResponseDto(updated);
   }
 
   async updatePayment(

@@ -331,6 +331,12 @@ export class DoctorsService {
     });
     if (!type) throw new NotFoundException('Tipo de consulta não encontrado');
 
+    if (dto.price === 0 && type.name.toLowerCase() !== 'retorno') {
+      throw new BadRequestException(
+        'Apenas o tipo "retorno" pode ter valor zero',
+      );
+    }
+
     const conflict =
       await this.prisma.client.appointmentTypeCommission.findUnique({
         where: {
@@ -382,8 +388,20 @@ export class DoctorsService {
     const commission =
       await this.prisma.client.appointmentTypeCommission.findFirst({
         where: { id: commissionId, doctorId },
+        include: {
+          appointmentType: { select: { name: true } },
+        },
       });
     if (!commission) throw new NotFoundException('Comissão não encontrada');
+
+    if (
+      dto.price === 0 &&
+      commission.appointmentType.name.toLowerCase() !== 'retorno'
+    ) {
+      throw new BadRequestException(
+        'Apenas o tipo "retorno" pode ter valor zero',
+      );
+    }
 
     const updated = await this.prisma.client.appointmentTypeCommission.update({
       where: { id: commissionId },

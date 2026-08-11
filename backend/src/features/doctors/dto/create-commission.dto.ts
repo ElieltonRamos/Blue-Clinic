@@ -45,7 +45,7 @@ export class CreateCommissionDto {
 
   @ApiProperty({ description: 'Valor cobrado do paciente', example: 300.0 })
   @IsNumber({}, { message: 'Valor deve ser um número' })
-  @IsPositive({ message: 'Valor deve ser maior que zero' })
+  @Min(0, { message: 'Valor não pode ser negativo' })
   @Type(() => Number)
   price: number;
 

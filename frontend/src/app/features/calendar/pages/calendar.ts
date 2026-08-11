@@ -335,6 +335,41 @@ export class Calendar implements OnInit {
     });
   }
 
+  handlePayClick(apt: Appointment): void {
+    if (this.isRetorno(apt)) {
+      this.completeRetorno(apt);
+    } else {
+      this.closeModal();
+      this.openPaymentModal(apt);
+    }
+  }
+
+  isRetorno(apt: Appointment): boolean {
+    return apt.appointmentTypeName?.toLowerCase() === 'retorno';
+  }
+
+  payButtonLabel(apt: Appointment): string {
+    return this.isRetorno(apt) ? 'Concluir Retorno' : 'Pagar';
+  }
+
+  private completeRetorno(apt: Appointment): void {
+    if (this.actionLoading()) return;
+    this.actionLoading.set(true);
+
+    this.service.updateStatus(apt.id, 'finished').subscribe({
+      next: () => {
+        this.updateAppointmentStatus(apt.id, 'finished');
+        this.notify.success('Retorno concluído');
+        this.actionLoading.set(false);
+        this.closeModal();
+      },
+      error: (err: HttpErrorResponse) => {
+        this.notify.error(this.getErrorMessage(err, 'Erro ao concluir retorno'));
+        this.actionLoading.set(false);
+      },
+    });
+  }
+
   finishAppointment(apt: Appointment): void {
     if (this.actionLoading()) return;
     this.actionLoading.set(true);
@@ -567,6 +602,11 @@ export class Calendar implements OnInit {
   }
 
   reprintReceipt(apt: Appointment): void {
+    if (this.isRetorno(apt)) {
+      this.receiptData = this.buildRetornoReceipt(apt);
+      return;
+    }
+
     if (this.actionLoading()) return;
     this.actionLoading.set(true);
 
@@ -580,5 +620,26 @@ export class Calendar implements OnInit {
         this.actionLoading.set(false);
       },
     });
+  }
+
+  private buildRetornoReceipt(apt: Appointment): PaymentResponseDto {
+    return {
+      id: apt.id,
+      appointmentId: apt.id,
+      date: apt.date,
+      patient: apt.patientName,
+      doctor: this.doctorNameFor(apt.doctorId),
+      value: 0,
+      discount: 0,
+      doctorEarnings: 0,
+      clinicEarnings: 0,
+      specialty: apt.specialty,
+      startTime: apt.startTime,
+      appointmentTypeName: apt.appointmentTypeName ?? 'Retorno',
+      entries: [],
+      invoiceIssued: false,
+      invoiceXmlUrl: null,
+      invoicePdfUrl: null,
+    };
   }
 }

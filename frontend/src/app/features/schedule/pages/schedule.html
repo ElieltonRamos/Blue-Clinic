@@ -745,7 +745,7 @@
                 >
                   <option [ngValue]="null">Selecione...</option>
                   @for (type of availableTypesForNew; track type.id) {
-                    <option [value]="type.id">{{ type.name }} ({{ type.duration }} min)</option>
+                    <option [ngValue]="type.id">{{ type.name }} ({{ type.duration }} min)</option>
                   }
                 </select>
               </div>

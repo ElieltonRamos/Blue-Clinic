@@ -457,11 +457,11 @@
                 }
                 @if (apt.status === 'confirmed') {
                   <button
-                    (click)="closeModal(); openPaymentModal(apt); $event.stopPropagation()"
+                    (click)="handlePayClick(apt); $event.stopPropagation()"
                     [disabled]="actionLoading()"
                     class="text-[10px] px-2 py-1 rounded-lg bg-success-subtle text-success hover:opacity-80 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                   >
-                    Pagar
+                    {{ payButtonLabel(apt) }}
                   </button>
                   <button
                     (click)="requestReschedule(apt); $event.stopPropagation()"

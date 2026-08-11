@@ -1,6 +1,6 @@
 // update-commission.dto.ts
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNumber, IsPositive, IsEnum, IsOptional, Min } from 'class-validator';
+import { IsNumber, IsEnum, IsOptional, Min } from 'class-validator';
 import { CommissionType } from '../../../../generated/prisma/client.js';
 import { Type } from 'class-transformer';
 
@@ -44,7 +44,7 @@ export class UpdateCommissionDto {
   @ApiProperty({ description: 'Valor cobrado do paciente', example: 300.0 })
   @IsOptional()
   @IsNumber({}, { message: 'Valor deve ser um número' })
-  @IsPositive({ message: 'Valor deve ser maior que zero' })
+  @Min(0, { message: 'Valor não pode ser negativo' })
   @Type(() => Number)
   price?: number;
 
