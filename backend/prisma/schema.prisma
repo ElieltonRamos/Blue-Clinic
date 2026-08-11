@@ -142,6 +142,7 @@ model AppointmentType {
   name      String
   duration  Int
   active    Boolean @default(true)
+  isRetorno Boolean @default(false)
 
   company      Company                     @relation(fields: [companyId], references: [id])
   commissions  AppointmentTypeCommission[]
@@ -155,6 +156,9 @@ model AppointmentTypeCommission {
   doctorId          Int
   appointmentTypeId Int
   price             Decimal @db.Decimal(10, 2)
+
+  generatesRetorno    Boolean @default(true)
+  retornoValidityDays Int?    @default(30)
 
   doctorRateType CommissionType
   doctorRate     Decimal        @db.Decimal(10, 2)
@@ -257,28 +261,31 @@ model PatientDocument {
 }
 
 model Appointment {
-  id                 Int                @id @default(autoincrement())
-  doctorId           Int
-  patientId          Int
-  appointmentTypeId  Int?
-  specialty          String
-  date               DateTime
-  startTime          String
-  endTime            String
-  status             AppointmentStatus  @default(pending)
-  feeOverride        Decimal?           @db.Decimal(10, 2)
-  responsible        String?
-  notes              String?
-  cancellationReason String?            @db.Text
-  origin             AppointmentOrigin?
-  rating             Decimal?           @db.Decimal(3, 2)
-  reminderSent       Boolean            @default(false)
+  id                  Int                @id @default(autoincrement())
+  doctorId            Int
+  patientId           Int
+  appointmentTypeId   Int?
+  originAppointmentId Int?
+  specialty           String
+  date                DateTime
+  startTime           String
+  endTime             String
+  status              AppointmentStatus  @default(pending)
+  feeOverride         Decimal?           @db.Decimal(10, 2)
+  responsible         String?
+  notes               String?
+  cancellationReason  String?            @db.Text
+  origin              AppointmentOrigin?
+  rating              Decimal?           @db.Decimal(3, 2)
+  reminderSent        Boolean            @default(false)
 
-  doctor          Doctor           @relation(fields: [doctorId], references: [id])
-  patient         Patient          @relation(fields: [patientId], references: [id])
-  appointmentType AppointmentType? @relation(fields: [appointmentTypeId], references: [id])
-  consultation    Consultation?
-  payments        Payment[]
+  doctor            Doctor           @relation(fields: [doctorId], references: [id])
+  patient           Patient          @relation(fields: [patientId], references: [id])
+  appointmentType   AppointmentType? @relation(fields: [appointmentTypeId], references: [id])
+  originAppointment Appointment?     @relation("AppointmentRetorno", fields: [originAppointmentId], references: [id])
+  generatedRetornos Appointment[]    @relation("AppointmentRetorno")
+  consultation      Consultation?
+  payments          Payment[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -382,18 +389,18 @@ model Expense {
 }
 
 model WhatsappConfig {
-  id                        Int              @id @default(autoincrement())
-  companyId                 Int              @unique
-  provider                  WhatsappProvider @default(official)
+  id        Int              @id @default(autoincrement())
+  companyId Int              @unique
+  provider  WhatsappProvider @default(official)
 
   phoneNumberId             String?
-  accessToken               String?          @db.Text
-  botEnabled                Boolean          @default(true)
-  whatsappBusinessAccountId String?          @map("whatsapp_business_account_id")
-  autoReminder              Boolean          @default(true)
+  accessToken               String? @db.Text
+  botEnabled                Boolean @default(true)
+  whatsappBusinessAccountId String? @map("whatsapp_business_account_id")
+  autoReminder              Boolean @default(true)
 
-  baileysStatus             String?
-  baileysQr                 String?          @db.Text
+  baileysStatus String?
+  baileysQr     String? @db.Text
 
   company Company @relation(fields: [companyId], references: [id])
 
@@ -412,7 +419,7 @@ model Conversation {
   phone         String
   status        ConversationStatus @default(bot)
   unread        Int                @default(0)
-  lastMessage   String?   @db.Text
+  lastMessage   String?            @db.Text
   lastMessageAt DateTime?
   botStep       String?
   botData       Json?

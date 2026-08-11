@@ -29,7 +29,12 @@ type DoctorWithRelations = Doctor & {
   user: Pick<User, 'id' | 'username' | 'role' | 'active'> | null;
   doctorSchedules: DoctorSchedule[];
   appointmentTypeCommissions: (AppointmentTypeCommission & {
-    appointmentType: { id: number; name: string; duration: number };
+    appointmentType: {
+      id: number;
+      name: string;
+      duration: number;
+      isRetorno: boolean;
+    };
   })[];
 };
 
@@ -38,7 +43,9 @@ const DOCTOR_INCLUDE = {
   doctorSchedules: { orderBy: { dayOfWeek: 'asc' } },
   appointmentTypeCommissions: {
     include: {
-      appointmentType: { select: { id: true, name: true, duration: true } },
+      appointmentType: {
+        select: { id: true, name: true, duration: true, isRetorno: true },
+      },
     },
   },
 } satisfies Prisma.DoctorInclude;
@@ -331,7 +338,7 @@ export class DoctorsService {
     });
     if (!type) throw new NotFoundException('Tipo de consulta não encontrado');
 
-    if (dto.price === 0 && type.name.toLowerCase() !== 'retorno') {
+    if (dto.price === 0 && !type.isRetorno) {
       throw new BadRequestException(
         'Apenas o tipo "retorno" pode ter valor zero',
       );
@@ -355,7 +362,9 @@ export class DoctorsService {
       await this.prisma.client.appointmentTypeCommission.create({
         data: { doctorId, ...dto },
         include: {
-          appointmentType: { select: { id: true, name: true, duration: true } },
+          appointmentType: {
+            select: { id: true, name: true, duration: true, isRetorno: true },
+          },
         },
       });
 
@@ -370,7 +379,9 @@ export class DoctorsService {
       await this.prisma.client.appointmentTypeCommission.findMany({
         where: { doctorId },
         include: {
-          appointmentType: { select: { id: true, name: true, duration: true } },
+          appointmentType: {
+            select: { id: true, name: true, duration: true, isRetorno: true },
+          },
         },
       });
 
@@ -389,15 +400,12 @@ export class DoctorsService {
       await this.prisma.client.appointmentTypeCommission.findFirst({
         where: { id: commissionId, doctorId },
         include: {
-          appointmentType: { select: { name: true } },
+          appointmentType: { select: { isRetorno: true } },
         },
       });
     if (!commission) throw new NotFoundException('Comissão não encontrada');
 
-    if (
-      dto.price === 0 &&
-      commission.appointmentType.name.toLowerCase() !== 'retorno'
-    ) {
+    if (dto.price === 0 && !commission.appointmentType.isRetorno) {
       throw new BadRequestException(
         'Apenas o tipo "retorno" pode ter valor zero',
       );
@@ -407,7 +415,9 @@ export class DoctorsService {
       where: { id: commissionId },
       data: dto,
       include: {
-        appointmentType: { select: { id: true, name: true, duration: true } },
+        appointmentType: {
+          select: { id: true, name: true, duration: true, isRetorno: true },
+        },
       },
     });
 

@@ -52,6 +52,15 @@ export class DoctorCommissionSummaryDto {
   nfDeductionType: CommissionType | null;
   @ApiPropertyOptional({ nullable: true })
   nfDeductionValue: number | null;
+  @ApiProperty({
+    description: 'Se este tipo de consulta gera direito a retorno',
+  })
+  generatesRetorno: boolean;
+  @ApiPropertyOptional({
+    description: 'Validade do retorno em dias',
+    nullable: true,
+  })
+  retornoValidityDays: number | null;
 }
 
 export class DoctorResponseDto {
@@ -121,6 +130,8 @@ export class DoctorResponseDto {
           c['nfDeductionValue'] !== null && c['nfDeductionValue'] !== undefined
             ? Number(c['nfDeductionValue'])
             : null,
+        generatesRetorno: c['generatesRetorno'],
+        retornoValidityDays: c['retornoValidityDays'] ?? null,
       }),
     );
   }

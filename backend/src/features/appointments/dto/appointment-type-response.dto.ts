@@ -23,16 +23,10 @@ export class AppointmentTypeResponseDto {
   active: boolean;
 
   @ApiProperty({
-    example: '2026-05-23T10:00:00.000Z',
-    description: 'Data de criação',
+    example: false,
+    description: 'Indica se é consulta de retorno',
   })
-  createdAt: Date;
-
-  @ApiProperty({
-    example: '2026-05-23T10:00:00.000Z',
-    description: 'Data da última atualização',
-  })
-  updatedAt: Date;
+  isRetorno: boolean;
 
   constructor(t: any) {
     this.id = t.id;
@@ -40,7 +34,6 @@ export class AppointmentTypeResponseDto {
     this.name = t.name;
     this.duration = t.duration;
     this.active = t.active;
-    this.createdAt = t.createdAt;
-    this.updatedAt = t.updatedAt;
+    this.isRetorno = t.isRetorno;
   }
 }

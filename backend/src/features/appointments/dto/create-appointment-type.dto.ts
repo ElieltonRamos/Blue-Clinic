@@ -1,7 +1,14 @@
 // create-appointment-type.dto.ts
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsString, IsInt, IsPositive, MinLength } from 'class-validator';
+import {
+  IsString,
+  IsInt,
+  IsPositive,
+  MinLength,
+  IsOptional,
+  IsBoolean,
+} from 'class-validator';
 
 export class CreateAppointmentTypeDto {
   @ApiProperty({ description: 'Nome do tipo de consulta', example: 'Consulta' })
@@ -14,4 +21,12 @@ export class CreateAppointmentTypeDto {
   @IsPositive({ message: 'Duração deve ser maior que zero' })
   @Type(() => Number)
   duration: number;
+
+  @ApiPropertyOptional({
+    description: 'Marca este tipo como consulta de retorno',
+    default: false,
+  })
+  @IsOptional()
+  @IsBoolean({ message: 'isRetorno deve ser um booleano' })
+  isRetorno?: boolean;
 }

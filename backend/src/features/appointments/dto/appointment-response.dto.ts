@@ -55,6 +55,12 @@ export class AppointmentResponseDto {
   @ApiPropertyOptional({ example: 'Retorno', description: 'Tipo de consulta' })
   appointmentTypeName?: string;
 
+  @ApiPropertyOptional({
+    example: '3',
+    description: 'ID da consulta original que originou este retorno',
+  })
+  originAppointmentId?: string;
+
   constructor(data: any) {
     this.id = String(data.id);
     this.doctorId = String(data.doctorId);
@@ -70,5 +76,9 @@ export class AppointmentResponseDto {
     this.price =
       data.feeOverride != null ? Number(data.feeOverride) : undefined;
     this.cancellationReason = data.cancellationReason ?? undefined;
+    this.originAppointmentId =
+      data.originAppointmentId != null
+        ? String(data.originAppointmentId)
+        : undefined;
   }
 }

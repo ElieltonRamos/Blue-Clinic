@@ -10,12 +10,13 @@ interface TypeRow {
   type: AppointmentType;
   editing: boolean;
   saving: boolean;
-  form: { name: string; duration: number };
+  form: { name: string; duration: number; isRetorno: boolean };
 }
 
 interface TypeForm {
   name: string;
   duration: number | null;
+  isRetorno: boolean;
 }
 
 @Component({
@@ -61,12 +62,12 @@ export class AppointmentTypes implements OnInit {
       type,
       editing: false,
       saving: false,
-      form: { name: type.name, duration: type.duration },
+      form: { name: type.name, duration: type.duration, isRetorno: type.isRetorno },
     };
   }
 
   private emptyForm(): TypeForm {
-    return { name: '', duration: null };
+    return { name: '', duration: null, isRetorno: false };
   }
 
   cancelNew(): void {
@@ -78,7 +79,11 @@ export class AppointmentTypes implements OnInit {
     if (!this.validateForm(this.newForm)) return;
     this.savingNew = true;
     this.service
-      .create({ name: this.newForm.name.trim(), duration: this.newForm.duration! })
+      .create({
+        name: this.newForm.name.trim(),
+        duration: this.newForm.duration!,
+        isRetorno: this.newForm.isRetorno,
+      })
       .subscribe({
         next: (created) => {
           this.rows.push(this.toRow(created));
@@ -97,7 +102,7 @@ export class AppointmentTypes implements OnInit {
   }
 
   startEdit(row: TypeRow): void {
-    row.form = { name: row.type.name, duration: row.type.duration };
+    row.form = { name: row.type.name, duration: row.type.duration, isRetorno: row.type.isRetorno };
     row.editing = true;
   }
 
@@ -109,7 +114,11 @@ export class AppointmentTypes implements OnInit {
     if (!this.validateForm(row.form)) return;
     row.saving = true;
     this.service
-      .update(row.type.id, { name: row.form.name.trim(), duration: row.form.duration })
+      .update(row.type.id, {
+        name: row.form.name.trim(),
+        duration: row.form.duration,
+        isRetorno: row.form.isRetorno,
+      })
       .subscribe({
         next: (updated) => {
           row.type = updated;

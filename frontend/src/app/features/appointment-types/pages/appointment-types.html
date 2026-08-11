@@ -43,6 +43,17 @@
           />
         </div>
       </div>
+      <div class="flex items-center gap-2">
+        <input
+          type="checkbox"
+          id="new-is-retorno"
+          [(ngModel)]="newForm.isRetorno"
+          class="w-3.5 h-3.5 accent-(--color-primary)"
+        />
+        <label for="new-is-retorno" class="text-[11px] text-(--color-text-muted)">
+          Marcar como consulta de retorno
+        </label>
+      </div>
       <div class="flex justify-end gap-2">
         <button
           (click)="cancelNew()"
@@ -85,6 +96,12 @@
               <div class="flex-1 min-w-0">
                 <p class="text-[13px] font-medium text-(--color-text-primary)">
                   {{ row.type.name }}
+                  @if (row.type.isRetorno) {
+                    <span
+                      class="ml-1 text-[9px] px-1.5 py-0.5 rounded-full bg-(--color-primary-subtle) text-(--color-primary-text)"
+                      >Retorno</span
+                    >
+                  }
                 </p>
                 <p class="text-[10px] text-(--color-text-muted)">{{ row.type.duration }} min</p>
               </div>
@@ -128,6 +145,20 @@
                     class="w-full bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-2.5 py-1.5 text-[12px] text-(--color-input-text) outline-none focus:border-(--color-primary) transition-colors"
                   />
                 </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  [id]="'edit-is-retorno-' + row.type.id"
+                  [(ngModel)]="row.form.isRetorno"
+                  class="w-3.5 h-3.5 accent-(--color-primary)"
+                />
+                <label
+                  [for]="'edit-is-retorno-' + row.type.id"
+                  class="text-[11px] text-(--color-text-muted)"
+                >
+                  Marcar como consulta de retorno
+                </label>
               </div>
               <div class="flex justify-end gap-2">
                 <button

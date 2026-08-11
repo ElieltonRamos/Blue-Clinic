@@ -6,6 +6,7 @@ import {
   IsEnum,
   IsOptional,
   Min,
+  IsBoolean,
 } from 'class-validator';
 import { CommissionType } from '../../../../generated/prisma/client.js';
 import { Type } from 'class-transformer';
@@ -64,4 +65,22 @@ export class CreateCommissionDto {
   @Min(0, { message: 'Valor de abatimento fiscal não pode ser negativo' })
   @Type(() => Number)
   nfDeductionValue?: number | null;
+
+  @ApiPropertyOptional({
+    description: 'Se este tipo de consulta gera direito a retorno',
+    default: true,
+  })
+  @IsOptional()
+  @IsBoolean({ message: 'generatesRetorno deve ser um booleano' })
+  generatesRetorno?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Validade do retorno em dias',
+    example: 30,
+  })
+  @IsOptional()
+  @IsInt({ message: 'retornoValidityDays deve ser um número inteiro' })
+  @Min(1, { message: 'retornoValidityDays deve ser maior que zero' })
+  @Type(() => Number)
+  retornoValidityDays?: number;
 }

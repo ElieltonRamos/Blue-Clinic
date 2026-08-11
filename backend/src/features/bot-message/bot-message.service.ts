@@ -154,7 +154,12 @@ export class BotMessageService {
           'SELECT_APPOINTMENT_TYPE',
           data,
         );
-        return askAppointmentType(companyId, sendFn, this.prisma);
+        return askAppointmentType(
+          companyId,
+          sendFn,
+          this.prisma,
+          data.patientId,
+        );
       case 'SELECT_DOCTOR':
         await this.updateConversation(conversationId, 'SELECT_DOCTOR', data);
         return askDoctor(
@@ -232,7 +237,7 @@ export class BotMessageService {
           sendFn,
           p,
           update,
-          (cId, sf) => askAppointmentType(cId, sf, p),
+          (cId, sf) => askAppointmentType(cId, sf, p, data.patientId),
         );
       case 'SELECT_APPOINTMENT_TYPE':
         return handleSelectAppointmentType(

@@ -36,6 +36,7 @@ export class AppointmentTypesService {
         name: dto.name,
         duration: dto.duration,
         active: true,
+        isRetorno: dto.isRetorno ?? false,
       },
     });
     return new AppointmentTypeResponseDto(type);
@@ -69,6 +70,7 @@ export class AppointmentTypesService {
     const data: Prisma.AppointmentTypeUpdateInput = {};
     if (dto.name !== undefined) data.name = dto.name;
     if (dto.duration !== undefined) data.duration = dto.duration;
+    if (dto.isRetorno !== undefined) data.isRetorno = dto.isRetorno;
 
     const type = await this.prisma.client.appointmentType.update({
       where: { id },

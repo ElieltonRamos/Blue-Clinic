@@ -97,6 +97,24 @@ export class AppointmentsService {
     });
     if (!patient) throw new NotFoundException('Paciente não encontrado');
 
+    const appointmentType = await this.prisma.client.appointmentType.findFirst({
+      where: { id: dto.appointmentTypeId, companyId },
+    });
+    if (!appointmentType)
+      throw new NotFoundException('Tipo de consulta não encontrado');
+
+    let originAppointmentId: number | null = null;
+    if (appointmentType.isRetorno) {
+      const origin = await this.findEligibleOriginAppointment(
+        dto.patientId,
+        dto.doctorId,
+      );
+      if (!origin) {
+        throw new BadRequestException('Paciente não possui retorno disponível');
+      }
+      originAppointmentId = origin.id;
+    }
+
     const feeOverride = await this.resolveFee(
       dto.doctorId,
       dto.appointmentTypeId,
@@ -116,6 +134,7 @@ export class AppointmentsService {
         notes: dto.notes,
         origin: dto.origin ?? 'presencial',
         ...(feeOverride !== null && { feeOverride }),
+        ...(originAppointmentId !== null && { originAppointmentId }),
       },
       include: APPOINTMENT_INCLUDE,
     });
@@ -151,6 +170,47 @@ export class AppointmentsService {
     });
 
     return new AppointmentResponseDto(updated);
+  }
+
+  private async findEligibleOriginAppointment(
+    patientId: number,
+    doctorId: number,
+  ): Promise<{ id: number } | null> {
+    const candidates = await this.prisma.client.appointment.findMany({
+      where: {
+        patientId,
+        doctorId,
+        status: 'finished',
+        generatedRetornos: {
+          none: { status: { not: 'cancelled' } },
+        },
+      },
+      include: {
+        appointmentType: {
+          include: {
+            commissions: { where: { doctorId } },
+          },
+        },
+      },
+      orderBy: { date: 'desc' },
+    });
+
+    const today = new Date();
+
+    for (const appointment of candidates) {
+      const commission = appointment.appointmentType?.commissions[0];
+      if (!commission || !commission.generatesRetorno) continue;
+
+      if (commission.retornoValidityDays != null) {
+        const limit = new Date(appointment.date);
+        limit.setDate(limit.getDate() + commission.retornoValidityDays);
+        if (limit < today) continue;
+      }
+
+      return { id: appointment.id };
+    }
+
+    return null;
   }
 
   private async resolveFee(
@@ -614,7 +674,7 @@ export class AppointmentsService {
   ): Promise<AppointmentResponseDto> {
     const appointment = await this.prisma.client.appointment.findFirst({
       where: { id, doctor: { companyId } },
-      include: { appointmentType: { select: { name: true } } },
+      include: { appointmentType: { select: { isRetorno: true } } },
     });
     if (!appointment) throw new NotFoundException('Agendamento não encontrado');
 
@@ -627,10 +687,7 @@ export class AppointmentsService {
       data.cancellationReason = dto.cancellationReason.trim();
     }
 
-    if (
-      dto.status === 'paid' &&
-      appointment.appointmentType?.name.toLowerCase() !== 'retorno'
-    ) {
+    if (dto.status === 'paid' && !appointment.appointmentType?.isRetorno) {
       throw new BadRequestException(
         'Este tipo de consulta deve ser pago via registro de pagamento',
       );
@@ -639,7 +696,7 @@ export class AppointmentsService {
     if (
       dto.status === 'finished' &&
       appointment.status !== 'paid' &&
-      appointment.appointmentType?.name.toLowerCase() !== 'retorno'
+      !appointment.appointmentType?.isRetorno
     ) {
       throw new BadRequestException(
         'Este tipo de consulta precisa ser pago antes de ser finalizado',

@@ -35,6 +35,7 @@ export interface AppointmentTypeSummary {
   id: number;
   name: string;
   duration: number;
+  isRetorno: boolean;
 }
 
 export interface DoctorCommission {
@@ -48,6 +49,8 @@ export interface DoctorCommission {
   appointmentType: AppointmentTypeSummary;
   nfDeductionType: CommissionRateType | null;
   nfDeductionValue: number | null;
+  generatesRetorno: boolean;
+  retornoValidityDays: number | null;
 }
 
 export interface DoctorProfile {
@@ -93,6 +96,8 @@ export interface CreateCommissionRequest {
   price: number;
   nfDeductionType?: CommissionRateType | null;
   nfDeductionValue?: number | null;
+  generatesRetorno?: boolean;
+  retornoValidityDays?: number | null;
 }
 
 export interface UpdateCommissionRequest {
@@ -103,6 +108,8 @@ export interface UpdateCommissionRequest {
   price?: number;
   nfDeductionType?: CommissionRateType | null;
   nfDeductionValue?: number | null;
+  generatesRetorno?: boolean;
+  retornoValidityDays?: number | null;
 }
 
 export interface CommissionForm {
@@ -115,6 +122,8 @@ export interface CommissionForm {
   nfDeductionEnabled: boolean;
   nfDeductionType: CommissionRateType;
   nfDeductionValue: number;
+  generatesRetorno: boolean;
+  retornoValidityDays: number;
 }
 
 export interface BlockedSlot {

@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { PrismaService } from '../../../core/database/prisma.service.js';
+import { hasEligibleRetorno } from '../bot-helpers.js';
 import { BotData, BotStep, SendFn } from '../entities/bot-state.types.js';
 
 export async function askDoctor(
@@ -78,11 +79,33 @@ export async function handleSelectDoctor(
   }
 
   const doctor = doctors[idx];
+
+  if (data.appointmentTypeIsRetorno && data.patientId) {
+    const eligible = await hasEligibleRetorno(
+      prisma,
+      data.patientId,
+      doctor.id,
+    );
+    if (!eligible) {
+      await sendFn(
+        'Você não possui retorno disponível com este médico. Escolha outro médico.',
+      );
+      return askDoctor(
+        companyId,
+        data.specialty ?? '',
+        sendFn,
+        prisma,
+        data.appointmentTypeId,
+      );
+    }
+  }
+
   const updatedData: BotData = {
     ...data,
     doctorId: doctor.id,
     doctorName: doctor.name,
   };
+
   await updateConversation(conversationId, 'SELECT_DATE', updatedData);
   return askDate(updatedData, conversationId, companyId, sendFn);
 }

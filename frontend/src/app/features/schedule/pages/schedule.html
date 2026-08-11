@@ -589,6 +589,15 @@
                         }}</span>
                       </span>
                     }
+                    @if (row.commission.generatesRetorno) {
+                      <span class="text-(--color-border-md)">·</span>
+                      <span class="text-(--color-text-muted)">
+                        Retorno:
+                        <span class="text-(--color-primary-text) font-semibold"
+                          >{{ row.commission.retornoValidityDays }}d</span
+                        >
+                      </span>
+                    }
                   </div>
                   <div class="flex items-center gap-1 ml-auto shrink-0">
                     <button
@@ -699,6 +708,27 @@
                             class="flex-1 bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-2 py-1.5 text-[12px] text-(--color-input-text) outline-none focus:border-(--color-primary)"
                           />
                         </div>
+                      </div>
+                    }
+                    <div class="col-span-2">
+                      <label
+                        class="flex items-center gap-2 text-[11px] text-(--color-text-secondary) cursor-pointer"
+                      >
+                        <input type="checkbox" [(ngModel)]="row.form.generatesRetorno" />
+                        Gera direito a retorno
+                      </label>
+                    </div>
+                    @if (row.form.generatesRetorno) {
+                      <div class="col-span-2">
+                        <label class="block text-[10px] text-(--color-text-muted) mb-1"
+                          >Validade em dias</label
+                        >
+                        <input
+                          type="number"
+                          min="1"
+                          [(ngModel)]="row.form.retornoValidityDays"
+                          class="w-full bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-2.5 py-1.5 text-[12px] text-(--color-input-text) outline-none focus:border-(--color-primary)"
+                        />
                       </div>
                     }
                   </div>
@@ -834,6 +864,27 @@
                         class="flex-1 bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-2 py-1.5 text-[12px] text-(--color-input-text) outline-none focus:border-(--color-primary)"
                       />
                     </div>
+                  </div>
+                }
+                <div class="col-span-2">
+                  <label
+                    class="flex items-center gap-2 text-[11px] text-(--color-text-secondary) cursor-pointer"
+                  >
+                    <input type="checkbox" [(ngModel)]="newCommissionForm.generatesRetorno" />
+                    Gera direito a retorno
+                  </label>
+                </div>
+                @if (newCommissionForm.generatesRetorno) {
+                  <div class="col-span-2">
+                    <label class="block text-[10px] text-(--color-text-muted) mb-1"
+                      >Validade em dias</label
+                    >
+                    <input
+                      type="number"
+                      min="1"
+                      [(ngModel)]="newCommissionForm.retornoValidityDays"
+                      class="w-full bg-(--color-bg-overlay) border border-(--color-border) rounded-lg px-2.5 py-1.5 text-[12px] text-(--color-input-text) outline-none focus:border-(--color-primary)"
+                    />
                   </div>
                 }
               </div>

@@ -6,6 +6,7 @@ import {
   IsPositive,
   MinLength,
   IsOptional,
+  IsBoolean,
 } from 'class-validator';
 
 export class UpdateAppointmentTypeDto {
@@ -20,4 +21,11 @@ export class UpdateAppointmentTypeDto {
   @IsInt({ message: 'Duração deve ser um número inteiro' })
   @IsPositive({ message: 'Duração deve ser maior que zero' })
   duration?: number;
+
+  @ApiPropertyOptional({
+    description: 'Marca este tipo como consulta de retorno',
+  })
+  @IsOptional()
+  @IsBoolean({ message: 'isRetorno deve ser um booleano' })
+  isRetorno?: boolean;
 }

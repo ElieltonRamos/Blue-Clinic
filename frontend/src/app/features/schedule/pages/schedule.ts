@@ -70,6 +70,8 @@ const DEFAULT_COMMISSION_FORM = (): CommissionForm => ({
   nfDeductionEnabled: false,
   nfDeductionType: 'percentage',
   nfDeductionValue: 0,
+  generatesRetorno: true,
+  retornoValidityDays: 30,
 });
 
 @Component({
@@ -259,6 +261,8 @@ export class Schedule implements OnInit {
         nfDeductionEnabled: c.nfDeductionValue !== null,
         nfDeductionType: c.nfDeductionType ?? 'percentage',
         nfDeductionValue: c.nfDeductionValue ?? 0,
+        generatesRetorno: c.generatesRetorno,
+        retornoValidityDays: c.retornoValidityDays ?? 30,
       },
     }));
   }
@@ -404,6 +408,10 @@ export class Schedule implements OnInit {
         nfDeductionValue: this.newCommissionForm.nfDeductionEnabled
           ? this.newCommissionForm.nfDeductionValue
           : null,
+        generatesRetorno: this.newCommissionForm.generatesRetorno,
+        retornoValidityDays: this.newCommissionForm.generatesRetorno
+          ? this.newCommissionForm.retornoValidityDays
+          : null,
       })
       .subscribe({
         next: (created) => {
@@ -441,6 +449,8 @@ export class Schedule implements OnInit {
         price: row.form.price,
         nfDeductionType: row.form.nfDeductionEnabled ? row.form.nfDeductionType : null,
         nfDeductionValue: row.form.nfDeductionEnabled ? row.form.nfDeductionValue : null,
+        generatesRetorno: row.form.generatesRetorno,
+        retornoValidityDays: row.form.generatesRetorno ? row.form.retornoValidityDays : null,
       })
       .subscribe({
         next: (updated) => {
@@ -486,6 +496,8 @@ export class Schedule implements OnInit {
       nfDeductionEnabled: row.commission.nfDeductionValue !== null,
       nfDeductionType: row.commission.nfDeductionType ?? 'percentage',
       nfDeductionValue: row.commission.nfDeductionValue ?? 0,
+      generatesRetorno: row.commission.generatesRetorno,
+      retornoValidityDays: row.commission.retornoValidityDays ?? 30,
     };
     row.editing = false;
   }
@@ -514,13 +526,17 @@ export class Schedule implements OnInit {
       return false;
     }
     const type = this.appointmentTypes.find((t) => t.id === form.appointmentTypeId);
-    const isRetorno = type?.name.toLowerCase() === 'retorno';
+    const isRetorno = type?.isRetorno ?? false;
     if (form.price < 0 || (form.price === 0 && !isRetorno)) {
       this.notification.error('Preço deve ser maior que zero2');
       return false;
     }
     if (form.nfDeductionEnabled && form.nfDeductionValue < 0) {
       this.notification.error('Valor do abatimento deve ser maior ou igual a zero');
+      return false;
+    }
+    if (form.generatesRetorno && (!form.retornoValidityDays || form.retornoValidityDays < 1)) {
+      this.notification.error('Validade do retorno deve ser maior que zero');
       return false;
     }
     return true;

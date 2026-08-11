@@ -5,13 +5,19 @@ import {
 } from '../../../../generated/prisma/client.js';
 
 type CommissionWithRelations = AppointmentTypeCommission & {
-  appointmentType: { id: number; name: string; duration: number };
+  appointmentType: {
+    id: number;
+    name: string;
+    duration: number;
+    isRetorno: boolean;
+  };
 };
 
 class AppointmentTypeSummaryDto {
   @ApiProperty() id: number;
   @ApiProperty() name: string;
   @ApiProperty() duration: number;
+  @ApiProperty() isRetorno: boolean;
 }
 
 export class CommissionResponseDto {
@@ -34,6 +40,17 @@ export class CommissionResponseDto {
   @ApiPropertyOptional({ nullable: true })
   nfDeductionValue: number | null;
 
+  @ApiProperty({
+    description: 'Se este tipo de consulta gera direito a retorno',
+  })
+  generatesRetorno: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Validade do retorno em dias',
+    nullable: true,
+  })
+  retornoValidityDays: number | null;
+
   constructor(c: CommissionWithRelations) {
     this.id = c.id;
     this.doctorId = c.doctorId;
@@ -47,5 +64,7 @@ export class CommissionResponseDto {
     this.nfDeductionType = c.nfDeductionType;
     this.nfDeductionValue =
       c.nfDeductionValue !== null ? Number(c.nfDeductionValue) : null;
+    this.generatesRetorno = c.generatesRetorno;
+    this.retornoValidityDays = c.retornoValidityDays;
   }
 }

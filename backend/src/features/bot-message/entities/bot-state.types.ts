@@ -19,6 +19,7 @@ export interface BotData {
   appointmentTypeId?: number;
   appointmentTypeName?: string;
   appointmentTypeDuration?: number;
+  appointmentTypeIsRetorno?: boolean;
   doctorId?: number;
   doctorName?: string;
   date?: string;
