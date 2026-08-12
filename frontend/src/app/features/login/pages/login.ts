@@ -50,9 +50,13 @@ export class Login {
 
     const { username, password } = this.form.value;
 
+    if (typeof username !== 'string' || typeof password !== 'string' || this.form.invalid) {
+      return;
+    }
+
     alertLoading();
 
-    this.serviceLogin.login(username!, password!).subscribe({
+    this.serviceLogin.login(username, password).subscribe({
       next: (response) => {
         localStorage.setItem('token', response.token);
         closeLoading();
@@ -67,25 +71,19 @@ export class Login {
           },
         });
 
-        this.notification.success('Bem Vindo! 👋');
+        this.notification.success(`Bem Vindo! 👋`);
         this.form.reset();
         this.router.navigate(['/dashboard']);
       },
       error: (err) => {
-        closeLoading();
+          closeLoading();
         localStorage.removeItem('token');
 
-        let message = 'Credenciais inválidas';
-
-        if (err.status === 0) {
-          message = 'Não foi possível conectar ao servidor';
-        } else if (err.status === 401 || err.status === 403) {
-          message = err.error?.message || 'Usuário ou senha incorretos';
-        } else if (err.error?.message) {
-          message = err.error.message;
+        if (err.status === 0 || err.status === 500) {
+          this.notification.error('Servidor indisponível');
+        } else {
+          this.notification.error(err.error?.message || 'Credenciais inválidas');
         }
-
-        this.notification.error(message);
         this.form.reset();
       },
     });

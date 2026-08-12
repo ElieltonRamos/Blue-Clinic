@@ -3,6 +3,7 @@ import { PrismaService } from '../../core/database/prisma.service.js';
 import {
   ConversationStatus,
   MessageStatus,
+  Prisma,
 } from '../../../generated/prisma/client.js';
 import { ConversationResponseDto } from './dto/conversation-response.dto.js';
 import { ChatMessageResponseDto } from './dto/chat-message-response.dto.js';
@@ -136,9 +137,9 @@ export class ChatService {
     wamid?: string | null,
     status: MessageStatus = 'sent',
   ): Promise<ChatMessageResponseDto> {
-    const [message, updatedConv] = await this.prisma.client.$transaction(
-      async (tx) => {
-        const msg = await tx.chatMessage.create({
+    const [message, updatedConv] = await this.runTransactionWithRetry((tx) =>
+      Promise.all([
+        tx.chatMessage.create({
           data: {
             conversationId,
             sender: 'human',
@@ -149,16 +150,13 @@ export class ChatService {
             wamid: wamid ?? null,
             status,
           },
-        });
-
-        const conv = await tx.conversation.update({
+        }),
+        tx.conversation.update({
           where: { id: conversationId },
           data: { lastMessage: text, lastMessageAt: new Date() },
           include: { patient: { select: { name: true } } },
-        });
-
-        return [msg, conv];
-      },
+        }),
+      ]),
     );
 
     const msgDto = new ChatMessageResponseDto(message);
@@ -169,6 +167,27 @@ export class ChatService {
     );
 
     return msgDto;
+  }
+
+  private async runTransactionWithRetry<T>(
+    fn: (tx: Prisma.TransactionClient) => Promise<T>,
+    maxRetries = 3,
+  ): Promise<T> {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        return await this.prisma.client.$transaction(fn);
+      } catch (err) {
+        const isDeadlock =
+          err instanceof Prisma.PrismaClientKnownRequestError &&
+          err.code === 'P2034';
+
+        if (!isDeadlock || attempt === maxRetries) throw err;
+
+        const delay = 100 * attempt; // 100ms, 200ms, 300ms
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
+    }
+    throw new Error('unreachable');
   }
 
   async toggleBlock(
@@ -269,23 +288,25 @@ export class ChatService {
     phone: string;
     patientId: number | null;
   }> {
-    const existing = await this.prisma.client.conversation.findFirst({
-      where: { phone, companyId },
-      include: { patient: { select: { blocked: true } } },
-    });
+    return this.runTransactionWithRetry(async (tx) => {
+      const existing = await tx.conversation.findFirst({
+        where: { phone, companyId },
+        include: { patient: { select: { blocked: true } } },
+      });
 
-    if (existing) return existing;
+      if (existing) return existing;
 
-    return this.prisma.client.conversation.create({
-      data: {
-        companyId,
-        phone,
-        patientId,
-        status: 'bot',
-        lastMessageAt: new Date(),
-        unread: 1,
-      },
-      include: { patient: { select: { blocked: true } } },
+      return tx.conversation.create({
+        data: {
+          companyId,
+          phone,
+          patientId,
+          status: 'bot',
+          lastMessageAt: new Date(),
+          unread: 1,
+        },
+        include: { patient: { select: { blocked: true } } },
+      });
     });
   }
 

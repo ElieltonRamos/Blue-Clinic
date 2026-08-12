@@ -110,6 +110,7 @@ export class PatientsService {
         cpf: dto.cpf,
         birthDate: dto.birthDate ? new Date(dto.birthDate) : undefined,
         status: 'Ativo',
+        whatsappActive: !!dto.phone,
       },
       include: PATIENT_DETAIL_INCLUDE,
     });

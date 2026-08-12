@@ -1,6 +1,5 @@
-// environment.ts
 export const environment = {
-  production: true,
-  // apiUrl: 'https://blueclinic-whatsapp.portfoliostudio.cfd',
-  apiUrl: 'http://localhost:3003'
+  // apiUrl: 'https://blueclinic-whatsapp.portfoliostudio.cfd/api', // homolog
+  // apiUrl: 'http://localhost:3003/api', // use em dev ou ip da maquina do cliente
+  apiUrl: '/api', // publicado via backend
 };

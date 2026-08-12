@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { LicenseSystemModule } from './features/license-system/license-system.module';
@@ -19,6 +21,18 @@ import { RemindersJobsModule } from './features/reminders-jobs/reminders-jobs.mo
 
 @Module({
   imports: [
+    ServeStaticModule.forRoot({
+      rootPath: join(
+        __dirname,
+        '..',
+        '..',
+        'public',
+        'dist',
+        'frontend',
+        'browser',
+      ),
+      exclude: ['/api/{*splat}', '/swagger/{*splat}'],
+    }),
     ScheduleModule.forRoot(),
     LicenseSystemModule,
     UsersModule,
