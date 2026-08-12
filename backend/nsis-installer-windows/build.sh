@@ -38,6 +38,13 @@ for file in "${REQUIRED_FILES[@]}"; do
     echo "  ✓ $file"
 done
 
+if [ ! -d "public" ]; then
+    echo "ERRO: Diretório não encontrado: public"
+    echo "  Rode 'npm run installer:win' a partir do backend, não este script isoladamente."
+    exit 1
+fi
+echo "  ✓ public"
+
 echo ""
 echo "Compilando instalador..."
 makensis -DAPP_VERSION=$VERSION blue-clinic-server.nsi

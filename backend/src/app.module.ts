@@ -22,15 +22,7 @@ import { RemindersJobsModule } from './features/reminders-jobs/reminders-jobs.mo
 @Module({
   imports: [
     ServeStaticModule.forRoot({
-      rootPath: join(
-        __dirname,
-        '..',
-        '..',
-        'public',
-        'dist',
-        'frontend',
-        'browser',
-      ),
+      rootPath: join(process.cwd(), 'public', 'dist', 'frontend', 'browser'),
       exclude: ['/api/{*splat}', '/swagger/{*splat}'],
     }),
     ScheduleModule.forRoot(),

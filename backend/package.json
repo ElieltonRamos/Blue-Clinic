@@ -1,6 +1,6 @@
 {
   "name": "backend",
-  "version": "0.5.7",
+  "version": "0.5.8",
   "description": "",
   "author": "",
   "private": true,
@@ -14,8 +14,8 @@
     "start:prod": "node dist/main",
     "build:frontend": "cd ../frontend && npm run build",
     "copy:frontend": "rm -rf public/dist/frontend/browser && mkdir -p public/dist/frontend/browser && cp -r ../frontend/dist/frontend/browser/. public/dist/frontend/browser/",
-    "preinstaller:win": "npm run build:frontend && npm run copy:frontend",
-    "installer:win": "npm run build:bundle && cp release/server.js nsis-installer-windows/server.js && cp .env nsis-installer-windows/.env && cd nsis-installer-windows && bash build.sh",
+    "preinstaller:win": "npm run build && npm run build:frontend && npm run copy:frontend",
+    "installer:win": "npm run build:bundle && cp release/server.js nsis-installer-windows/server.js && cp .env nsis-installer-windows/.env && cp -r public nsis-installer-windows/public && cd nsis-installer-windows && bash build.sh",
     "prisma:generate": "npx prisma generate",
     "prisma:migrate": "npx prisma migrate dev",
     "prisma:reset": "npx prisma migrate reset --force",
