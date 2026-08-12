@@ -5,7 +5,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { SettingsService } from '../services/settings.service';
 import { version } from '../../../../../package.json';
 import * as QRCode from 'qrcode';
-import { WhatsappProviderType } from '../types/settings.types';
+import { ReminderRule, WhatsappProviderType } from '../types/settings.types';
 import {
   CompanyData,
   IntegrationStatus,
@@ -66,6 +66,17 @@ export class Settings implements OnInit {
     { key: 'autoReminder', label: 'Lembrete automático' },
   ];
   private originalCompany: CompanyData | null = null;
+
+  reminderRules = signal<ReminderRule[]>([]);
+
+  showCreateRuleModal = signal(false);
+  newRule = signal<Partial<{ offsetDays: number; time: string }>>({});
+
+  showEditRuleModal = signal(false);
+  editRule = signal<Partial<{ offsetDays: number; time: string; active: string }>>({});
+  editRuleId = signal<number | null>(null);
+
+  private readonly TIME_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
   // memberCreateFields vai precisar de name e specialty condicionais ao role medico
   memberCreateFields: FormField[] = [
@@ -136,11 +147,164 @@ export class Settings implements OnInit {
     { name: 'active', label: 'Status', type: 'select', options: ['Ativo', 'Inativo'] },
   ];
 
+  reminderRuleCreateFields: FormField[] = [
+    {
+      name: 'offsetDays',
+      label: 'Dias antes da consulta',
+      type: 'number',
+      placeholder: 'Ex: 0 = mesmo dia, 1 = 1 dia antes, 3 = 3 dias antes',
+      required: true,
+    },
+    {
+      name: 'time',
+      label: 'Horário de envio (HH:mm)',
+      type: 'text',
+      placeholder: 'Ex: 14:30',
+      required: true,
+    },
+  ];
+
+  reminderRuleEditFields: FormField[] = [
+    {
+      name: 'offsetDays',
+      label: 'Dias antes da consulta',
+      type: 'number',
+      placeholder: 'Ex: 0 = mesmo dia, 1 = 1 dia antes, 3 = 3 dias antes',
+    },
+    {
+      name: 'time',
+      label: 'Horário de envio (HH:mm)',
+      type: 'text',
+      placeholder: 'Ex: 14:30',
+    },
+    { name: 'active', label: 'Status', type: 'select', options: ['Ativo', 'Inativo'] },
+  ];
+
   ngOnInit(): void {
     this.isAdmin.set(this.auth.getTokenPayload()?.role === 'admin');
     this.loadMembers();
     this.loadCompany();
     this.loadIntegration();
+    this.loadReminderRules();
+  }
+
+  private loadReminderRules(): void {
+    this.settingsService.getReminderRules().subscribe({
+      next: (rules) => this.reminderRules.set(rules),
+      error: (err: HttpErrorResponse) => {
+        this.notification.error(this.getErrorMessage(err, 'Erro ao carregar regras de lembrete.'));
+      },
+    });
+  }
+
+  ruleOffsetLabel(offsetDays: number): string {
+    if (offsetDays === 0) return 'No dia da consulta';
+    if (offsetDays === 1) return '1 dia antes';
+    return `${offsetDays} dias antes`;
+  }
+
+  openCreateRuleModal(): void {
+    this.newRule.set({});
+    this.showCreateRuleModal.set(true);
+  }
+
+  onSaveRule(entity: Partial<{ offsetDays: number; time: string }>): void {
+    const offsetDays = Number(entity.offsetDays);
+    const time = entity.time?.trim() ?? '';
+
+    if (Number.isNaN(offsetDays) || offsetDays < 0) {
+      this.notification.warning('Informe um número de dias válido (0 ou maior).');
+      return;
+    }
+    if (!this.TIME_REGEX.test(time)) {
+      this.notification.warning('Informe um horário válido no formato HH:mm.');
+      return;
+    }
+
+    this.settingsService.createReminderRule({ offsetDays, time }).subscribe({
+      next: (rule) => {
+        this.reminderRules.update((list) => [...list, rule]);
+        this.showCreateRuleModal.set(false);
+        this.notification.success('Regra de lembrete criada com sucesso.');
+      },
+      error: (err: HttpErrorResponse) => {
+        this.notification.error(this.getErrorMessage(err, 'Erro ao criar regra de lembrete.'));
+      },
+    });
+  }
+
+  openEditRuleModal(rule: ReminderRule): void {
+    this.editRuleId.set(rule.id);
+    this.editRule.set({
+      offsetDays: rule.offsetDays,
+      time: rule.time,
+      active: rule.active ? 'Ativo' : 'Inativo',
+    });
+    this.showEditRuleModal.set(true);
+  }
+
+  onUpdateRule(entity: Partial<{ offsetDays: number; time: string; active: string }>): void {
+    const id = this.editRuleId();
+    if (!id) return;
+
+    const dto: Record<string, unknown> = {};
+
+    if (entity.offsetDays !== undefined) {
+      const offsetDays = Number(entity.offsetDays);
+      if (Number.isNaN(offsetDays) || offsetDays < 0) {
+        this.notification.warning('Informe um número de dias válido (0 ou maior).');
+        return;
+      }
+      dto['offsetDays'] = offsetDays;
+    }
+
+    if (entity.time !== undefined) {
+      const time = entity.time.trim();
+      if (!this.TIME_REGEX.test(time)) {
+        this.notification.warning('Informe um horário válido no formato HH:mm.');
+        return;
+      }
+      dto['time'] = time;
+    }
+
+    if (entity.active !== undefined) dto['active'] = entity.active === 'Ativo';
+
+    this.settingsService.updateReminderRule(id, dto as any).subscribe({
+      next: (updated) => {
+        this.reminderRules.update((list) => list.map((r) => (r.id === id ? updated : r)));
+        this.showEditRuleModal.set(false);
+        this.notification.success('Regra de lembrete atualizada com sucesso.');
+      },
+      error: (err: HttpErrorResponse) => {
+        this.notification.error(this.getErrorMessage(err, 'Erro ao atualizar regra de lembrete.'));
+      },
+    });
+  }
+
+  toggleRuleActive(rule: ReminderRule, active: boolean): void {
+    this.settingsService.updateReminderRule(rule.id, { active }).subscribe({
+      next: (updated) => {
+        this.reminderRules.update((list) => list.map((r) => (r.id === rule.id ? updated : r)));
+      },
+      error: (err: HttpErrorResponse) => {
+        this.notification.error(this.getErrorMessage(err, 'Erro ao atualizar regra de lembrete.'));
+      },
+    });
+  }
+
+  async removeRule(id: number): Promise<void> {
+    const confirmed = await alertConfirm('Deseja remover esta regra de lembrete?');
+    if (!confirmed) return;
+
+    this.settingsService.removeReminderRule(id).subscribe({
+      next: () => {
+        this.reminderRules.update((list) => list.filter((r) => r.id !== id));
+        this.notification.success('Regra removida com sucesso.');
+      },
+      error: (err: HttpErrorResponse) => {
+        this.notification.error(this.getErrorMessage(err, 'Erro ao remover regra de lembrete.'));
+      },
+    });
   }
 
   onProviderChange(provider: WhatsappProviderType): void {

@@ -51,7 +51,7 @@ export const BAILEYS_TEMPLATES = [
     components: [
       {
         type: 'BODY',
-        text: 'Olá, {{1}}! 👋\n\nLembramos que você tem uma consulta amanhã:\n\n👨‍⚕️ *Médico:* {{2}}\n📅 *Data:* {{3}}\n🕐 *Horário:* {{4}}\n\nDigite *1* para confirmar ou *2* para cancelar.',
+        text: 'Olá, {{1}}! 👋\n\nLembramos que você tem uma consulta agendada:\n\n👨‍⚕️ *Médico:* {{2}}\n📅 *Data:* {{3}}\n🕐 *Horário:* {{4}}\n\nDigite *1* para confirmar ou *2* para cancelar.',
         example: {
           body_text: [['BlueClinic', 'Dr Joao', '16/09/2026', '15h30min']],
         },

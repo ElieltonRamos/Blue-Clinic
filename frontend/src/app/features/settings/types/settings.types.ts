@@ -73,3 +73,24 @@ export interface BaileysStatus {
   status: string | null;
   qr: string | null;
 }
+
+export interface ReminderRule {
+  id: number;
+  companyId: number;
+  offsetDays: number;
+  time: string;
+  active: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CreateReminderRuleDto {
+  offsetDays: number;
+  time: string;
+}
+
+export interface UpdateReminderRuleDto {
+  offsetDays?: number;
+  time?: string;
+  active?: boolean;
+}

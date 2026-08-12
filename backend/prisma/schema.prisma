@@ -118,6 +118,7 @@ model Company {
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   conversations Conversation[]
+  reminderRules ReminderRule[]
 
   @@map("company")
 }
@@ -408,6 +409,21 @@ model WhatsappConfig {
   updatedAt DateTime @updatedAt
 
   @@map("whatsapp_config")
+}
+
+model ReminderRule {
+  id         Int     @id @default(autoincrement())
+  companyId  Int
+  offsetDays Int
+  time       String
+  active     Boolean @default(true)
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("reminder_rule")
 }
 
 model Conversation {

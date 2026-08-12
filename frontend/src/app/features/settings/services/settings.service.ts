@@ -9,6 +9,9 @@ import {
   UserLevel,
   UpsertIntegrationDto,
   BaileysStatus,
+  ReminderRule,
+  CreateReminderRuleDto,
+  UpdateReminderRuleDto,
 } from '../types/settings.types';
 
 @Injectable({
@@ -63,5 +66,21 @@ export class SettingsService {
 
   disconnectBaileys() {
     return this.http.post<{ ok: true }>(`${this.apiUrl}/whatssap/baileys/disconnect`, {});
+  }
+
+  getReminderRules() {
+    return this.http.get<ReminderRule[]>(`${this.apiUrl}/whatssap/reminder-rules`);
+  }
+
+  createReminderRule(dto: CreateReminderRuleDto) {
+    return this.http.post<ReminderRule>(`${this.apiUrl}/whatssap/reminder-rules`, dto);
+  }
+
+  updateReminderRule(id: number, dto: UpdateReminderRuleDto) {
+    return this.http.patch<ReminderRule>(`${this.apiUrl}/whatssap/reminder-rules/${id}`, dto);
+  }
+
+  removeReminderRule(id: number) {
+    return this.http.delete<{ ok: true }>(`${this.apiUrl}/whatssap/reminder-rules/${id}`);
   }
 }
