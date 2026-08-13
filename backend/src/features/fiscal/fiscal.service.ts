@@ -115,7 +115,7 @@ export class FiscalService {
 
   private async calculateDoctorEarnings(
     appointment: {
-      doctorId: number;
+      doctorId: number | null;
       appointmentTypeId: number | null;
       feeOverride: Prisma.Decimal | null;
     },
@@ -126,7 +126,7 @@ export class FiscalService {
     deductedAmount: number;
     deductionExceeded: boolean;
   }> {
-    if (!appointment.appointmentTypeId)
+    if (!appointment.doctorId || !appointment.appointmentTypeId)
       return { value: 0, deductedAmount: 0, deductionExceeded: false };
 
     const commission =
@@ -272,8 +272,8 @@ export class FiscalService {
 
     return payments.map((p) => ({
       paymentId: p.id,
-      patientName: p.appointment.patient.name,
-      doctorName: p.appointment.doctor.name,
+      patientName: p.appointment.patient?.name ?? 'Deletado',
+      doctorName: p.appointment.doctor?.name ?? 'Deletado',
       value: Number(p.value),
       doctorEarnings: Number(p.doctorEarnings),
       date: this.toLocalDateString(p.date),
@@ -314,8 +314,8 @@ export class FiscalService {
     return payments.map((p) => ({
       paymentId: p.id,
       appointmentId: p.appointmentId,
-      patientName: p.appointment.patient.name,
-      doctorName: p.appointment.doctor.name,
+      patientName: p.appointment.patient?.name ?? 'Deletado',
+      doctorName: p.appointment.doctor?.name ?? 'Deletado',
       value: Number(p.value),
       date: this.toLocalDateString(p.date),
     }));

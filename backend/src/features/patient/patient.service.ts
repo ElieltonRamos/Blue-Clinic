@@ -118,6 +118,16 @@ export class PatientsService {
     return new PatientDetailResponseDto(patient);
   }
 
+  async remove(id: number, companyId: number): Promise<void> {
+    const patient = await this.prisma.client.patient.findFirst({
+      where: { id, companyId },
+      select: { id: true },
+    });
+    if (!patient) throw new NotFoundException('Paciente não encontrado');
+
+    await this.prisma.client.patient.delete({ where: { id } });
+  }
+
   async update(
     id: number,
     companyId: number,

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-call */
 import { PrismaService } from '../../../core/database/prisma.service.js';
 import { BotData, BotStep, SendFn } from '../entities/bot-state.types.js';
 import { MENU_TEXT } from './menu.handler.js';
@@ -66,7 +65,7 @@ export async function showCancelAppointment(
 
   await sendFn(
     `Sua próxima consulta:\n\n` +
-      `👨‍⚕️ *Médico:* ${appointment.doctor.name}\n` +
+      `👨‍⚕️ *Médico:* ${appointment.doctor?.name ?? appointment.doctorName ?? 'Não informado'}\n` +
       `📅 *Data:* ${formatAppointmentDate(new Date(appointment.date))}\n` +
       `🕐 *Horário:* ${appointment.startTime}\n\n` +
       `Deseja cancelar? Digite *1* para confirmar ou *2* para voltar.`,
@@ -143,7 +142,7 @@ export async function showNextAppointment(
   await updateConversation(conversationId, 'MENU', {});
   await sendFn(
     `Sua próxima consulta:\n\n` +
-      `👨‍⚕️ *Médico:* ${appointment.doctor.name}\n` +
+      `👨‍⚕️ *Médico:* ${appointment.doctor?.name ?? appointment.doctorName ?? 'Não informado'}\n` +
       `📅 *Data:* ${formatAppointmentDate(new Date(appointment.date))}\n` +
       `🕐 *Horário:* ${appointment.startTime}\n\n` +
       `Se precisar de mais alguma coisa, é só falar! 😊`,

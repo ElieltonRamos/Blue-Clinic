@@ -72,11 +72,11 @@ export class FinanceService {
 
     const [payments, prevPayments, expenses] = await Promise.all([
       this.prisma.client.payment.findMany({
-        where: { date: range, appointment: { doctor: { companyId } } },
+        where: { date: range, appointment: { companyId } },
         select: { value: true },
       }),
       this.prisma.client.payment.findMany({
-        where: { date: prevRange, appointment: { doctor: { companyId } } },
+        where: { date: prevRange, appointment: { companyId } },
         select: { value: true },
       }),
       this.prisma.client.expense.findMany({
@@ -119,16 +119,7 @@ export class FinanceService {
       orderBy: { date: 'desc' },
     });
 
-    return expenses.map((e) => ({
-      id: String(e.id),
-      description: e.description,
-      category: e.category,
-      registeredById: e.registeredById,
-      registeredByName: e.registeredBy.username,
-      value: Number(e.value),
-      date: this.toLocalDateString(e.date),
-      status: e.status,
-    }));
+    return expenses.map((e) => this.mapExpense(e));
   }
 
   // ── Transactions ───────────────────────────────────────────────────────────
@@ -141,7 +132,7 @@ export class FinanceService {
 
     const [payments, expenses] = await Promise.all([
       this.prisma.client.payment.findMany({
-        where: { date: range, appointment: { doctor: { companyId } } },
+        where: { date: range, appointment: { companyId } },
         include: {
           entries: { select: { method: true } },
           registeredBy: { select: { username: true } },
@@ -168,7 +159,7 @@ export class FinanceService {
       }),
       patient: p.patient ?? '',
       doctor: p.doctor ?? '',
-      registeredBy: p.registeredBy.username,
+      registeredBy: p.registeredBy?.username ?? p.registeredByName ?? '—',
       value: Number(p.value),
       methods: [...new Set(p.entries.map((e) => e.method))],
     }));
@@ -184,7 +175,7 @@ export class FinanceService {
       }),
       patient: e.description,
       doctor: '',
-      registeredBy: e.registeredBy.username,
+      registeredBy: e.registeredBy?.username ?? e.registeredByName ?? '—',
       value: Number(e.value),
       methods: [],
     }));
@@ -205,7 +196,7 @@ export class FinanceService {
     const range = this.parseDateRange(filter);
 
     const payments = await this.prisma.client.payment.findMany({
-      where: { date: range, appointment: { doctor: { companyId } } },
+      where: { date: range, appointment: { companyId } },
       select: {
         id: true,
         date: true,
@@ -220,7 +211,10 @@ export class FinanceService {
             specialty: true,
             appointmentType: { select: { name: true } },
             patient: { select: { name: true } },
+            patientName: true,
             doctor: { select: { id: true, name: true, avatarUrl: true } },
+            doctorId: true,
+            doctorName: true,
           },
         },
       },
@@ -238,14 +232,25 @@ export class FinanceService {
     >();
 
     for (const p of payments) {
-      const doctor = p.appointment.doctor;
+      const doctorId = p.appointment.doctor?.id ?? p.appointment.doctorId;
+      if (doctorId == null) continue; // médico removido: não há como agrupar por profissional
+
+      const doctorName =
+        p.appointment.doctor?.name ??
+        p.appointment.doctorName ??
+        'Médico removido';
+      const avatarUrl = p.appointment.doctor?.avatarUrl ?? null;
+
       const appointment: ProfessionalRevenueAppointmentDto = {
         paymentId: p.id,
         date: this.toLocalDateString(p.appointment.date),
         startTime: p.appointment.startTime,
         specialty: p.appointment.specialty,
         appointmentType: p.appointment.appointmentType?.name ?? null,
-        patientName: p.appointment.patient.name,
+        patientName:
+          p.appointment.patient?.name ??
+          p.appointment.patientName ??
+          'Paciente removido',
         paymentValue: Number(p.value),
         doctorEarnings: Number(p.doctorEarnings),
         discount: Number(p.discount),
@@ -253,15 +258,15 @@ export class FinanceService {
         commissionPaid: p.commissionPaid,
       };
 
-      const existing = map.get(doctor.id);
+      const existing = map.get(doctorId);
       if (existing) {
         existing.value += Number(p.doctorEarnings);
         existing.appointments.push(appointment);
       } else {
-        map.set(doctor.id, {
-          id: doctor.id,
-          name: doctor.name,
-          avatarUrl: doctor.avatarUrl,
+        map.set(doctorId, {
+          id: doctorId,
+          name: doctorName,
+          avatarUrl,
           value: Number(p.doctorEarnings),
           appointments: [appointment],
         });
@@ -291,7 +296,7 @@ export class FinanceService {
       where: {
         payment: {
           date: range,
-          appointment: { doctor: { companyId } },
+          appointment: { companyId },
         },
       },
       select: {
@@ -301,6 +306,8 @@ export class FinanceService {
         payment: {
           select: {
             registeredBy: { select: { id: true, username: true } },
+            registeredById: true,
+            registeredByName: true,
           },
         },
       },
@@ -309,12 +316,19 @@ export class FinanceService {
     const map = new Map<number, CashClosingRowDto>();
 
     for (const entry of entries) {
-      const user = entry.payment.registeredBy;
+      const userId =
+        entry.payment.registeredBy?.id ?? entry.payment.registeredById;
+      if (userId == null) continue; // usuário removido: não há como agrupar por operador
+
+      const username =
+        entry.payment.registeredBy?.username ??
+        entry.payment.registeredByName ??
+        'Usuário removido';
       const net = Number(entry.amount) - Number(entry.change);
 
-      if (!map.has(user.id)) {
-        map.set(user.id, {
-          operator: user.username,
+      if (!map.has(userId)) {
+        map.set(userId, {
+          operator: username,
           pix: 0,
           dinheiro: 0,
           cartao: 0,
@@ -322,7 +336,7 @@ export class FinanceService {
         });
       }
 
-      const row = map.get(user.id)!;
+      const row = map.get(userId)!;
       row[entry.method] += net;
     }
 
@@ -340,7 +354,7 @@ export class FinanceService {
       where: {
         id: { in: paymentIds },
         commissionPaid: false,
-        appointment: { doctor: { companyId } },
+        appointment: { companyId },
       },
       select: {
         id: true,
@@ -348,7 +362,9 @@ export class FinanceService {
         appointment: {
           select: {
             doctor: { select: { name: true } },
+            doctorName: true,
             patient: { select: { name: true } },
+            patientName: true,
           },
         },
       },
@@ -365,7 +381,7 @@ export class FinanceService {
         where: {
           id: { in: payments.map((p) => p.id) },
           commissionPaid: false,
-          appointment: { doctor: { companyId } },
+          appointment: { companyId },
         },
         data: {
           commissionPaid: true,
@@ -378,7 +394,15 @@ export class FinanceService {
         data: payments.map((p) => ({
           companyId,
           registeredById: paidById,
-          description: `Comissão - ${p.appointment.doctor.name} (${p.appointment.patient.name})`,
+          description: `Comissão - ${
+            p.appointment.doctor?.name ??
+            p.appointment.doctorName ??
+            'Médico removido'
+          } (${
+            p.appointment.patient?.name ??
+            p.appointment.patientName ??
+            'Paciente removido'
+          })`,
           category: 'Comissões',
           value: p.doctorEarnings,
           date: now,
@@ -400,7 +424,7 @@ export class FinanceService {
       where: {
         commissionPaid: true,
         commissionPaidAt: range,
-        appointment: { doctor: { companyId } },
+        appointment: { companyId },
       },
       include: {
         appointment: { include: { doctor: true, patient: true } },
@@ -411,8 +435,14 @@ export class FinanceService {
 
     return payments.map((p) => ({
       id: p.id,
-      doctorName: p.appointment.doctor.name,
-      patientName: p.appointment.patient.name,
+      doctorName:
+        p.appointment.doctor?.name ??
+        p.appointment.doctorName ??
+        'Médico removido',
+      patientName:
+        p.appointment.patient?.name ??
+        p.appointment.patientName ??
+        'Paciente removido',
       value: Number(p.doctorEarnings),
       paidByName: p.commissionPaidBy?.username ?? '—',
       paidAt: p.commissionPaidAt!.toISOString(),
@@ -426,8 +456,9 @@ export class FinanceService {
       id: String(expense.id),
       description: expense.description,
       category: expense.category,
-      registeredById: expense.registeredById,
-      registeredByName: expense.registeredBy.username,
+      registeredById: expense.registeredBy?.id ?? expense.registeredById ?? 0,
+      registeredByName:
+        expense.registeredBy?.username ?? expense.registeredByName ?? '—',
       value: Number(expense.value),
       date: this.toLocalDateString(expense.date),
       status: expense.status,
@@ -439,10 +470,16 @@ export class FinanceService {
     registeredById: number,
     dto: CreateExpenseDto,
   ): Promise<FinanceExpenseDto> {
+    const registeredByUser = await this.prisma.client.user.findUnique({
+      where: { id: registeredById },
+      select: { username: true },
+    });
+
     const expense = await this.prisma.client.expense.create({
       data: {
         companyId,
         registeredById,
+        registeredByName: registeredByUser?.username ?? null,
         description: dto.description,
         category: dto.category,
         value: dto.value,

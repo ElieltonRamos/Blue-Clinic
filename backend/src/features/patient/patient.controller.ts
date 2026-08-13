@@ -13,6 +13,8 @@ import {
   UseInterceptors,
   UploadedFile,
   StreamableFile,
+  Delete,
+  HttpCode,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -171,5 +173,21 @@ export class PatientsController {
     @CurrentUser('companyId') companyId: number,
   ): Promise<StreamableFile> {
     return this.patientsService.streamDocument(id, documentId, companyId);
+  }
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Excluir paciente' })
+  @ApiParam({ name: 'id', type: Number })
+  @ApiResponse({ status: HttpStatus.NO_CONTENT })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Paciente não encontrado',
+  })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  remove(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser('companyId') companyId: number,
+  ) {
+    return this.patientsService.remove(id, companyId);
   }
 }

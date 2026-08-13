@@ -73,13 +73,14 @@ export class DoctorReminderJob {
 
     const byDoctor = new Map<number, typeof appointments>();
     for (const appt of appointments) {
+      if (!appt.doctorId || !appt.doctor) continue;
       const list = byDoctor.get(appt.doctorId) ?? [];
       list.push(appt);
       byDoctor.set(appt.doctorId, list);
     }
 
     for (const [doctorId, appts] of byDoctor) {
-      const doctor = appts[0].doctor;
+      const doctor = appts[0].doctor!;
       const phone = doctor.user?.phone;
 
       if (!phone) {
@@ -93,7 +94,7 @@ export class DoctorReminderJob {
         timeZone: 'UTC',
       });
       const patientList = appts
-        .map((a) => `${a.startTime} - ${a.patient.name}`)
+        .map((a) => `${a.startTime} - ${a.patient?.name ?? 'Deletado'}`)
         .join('\n');
 
       try {

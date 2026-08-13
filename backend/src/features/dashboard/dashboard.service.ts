@@ -83,42 +83,42 @@ export class DashboardService {
     ] = await Promise.all([
       this.prisma.client.appointment.count({
         where: {
-          doctor: { companyId },
+          companyId,
           date: today,
           status: { in: activeStatuses },
         },
       }),
       this.prisma.client.appointment.count({
         where: {
-          doctor: { companyId },
+          companyId,
           date: yesterday,
           status: { in: activeStatuses },
         },
       }),
       this.prisma.client.payment.findMany({
-        where: { date: currentMonth, appointment: { doctor: { companyId } } },
+        where: { date: currentMonth, appointment: { companyId } },
         select: { value: true },
       }),
       this.prisma.client.payment.findMany({
-        where: { date: prevMonth, appointment: { doctor: { companyId } } },
+        where: { date: prevMonth, appointment: { companyId } },
         select: { value: true },
       }),
       this.prisma.client.appointment.count({
         where: {
-          doctor: { companyId },
+          companyId,
           date: currentMonth,
           status: AppointmentStatus.cancelled,
         },
       }),
       this.prisma.client.appointment.count({
         where: {
-          doctor: { companyId },
+          companyId,
           date: currentMonth,
           status: { in: [...activeStatuses, AppointmentStatus.cancelled] },
         },
       }),
       this.prisma.client.conversation.count({
-        where: { patient: { companyId } },
+        where: { companyId },
       }),
     ]);
 
@@ -153,7 +153,7 @@ export class DashboardService {
 
     const appointments = await this.prisma.client.appointment.findMany({
       where: {
-        doctor: { companyId },
+        companyId,
         date: today,
         status: {
           notIn: [AppointmentStatus.blocked, AppointmentStatus.external],
@@ -165,13 +165,28 @@ export class DashboardService {
         startTime: true,
         status: true,
         patient: { select: { name: true } },
+        patientName: true,
         appointmentType: { select: { name: true } },
         doctor: { select: { id: true, name: true } },
+        doctorName: true,
+        doctorId: true,
       },
       orderBy: { startTime: 'asc' },
     });
 
-    return appointments;
+    return appointments.map((a) => ({
+      id: a.id,
+      startTime: a.startTime,
+      status: a.status,
+      patient: {
+        name: a.patient?.name ?? a.patientName ?? 'Paciente removido',
+      },
+      appointmentType: a.appointmentType,
+      doctor: {
+        id: a.doctor?.id ?? a.doctorId ?? 0,
+        name: a.doctor?.name ?? a.doctorName ?? 'Médico removido',
+      },
+    }));
   }
 
   // ── Next Patient ───────────────────────────────────────────────────────────
@@ -187,7 +202,7 @@ export class DashboardService {
     const appointment = await this.prisma.client.appointment.findFirst({
       where: {
         doctorId,
-        doctor: { companyId },
+        companyId,
         date: today,
         startTime: { gte: currentTime },
         status: {
@@ -201,12 +216,24 @@ export class DashboardService {
       select: {
         startTime: true,
         patient: { select: { name: true } },
+        patientName: true,
         appointmentType: { select: { name: true } },
       },
       orderBy: { startTime: 'asc' },
     });
 
-    return appointment ?? null;
+    if (!appointment) return null;
+
+    return {
+      startTime: appointment.startTime,
+      patient: {
+        name:
+          appointment.patient?.name ??
+          appointment.patientName ??
+          'Paciente removido',
+      },
+      appointmentType: appointment.appointmentType,
+    };
   }
 
   // ── Appointments Chart ─────────────────────────────────────────────────────
@@ -222,7 +249,7 @@ export class DashboardService {
         this.prisma.client.appointment.groupBy({
           by: ['status'],
           where: {
-            doctor: { companyId },
+            companyId,
             date: this.monthRange(year, month),
             status: {
               notIn: [AppointmentStatus.blocked, AppointmentStatus.external],
@@ -284,10 +311,10 @@ export class DashboardService {
   async getChatbotStats(companyId: number): Promise<ChatbotStatsDto> {
     const [botInteractions, humanInteractions] = await Promise.all([
       this.prisma.client.conversation.count({
-        where: { patient: { companyId }, status: 'bot' },
+        where: { companyId, status: 'bot' },
       }),
       this.prisma.client.conversation.count({
-        where: { patient: { companyId }, status: { in: ['human', 'waiting'] } },
+        where: { companyId, status: { in: ['human', 'waiting'] } },
       }),
     ]);
 

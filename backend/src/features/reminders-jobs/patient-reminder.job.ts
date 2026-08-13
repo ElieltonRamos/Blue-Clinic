@@ -102,6 +102,8 @@ export class PatientReminderJob {
     let failures = 0;
 
     for (const appointment of appointments) {
+      if (!appointment.patient || !appointment.doctor) continue;
+
       const phone = appointment.patient.phone;
       if (!phone) continue;
 

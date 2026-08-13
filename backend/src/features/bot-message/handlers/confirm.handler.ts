@@ -66,8 +66,11 @@ export async function handleConfirmAppointment(
 
   await prisma.client.appointment.create({
     data: {
+      companyId,
       doctorId: data.doctorId!,
+      doctorName: data.doctorName!,
       patientId: data.patientId!,
+      patientName: data.name!,
       appointmentTypeId: data.appointmentTypeId!,
       specialty: doctor!.specialty,
       date: new Date(Date.UTC(yr, mo - 1, dy)),

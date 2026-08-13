@@ -119,6 +119,7 @@ model Company {
   updatedAt     DateTime       @updatedAt
   conversations Conversation[]
   reminderRules ReminderRule[]
+  appointments  Appointment[]
 
   @@map("company")
 }
@@ -131,7 +132,7 @@ model DoctorSchedule {
   endTime   String
   active    Boolean @default(true)
 
-  doctor Doctor @relation(fields: [doctorId], references: [id])
+  doctor Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
 
   @@unique([doctorId, dayOfWeek])
   @@map("doctor_schedule")
@@ -169,8 +170,8 @@ model AppointmentTypeCommission {
   nfDeductionType  CommissionType?
   nfDeductionValue Decimal?        @db.Decimal(10, 2)
 
-  doctor          Doctor          @relation(fields: [doctorId], references: [id])
-  appointmentType AppointmentType @relation(fields: [appointmentTypeId], references: [id])
+  doctor          Doctor          @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  appointmentType AppointmentType @relation(fields: [appointmentTypeId], references: [id], onDelete: Cascade)
 
   @@unique([doctorId, appointmentTypeId])
   @@map("appointment_type_commission")
@@ -263,8 +264,11 @@ model PatientDocument {
 
 model Appointment {
   id                  Int                @id @default(autoincrement())
-  doctorId            Int
-  patientId           Int
+  companyId           Int
+  doctorId            Int?
+  doctorName          String?
+  patientId           Int?
+  patientName         String?
   appointmentTypeId   Int?
   originAppointmentId Int?
   specialty           String
@@ -280,8 +284,9 @@ model Appointment {
   rating              Decimal?           @db.Decimal(3, 2)
   reminderSent        Boolean            @default(false)
 
-  doctor            Doctor           @relation(fields: [doctorId], references: [id])
-  patient           Patient          @relation(fields: [patientId], references: [id])
+  company           Company          @relation(fields: [companyId], references: [id])
+  doctor            Doctor?          @relation(fields: [doctorId], references: [id], onDelete: SetNull)
+  patient           Patient?         @relation(fields: [patientId], references: [id], onDelete: SetNull)
   appointmentType   AppointmentType? @relation(fields: [appointmentTypeId], references: [id])
   originAppointment Appointment?     @relation("AppointmentRetorno", fields: [originAppointmentId], references: [id])
   generatedRetornos Appointment[]    @relation("AppointmentRetorno")
@@ -301,7 +306,7 @@ model Consultation {
   notes         String? @db.Text
   active        Boolean @default(true)
 
-  appointment Appointment @relation(fields: [appointmentId], references: [id])
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -331,27 +336,28 @@ model BlockedSlot {
 }
 
 model Payment {
-  id             Int      @id @default(autoincrement())
-  appointmentId  Int
-  date           DateTime
-  patient        String?
-  doctor         String?
-  registeredById Int
-  value          Decimal  @db.Decimal(10, 2)
-  doctorEarnings Decimal  @default(0) @db.Decimal(10, 2)
-  clinicEarnings Decimal  @default(0) @db.Decimal(10, 2)
-  discount       Decimal  @default(0) @db.Decimal(10, 2)
-  deductedAmount Decimal  @default(0) @db.Decimal(10, 2)
-  invoiceIssued  Boolean  @default(false)
-  invoiceXmlUrl  String?
-  invoicePdfUrl  String?
+  id               Int      @id @default(autoincrement())
+  appointmentId    Int
+  date             DateTime
+  patient          String?
+  doctor           String?
+  registeredById   Int?
+  registeredByName String?
+  value            Decimal  @db.Decimal(10, 2)
+  doctorEarnings   Decimal  @default(0) @db.Decimal(10, 2)
+  clinicEarnings   Decimal  @default(0) @db.Decimal(10, 2)
+  discount         Decimal  @default(0) @db.Decimal(10, 2)
+  deductedAmount   Decimal  @default(0) @db.Decimal(10, 2)
+  invoiceIssued    Boolean  @default(false)
+  invoiceXmlUrl    String?
+  invoicePdfUrl    String?
 
   commissionPaid     Boolean   @default(false)
   commissionPaidAt   DateTime?
   commissionPaidById Int?
 
-  appointment      Appointment    @relation(fields: [appointmentId], references: [id])
-  registeredBy     User           @relation("PaymentRegisteredBy", fields: [registeredById], references: [id])
+  appointment      Appointment    @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  registeredBy     User?          @relation("PaymentRegisteredBy", fields: [registeredById], references: [id], onDelete: SetNull)
   commissionPaidBy User?          @relation("CommissionPaidBy", fields: [commissionPaidById], references: [id])
   entries          PaymentEntry[]
 
@@ -371,17 +377,18 @@ model PaymentEntry {
 }
 
 model Expense {
-  id             Int           @id @default(autoincrement())
-  companyId      Int
-  description    String
-  category       String
-  registeredById Int
-  value          Decimal       @db.Decimal(10, 2)
-  date           DateTime
-  status         ExpenseStatus @default(pendente)
+  id               Int           @id @default(autoincrement())
+  companyId        Int
+  description      String
+  category         String
+  registeredById   Int?
+  registeredByName String?
+  value            Decimal       @db.Decimal(10, 2)
+  date             DateTime
+  status           ExpenseStatus @default(pendente)
 
   company      Company @relation(fields: [companyId], references: [id])
-  registeredBy User    @relation("ExpenseRegisteredBy", fields: [registeredById], references: [id])
+  registeredBy User?   @relation("ExpenseRegisteredBy", fields: [registeredById], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

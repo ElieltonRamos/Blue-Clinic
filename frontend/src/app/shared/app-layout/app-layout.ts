@@ -45,7 +45,7 @@ export class AppLayout implements OnInit {
       title: 'Configuração de Agenda',
       route: '/dashboard/agenda-config',
       icon: 'clock',
-      roles: ['admin', 'medico'],
+      roles: ['admin', 'medico', 'atendimento'],
     },
     {
       label: 'Tipos Consulta',

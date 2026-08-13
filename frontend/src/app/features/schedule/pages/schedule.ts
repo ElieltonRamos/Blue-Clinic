@@ -528,7 +528,7 @@ export class Schedule implements OnInit {
     const type = this.appointmentTypes.find((t) => t.id === form.appointmentTypeId);
     const isRetorno = type?.isRetorno ?? false;
     if (form.price < 0 || (form.price === 0 && !isRetorno)) {
-      this.notification.error('Preço deve ser maior que zero2');
+      this.notification.error('Preço deve ser maior que zero');
       return false;
     }
     if (form.nfDeductionEnabled && form.nfDeductionValue < 0) {

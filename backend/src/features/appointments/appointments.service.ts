@@ -39,9 +39,7 @@ export class AppointmentsService {
     companyId: number,
     filters: AppointmentFiltersDto,
   ): Promise<AppointmentResponseDto[]> {
-    const where: Prisma.AppointmentWhereInput = {
-      doctor: { companyId },
-    };
+    const where: Prisma.AppointmentWhereInput = { companyId };
 
     if (filters.month) {
       const [year, month] = filters.month.split('-').map(Number);
@@ -75,7 +73,7 @@ export class AppointmentsService {
     companyId: number,
   ): Promise<AppointmentResponseDto> {
     const appointment = await this.prisma.client.appointment.findFirst({
-      where: { id, doctor: { companyId } },
+      where: { id, companyId },
       include: APPOINTMENT_INCLUDE,
     });
 
@@ -122,8 +120,11 @@ export class AppointmentsService {
 
     const appointment = await this.prisma.client.appointment.create({
       data: {
+        companyId,
         doctorId: dto.doctorId,
+        doctorName: doctor.name,
         patientId: dto.patientId,
+        patientName: patient.name,
         appointmentTypeId: dto.appointmentTypeId,
         specialty: dto.specialty ?? doctor.specialty,
         date: this.parseDateUTC(dto.date),
@@ -148,7 +149,7 @@ export class AppointmentsService {
     rating: number,
   ): Promise<AppointmentResponseDto> {
     const appointment = await this.prisma.client.appointment.findFirst({
-      where: { id, doctor: { companyId } },
+      where: { id, companyId },
     });
 
     if (!appointment) throw new NotFoundException('Agendamento não encontrado');
@@ -252,6 +253,15 @@ export class AppointmentsService {
     return new AppointmentResponseDto(appointment);
   }
 
+  async remove(id: number, companyId: number): Promise<void> {
+    const appointment = await this.prisma.client.appointment.findFirst({
+      where: { id, companyId },
+    });
+    if (!appointment) throw new NotFoundException('Agendamento não encontrado');
+
+    await this.prisma.client.appointment.delete({ where: { id } });
+  }
+
   // ── Payments ───────────────────────────────────────────────────────────────
   async createPayment(
     appointmentId: number,
@@ -260,7 +270,7 @@ export class AppointmentsService {
     registeredById: number,
   ): Promise<PaymentResponseDto> {
     const appointment = await this.prisma.client.appointment.findFirst({
-      where: { id: appointmentId, doctor: { companyId } },
+      where: { id: appointmentId, companyId },
       include: {
         patient: { select: { name: true } },
         doctor: { select: { name: true } },
@@ -298,15 +308,24 @@ export class AppointmentsService {
       total,
     );
 
+    const registeredByUser = await this.prisma.client.user.findUnique({
+      where: { id: registeredById },
+      select: { username: true },
+    });
+
+    const patientName = appointment.patient?.name ?? appointment.patientName;
+    const doctorName = appointment.doctor?.name ?? appointment.doctorName;
+
     const payment = await this.prisma.client.$transaction(
       async (tx: Prisma.TransactionClient) => {
         const created = await tx.payment.create({
           data: {
             appointmentId,
             date: new Date(),
-            patient: appointment.patient.name,
-            doctor: appointment.doctor.name,
+            patient: patientName,
+            doctor: doctorName,
             registeredById,
+            registeredByName: registeredByUser?.username ?? null,
             value: total,
             discount,
             doctorEarnings,
@@ -342,12 +361,12 @@ export class AppointmentsService {
   private async resolveCommissions(
     appointment: {
       appointmentTypeId: number | null;
-      doctorId: number;
+      doctorId: number | null;
       feeOverride: Prisma.Decimal | null;
     },
     total: number,
   ): Promise<{ doctorEarnings: number; clinicEarnings: number }> {
-    if (!appointment.appointmentTypeId)
+    if (!appointment.appointmentTypeId || !appointment.doctorId)
       return { doctorEarnings: 0, clinicEarnings: 0 };
 
     const commission =
@@ -377,7 +396,7 @@ export class AppointmentsService {
     companyId: number,
   ): Promise<PaymentResponseDto> {
     const appointment = await this.prisma.client.appointment.findFirst({
-      where: { id: appointmentId, doctor: { companyId } },
+      where: { id: appointmentId, companyId },
       include: {
         patient: { select: { name: true } },
         doctor: { select: { name: true } },
@@ -551,10 +570,10 @@ export class AppointmentsService {
 
     const [confirmed, total] = await Promise.all([
       this.prisma.client.appointment.count({
-        where: { doctor: { companyId }, date: dateFilter, status: 'confirmed' },
+        where: { companyId, date: dateFilter, status: 'confirmed' },
       }),
       this.prisma.client.appointment.count({
-        where: { doctor: { companyId }, date: dateFilter },
+        where: { companyId, date: dateFilter },
       }),
     ]);
 
@@ -645,7 +664,7 @@ export class AppointmentsService {
         return {
           ...slot,
           status: 'booked' as SlotStatus,
-          reason: bookedBy.patient.name,
+          reason: bookedBy.patient?.name ?? 'Paciente removido',
         };
       }
 
@@ -673,7 +692,7 @@ export class AppointmentsService {
     dto: UpdateAppointmentStatusDto,
   ): Promise<AppointmentResponseDto> {
     const appointment = await this.prisma.client.appointment.findFirst({
-      where: { id, doctor: { companyId } },
+      where: { id, companyId },
       include: { appointmentType: { select: { isRetorno: true } } },
     });
     if (!appointment) throw new NotFoundException('Agendamento não encontrado');
@@ -719,7 +738,7 @@ export class AppointmentsService {
     dto: UpdatePaymentDto,
   ): Promise<PaymentResponseDto> {
     const appointment = await this.prisma.client.appointment.findFirst({
-      where: { id: appointmentId, doctor: { companyId } },
+      where: { id: appointmentId, companyId },
       include: {
         patient: { select: { name: true } },
         doctor: { select: { name: true } },
@@ -793,7 +812,7 @@ export class AppointmentsService {
     companyId: number,
   ): Promise<void> {
     const appointment = await this.prisma.client.appointment.findFirst({
-      where: { id: appointmentId, doctor: { companyId } },
+      where: { id: appointmentId, companyId },
     });
     if (!appointment) throw new NotFoundException('Agendamento não encontrado');
 

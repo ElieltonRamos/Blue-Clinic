@@ -165,11 +165,16 @@ export class UsersService {
   async remove(id: number): Promise<{ message: string }> {
     this.validateId(id);
     this.guardProtectedUser(id, 'removido');
-    await this.findActiveUserById(id);
 
-    await this.prisma.client.user.update({
-      where: { id },
-      data: { active: false },
+    const user = await this.prisma.client.user.findUnique({ where: { id } });
+    if (!user) throw new NotFoundException('Usuário não encontrado');
+
+    await this.prisma.client.$transaction(async (tx) => {
+      if (user.role === Role.medico) {
+        await tx.doctor.deleteMany({ where: { userId: id } });
+      }
+
+      await tx.user.delete({ where: { id } });
     });
 
     return { message: 'Usuário removido com sucesso' };
