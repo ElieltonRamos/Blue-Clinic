@@ -150,6 +150,14 @@
             }}</span>
           </div>
           <div class="flex gap-2">
+            @if (isAdmin) {
+              <button
+                (click)="deletePatient()"
+                class="text-(--color-text-muted) hover:text-danger transition-colors text-sm font-bold cursor-pointer px-2 py-1 rounded hover:bg-(--color-bg-hover-md)"
+              >
+                🗑️ Excluir
+              </button>
+            }
             <button
               (click)="openEditModal()"
               class="text-(--color-text-muted) hover:text-(--color-primary-text) transition-colors text-sm font-bold cursor-pointer px-2 py-1 rounded hover:bg-(--color-bg-hover-md)"

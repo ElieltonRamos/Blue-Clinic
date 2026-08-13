@@ -346,4 +346,21 @@ export class AppointmentsController {
   ) {
     return this.appointmentsService.reversePayment(id, paymentId, companyId);
   }
+
+  @Delete(':id')
+  @Roles('admin')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Remover agendamento' })
+  @ApiParam({ name: 'id', type: Number })
+  @ApiResponse({ status: HttpStatus.NO_CONTENT })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Agendamento não encontrado',
+  })
+  remove(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser('companyId') companyId: number,
+  ) {
+    return this.appointmentsService.remove(id, companyId);
+  }
 }

@@ -97,4 +97,8 @@ export class CalendarService {
       `${this.apiUrl}/appointments/${appointmentId}/payments/${paymentId}`,
     );
   }
+
+  deleteAppointment(appointmentId: number) {
+    return this.http.delete<void>(`${this.apiUrl}/appointments/${appointmentId}`);
+  }
 }

@@ -1,10 +1,4 @@
-import {
-  Component,
-  inject,
-  OnInit,
-  ChangeDetectionStrategy,
-  signal,
-} from '@angular/core';
+import { Component, inject, OnInit, ChangeDetectionStrategy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -21,6 +15,8 @@ import { NotificationService } from '../../../shared/toastr/notification.service
 import { PaginatorComponent } from '../../../shared/paginator/paginator.component';
 import { AppointmentResponse } from '../../../shared/create-appointment-modal/types/create-appointment.types';
 import { CreateAppointmentModal } from '../../../shared/create-appointment-modal/pages/create-appointment-modal';
+import { AuthService } from '../../../core/services/auth.service';
+import { alertConfirm } from '../../../shared/alerts/custom-alerts';
 
 const AVATAR_COLORS = [
   'bg-primary text-btn-primary-text',
@@ -40,6 +36,7 @@ const ITEMS_PER_PAGE = 100;
 export class Patients implements OnInit {
   private patientsService = inject(PatientsService);
   private notification = inject(NotificationService);
+  private authService = inject(AuthService);
 
   patients = signal<Patient[]>([]);
   selectedDetail = signal<PatientDetail | null>(null);
@@ -57,6 +54,10 @@ export class Patients implements OnInit {
   showEditModal = signal(false);
   showAppointmentModal = signal(false);
   editPatient = signal<Partial<UpdatePatientRequest>>({});
+
+  get isAdmin(): boolean {
+    return this.authService.getTokenPayload()?.role === 'admin';
+  }
 
   patientFields: FormField[] = [
     { name: 'name', label: 'Nome', type: 'text', placeholder: 'Nome completo', required: true },
@@ -99,6 +100,25 @@ export class Patients implements OnInit {
       error: (err: HttpErrorResponse) => {
         this.loading.set(false);
         this.notification.error(this.getErrorMessage(err, 'Erro ao carregar pacientes'));
+      },
+    });
+  }
+
+  async deletePatient(): Promise<void> {
+    const detail = this.selectedDetail();
+    if (!detail) return;
+
+    const confirmed = await alertConfirm(`Excluir o paciente "${detail.name}"?`);
+    if (!confirmed) return;
+
+    this.patientsService.deletePatient(detail.id).subscribe({
+      next: () => {
+        this.selectedDetail.set(null);
+        this.notification.success('Paciente excluído com sucesso.');
+        this.loadPatients();
+      },
+      error: (err: HttpErrorResponse) => {
+        this.notification.error(this.getErrorMessage(err, 'Erro ao excluir paciente.'));
       },
     });
   }

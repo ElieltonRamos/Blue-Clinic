@@ -504,6 +504,16 @@
                     🧾 Comprovante
                   </button>
                 }
+
+                @if (apt.status === 'cancelled' && isAdmin) {
+                  <button
+                    (click)="requestDelete(apt); $event.stopPropagation()"
+                    [disabled]="actionLoading()"
+                    class="text-[10px] px-2 py-1 rounded-lg bg-danger-subtle text-(--color-danger) hover:opacity-80 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    🗑 Excluir
+                  </button>
+                }
               </div>
             </div>
 
@@ -568,6 +578,33 @@
                     class="text-[11px] px-3 py-1 rounded-lg bg-danger-subtle text-(--color-danger) border border-(--color-danger)/40 hover:opacity-80 transition-opacity disabled:opacity-30 disabled:cursor-not-allowed"
                   >
                     Confirmar cancelamento
+                  </button>
+                </div>
+              </div>
+            }
+
+            @if (pendingDeleteId === apt.id) {
+              <div
+                class="mt-2 ml-15 rounded-xl border border-(--color-danger)/40 bg-danger-subtle p-3 flex flex-col gap-2"
+                (click)="$event.stopPropagation()"
+              >
+                <p class="text-[11px] font-semibold text-(--color-danger)">
+                  Excluir agendamento permanentemente? Esta ação não pode ser desfeita.
+                </p>
+                <div class="flex justify-end gap-2">
+                  <button
+                    (click)="dismissInline(); $event.stopPropagation()"
+                    [disabled]="actionLoading()"
+                    class="text-[11px] px-3 py-1 rounded-lg border border-(--color-border) text-(--color-text-secondary) hover:opacity-80 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    Desistir
+                  </button>
+                  <button
+                    (click)="deleteAppointment(apt); $event.stopPropagation()"
+                    [disabled]="actionLoading()"
+                    class="text-[11px] px-3 py-1 rounded-lg bg-danger-subtle text-(--color-danger) border border-(--color-danger)/40 hover:opacity-80 transition-opacity disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    Confirmar exclusão
                   </button>
                 </div>
               </div>

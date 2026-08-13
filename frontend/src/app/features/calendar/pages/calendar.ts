@@ -20,6 +20,7 @@ import { AppointmentResponse } from '../../../shared/create-appointment-modal/ty
 import { NotificationService } from '../../../shared/toastr/notification.service';
 import { ModalAppointmentReceipt } from '../../../shared/modal-appointment-receipt/modal-appointment-receipt';
 import { TemplateModal } from '../../chat-automation/pages/template-modal/template-modal';
+import { AuthService } from '../../../core/services/auth.service';
 
 const PAYMENT_METHODS: PaymentMethodConfig[] = [
   { method: 'pix', label: 'PIX', icon: '📱' },
@@ -42,6 +43,9 @@ const PAYMENT_METHODS: PaymentMethodConfig[] = [
 export class Calendar implements OnInit {
   private readonly service = inject(CalendarService);
   private readonly notify = inject(NotificationService);
+  private readonly authService = inject(AuthService);
+
+  role: string = '';
 
   readonly weekDays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
   readonly availablePaymentMethods = PAYMENT_METHODS;
@@ -51,7 +55,7 @@ export class Calendar implements OnInit {
   private currentDate = signal(new Date());
   private allAppointments = signal<Appointment[]>([]);
   private doctorMap = new Map<number, string>();
-
+  pendingDeleteId: number | null = null;
   doctors: Doctor[] = [];
   receiptData: PaymentResponseDto | null = null;
   blockedHours: BlockedHour[] = [];
@@ -150,11 +154,16 @@ export class Calendar implements OnInit {
   // ── Lifecycle ─────────────────────────────────────────────────
 
   ngOnInit(): void {
+    const payload = this.authService.getTokenPayload();
+    this.role = payload?.role ?? '';
     this.loadDoctors();
     this.loadMonthData();
     this.loadBlockedSlots();
   }
 
+  get isAdmin(): boolean {
+    return this.role === 'admin';
+  }
   // ── Navigation ────────────────────────────────────────────────
 
   prevMonth(): void {
@@ -188,6 +197,36 @@ export class Calendar implements OnInit {
     this.cancelReasonText = '';
   }
 
+  requestDelete(apt: Appointment): void {
+    this.pendingDeleteId = apt.id;
+    this.pendingCancelId = null;
+    this.pendingRescheduleId = null;
+  }
+
+  deleteAppointment(apt: Appointment): void {
+    if (this.actionLoading()) return;
+    this.actionLoading.set(true);
+
+    this.service.deleteAppointment(apt.id).subscribe({
+      next: () => {
+        this.allAppointments.update((list) => list.filter((a) => a.id !== apt.id));
+        const day = this.selectedDay();
+        if (day) {
+          this.selectedDay.set({
+            ...day,
+            appointments: day.appointments.filter((a) => a.id !== apt.id),
+          });
+        }
+        this.notify.success('Agendamento removido');
+        this.actionLoading.set(false);
+      },
+      error: (err: HttpErrorResponse) => {
+        this.notify.error(this.getErrorMessage(err, 'Erro ao remover agendamento'));
+        this.actionLoading.set(false);
+      },
+    });
+  }
+
   requestReschedule(apt: Appointment): void {
     this.pendingRescheduleId = apt.id;
     this.pendingCancelId = null;
@@ -197,6 +236,7 @@ export class Calendar implements OnInit {
   dismissInline(): void {
     this.pendingCancelId = null;
     this.pendingRescheduleId = null;
+    this.pendingDeleteId = null;
   }
 
   // ── Create modal ──────────────────────────────────────────────

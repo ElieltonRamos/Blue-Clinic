@@ -54,4 +54,8 @@ export class PatientsService {
       responseType: 'blob',
     });
   }
+
+  deletePatient(id: number) {
+    return this.http.delete<void>(`${this.apiUrl}/patients/${id}`);
+  }
 }
