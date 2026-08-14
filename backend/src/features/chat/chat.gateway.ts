@@ -49,6 +49,12 @@ export class ChatGateway {
       .emit('conversation_updated', conversation);
   }
 
+  emitConversationDeleted(companyId: number, conversationId: number) {
+    this.server
+      .to(`company:${companyId}`)
+      .emit('conversation_deleted', { conversationId });
+  }
+
   emitMessageStatusUpdated(
     companyId: number,
     conversationId: number,

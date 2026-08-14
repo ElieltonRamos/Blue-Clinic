@@ -1,0 +1,141 @@
+@if (isOpen) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+    <div
+      class="w-105 max-h-[70vh] bg-bg-card border border-(--color-border) rounded-2xl flex flex-col overflow-hidden"
+    >
+      <div class="flex items-center justify-between px-5 py-4 border-b border-(--color-border)">
+        <p class="text-[14px] font-semibold text-(--color-text-primary)">Nova Conversa</p>
+        <button
+          (click)="onClose()"
+          class="text-(--color-text-muted) hover:text-(--color-text-primary)"
+        >
+          ✕
+        </button>
+      </div>
+
+      <div class="flex px-4 pt-3 gap-2 border-b border-(--color-border)">
+        <button
+          (click)="setTab('search')"
+          class="text-[12px] font-medium px-3 py-2 rounded-t-lg transition-colors"
+          [class]="
+            activeTab() === 'search'
+              ? 'bg-(--color-primary-subtle) text-(--color-primary-text)'
+              : 'text-(--color-text-muted) hover:bg-(--color-bg-hover)'
+          "
+        >
+          Buscar Paciente
+        </button>
+        <button
+          (click)="setTab('phone')"
+          class="text-[12px] font-medium px-3 py-2 rounded-t-lg transition-colors"
+          [class]="
+            activeTab() === 'phone'
+              ? 'bg-(--color-primary-subtle) text-(--color-primary-text)'
+              : 'text-(--color-text-muted) hover:bg-(--color-bg-hover)'
+          "
+        >
+          Número de Telefone
+        </button>
+      </div>
+
+      @if (activeTab() === 'search') {
+        <div class="p-4 border-b border-(--color-border)">
+          <input
+            [ngModel]="searchTerm()"
+            (ngModelChange)="onSearchChange($event)"
+            type="text"
+            placeholder="Buscar por nome, telefone ou CPF"
+            class="w-full text-[13px] bg-bg-sidebar border border-(--color-border) rounded-lg px-3 py-2 text-(--color-text-primary) placeholder:text-(--color-text-muted) outline-none focus:border-(--color-primary)"
+          />
+        </div>
+
+        <div class="flex-1 overflow-y-auto">
+          @if (isLoading()) {
+            <div class="flex justify-center py-6">
+              <span
+                class="w-5 h-5 border-2 border-(--color-primary) border-t-transparent rounded-full animate-spin"
+              ></span>
+            </div>
+          }
+
+          @if (!isLoading() && searchTerm().trim() && results().length === 0) {
+            <p class="text-center text-[12px] text-(--color-text-muted) py-6">
+              Nenhum paciente encontrado.
+            </p>
+          }
+
+          @for (p of results(); track p.id) {
+            <button
+              (click)="selectPatient(p.id)"
+              [disabled]="!p.phone"
+              class="w-full text-left px-4 py-3 border-b border-(--color-border) transition-colors flex flex-col gap-0.5 disabled:opacity-40 disabled:cursor-not-allowed"
+              [class]="
+                selectedId() === p.id
+                  ? 'bg-(--color-primary-subtle)'
+                  : 'hover:bg-(--color-bg-hover)'
+              "
+            >
+              <span class="text-[13px] font-medium text-(--color-text-primary)">{{ p.name }}</span>
+              <span class="text-[11px] text-(--color-text-muted)">{{
+                p.phone ?? 'Sem telefone cadastrado'
+              }}</span>
+            </button>
+          }
+        </div>
+
+        <div class="p-4 border-t border-(--color-border) flex justify-end gap-2">
+          <button
+            (click)="onClose()"
+            class="text-[12px] font-medium px-4 py-2 rounded-lg border border-(--color-border-md) bg-bg-card text-(--color-text-primary) hover:bg-(--color-bg-hover-md) transition-colors"
+          >
+            Cancelar
+          </button>
+          <button
+            (click)="confirmSearchTab()"
+            [disabled]="selectedId() === null || isCreating()"
+            class="text-[12px] font-medium px-4 py-2 rounded-lg bg-(--color-primary) text-(--color-text-inverse) hover:bg-(--color-primary-hover) transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            @if (isCreating()) {
+              Criando...
+            } @else {
+              Iniciar Conversa
+            }
+          </button>
+        </div>
+      }
+
+      @if (activeTab() === 'phone') {
+        <div class="p-4 flex flex-col gap-2">
+          <label class="text-[11px] text-(--color-text-muted)">Número de telefone (WhatsApp)</label>
+          <input
+            [ngModel]="phoneValue()"
+            (ngModelChange)="onPhoneChange($event)"
+            type="text"
+            placeholder="Ex: 38988663580"
+            class="w-full text-[13px] bg-bg-sidebar border border-(--color-border) rounded-lg px-3 py-2 text-(--color-text-primary) placeholder:text-(--color-text-muted) outline-none focus:border-(--color-primary)"
+          />
+        </div>
+
+        <div class="p-4 border-t border-(--color-border) flex justify-end gap-2 mt-auto">
+          <button
+            (click)="onClose()"
+            class="text-[12px] font-medium px-4 py-2 rounded-lg border border-(--color-border-md) bg-bg-card text-(--color-text-primary) hover:bg-(--color-bg-hover-md) transition-colors"
+          >
+            Cancelar
+          </button>
+          <button
+            (click)="confirmPhoneTab()"
+            [disabled]="!phoneValue().trim() || isCreating()"
+            class="text-[12px] font-medium px-4 py-2 rounded-lg bg-(--color-primary) text-(--color-text-inverse) hover:bg-(--color-primary-hover) transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            @if (isCreating()) {
+              Criando...
+            } @else {
+              Iniciar Conversa
+            }
+          </button>
+        </div>
+      }
+    </div>
+  </div>
+}

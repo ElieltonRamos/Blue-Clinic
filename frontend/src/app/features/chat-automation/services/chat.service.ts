@@ -8,6 +8,10 @@ import {
   ConversationStatusUpdate,
   SendMessageDto,
   WhatsappTemplate,
+  GetConversationsQuery,
+  PaginatedResponse,
+  GetMessagesQuery,
+  CreateConversationDto,
 } from '../types/chat.types';
 import { Observable } from 'rxjs';
 
@@ -18,16 +22,26 @@ export class ChatService {
   private apiUrl = environment.apiUrl;
   private http = inject(HttpClient);
 
-  getConversations(status?: string) {
-    let params = new HttpParams();
-    if (status) params = params.set('status', status);
-    return this.http.get<Conversation[]>(`${this.apiUrl}/chat/conversations`, { params });
+  getConversations(query: GetConversationsQuery) {
+    let params = new HttpParams().set('page', query.page).set('limit', query.limit);
+    if (query.search) params = params.set('search', query.search);
+    if (query.filter) params = params.set('filter', query.filter);
+
+    return this.http.get<PaginatedResponse<Conversation>>(`${this.apiUrl}/chat/conversations`, {
+      params,
+    });
   }
 
-  getMessages(conversationId: number) {
-    return this.http.get<ChatMessage[]>(
+  getMessages(conversationId: number, query: GetMessagesQuery) {
+    const params = new HttpParams().set('page', query.page).set('limit', query.limit);
+    return this.http.get<PaginatedResponse<ChatMessage>>(
       `${this.apiUrl}/chat/conversations/${conversationId}/messages`,
+      { params },
     );
+  }
+
+  deleteConversation(conversationId: number) {
+    return this.http.delete<void>(`${this.apiUrl}/chat/conversations/${conversationId}`);
   }
 
   getPatient(conversationId: number) {
@@ -78,5 +92,9 @@ export class ChatService {
     return this.http.patch<void>(`${this.apiUrl}/chat/conversations/${conversationId}/patient`, {
       patientId,
     });
+  }
+
+  createConversation(dto: CreateConversationDto) {
+    return this.http.post<Conversation>(`${this.apiUrl}/chat/conversations`, dto);
   }
 }

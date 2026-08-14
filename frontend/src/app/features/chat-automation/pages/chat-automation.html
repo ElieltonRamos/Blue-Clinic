@@ -1,8 +1,26 @@
 <div class="flex h-full overflow-hidden" style="height: calc(100vh - 60px)">
   <!-- ── Coluna 1: Lista de conversas ── -->
   <div class="w-72 shrink-0 border-r border-(--color-border) bg-bg-sidebar flex flex-col">
-    <div class="p-4 border-b border-(--color-border)">
-      <p class="text-[13px] font-semibold text-(--color-text-primary) mb-3">Conversas Ativas</p>
+    <div class="p-4 border-b border-(--color-border) flex flex-col gap-3">
+      <div class="flex items-center justify-between">
+        <p class="text-[13px] font-semibold text-(--color-text-primary)">Conversas Ativas</p>
+        <button
+          (click)="openNewConversationModal()"
+          title="Nova conversa"
+          class="w-7 h-7 flex items-center justify-center rounded-lg bg-(--color-primary) text-(--color-text-inverse) hover:bg-(--color-primary-hover) transition-colors"
+        >
+          +
+        </button>
+      </div>
+
+      <input
+        [ngModel]="searchTerm()"
+        (ngModelChange)="onSearchChange($event)"
+        type="text"
+        placeholder="Buscar por nome ou telefone"
+        class="w-full text-[12px] bg-bg-card border border-(--color-border) rounded-lg px-3 py-2 text-(--color-text-primary) placeholder:text-(--color-text-muted) outline-none focus:border-(--color-primary)"
+      />
+
       <div class="flex gap-2">
         <button
           (click)="setFilter('todas')"
@@ -29,7 +47,7 @@
       </div>
     </div>
 
-    <div class="flex-1 overflow-y-auto">
+    <div #conversationsList class="flex-1 overflow-y-auto" (scroll)="onConversationsScroll($event)">
       @for (conv of conversations(); track conv.id) {
         <button
           (click)="selectConversation(conv.id)"
@@ -75,7 +93,16 @@
           </div>
         </button>
       }
-      @if (conversations().length === 0) {
+
+      @if (isLoadingConversations()) {
+        <div class="flex justify-center py-4">
+          <span
+            class="w-5 h-5 border-2 border-(--color-primary) border-t-transparent rounded-full animate-spin"
+          ></span>
+        </div>
+      }
+
+      @if (!isLoadingConversations() && conversations().length === 0) {
         <p class="text-center text-[12px] text-(--color-text-muted) py-8">Nenhuma conversa.</p>
       }
     </div>
@@ -102,24 +129,48 @@
         </div>
       </div>
 
-      @if (isBotActive()) {
-        <button
-          (click)="takeControl()"
-          class="flex items-center gap-2 text-[12px] font-medium px-4 py-2 rounded-lg bg-(--color-primary) text-(--color-text-inverse) hover:bg-(--color-primary-hover) transition-colors"
-        >
-          🖐️ Tomar Controle do Bot
-        </button>
-      } @else {
-        <button
-          (click)="takeControl()"
-          class="flex items-center gap-2 text-[12px] font-medium px-4 py-2 rounded-lg border border-(--color-border-md) bg-bg-card text-(--color-text-primary) hover:bg-(--color-bg-hover-md) transition-colors"
-        >
-          🤖 Devolver ao Bot
-        </button>
-      }
+      <div class="flex items-center gap-2">
+        @if (isBotActive()) {
+          <button
+            (click)="takeControl()"
+            class="flex items-center gap-2 text-[12px] font-medium px-4 py-2 rounded-lg bg-(--color-primary) text-(--color-text-inverse) hover:bg-(--color-primary-hover) transition-colors"
+          >
+            🖐️ Tomar Controle do Bot
+          </button>
+        } @else {
+          <button
+            (click)="takeControl()"
+            class="flex items-center gap-2 text-[12px] font-medium px-4 py-2 rounded-lg border border-(--color-border-md) bg-bg-card text-(--color-text-primary) hover:bg-(--color-bg-hover-md) transition-colors"
+          >
+            🤖 Devolver ao Bot
+          </button>
+        }
+
+        @if (activeConversationId()) {
+          <button
+            (click)="deleteConversation()"
+            title="Excluir conversa"
+            class="flex items-center justify-center w-9 h-9 rounded-lg border border-(--color-border-md) bg-bg-card text-(--color-danger) hover:bg-(--color-danger) hover:text-(--color-text-inverse) transition-colors"
+          >
+            🗑️
+          </button>
+        }
+      </div>
     </div>
 
-    <div #messagesContainer class="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-4">
+    <div
+      #messagesContainer
+      class="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-4"
+      (scroll)="onMessagesScroll($event)"
+    >
+      @if (isLoadingOlderMessages()) {
+        <div class="flex justify-center py-2">
+          <span
+            class="w-5 h-5 border-2 border-(--color-primary) border-t-transparent rounded-full animate-spin"
+          ></span>
+        </div>
+      }
+
       @for (msg of messages(); track msg.id) {
         @if (msg.sender === 'patient') {
           <div class="flex justify-start">
@@ -265,6 +316,14 @@
             <span>➕</span>
             <span>Registrar Paciente</span>
           </button>
+
+          <button
+            (click)="openLinkPatientModal()"
+            class="w-full bg-primary-dark text-(--color-text-inverse) font-bold py-2.5 rounded-lg text-[12px] flex items-center justify-center gap-2 hover:brightness-110 transition-all active:scale-95"
+          >
+            <span>🔗</span>
+            <span>Vincular Paciente Existente</span>
+          </button>
         }
 
         <button
@@ -315,4 +374,16 @@
   [entity]="newPatient()"
   (close)="showRegisterPatientModal.set(false)"
   (save)="onSavePatient($event)"
+/>
+
+<app-link-patient-modal
+  [isOpen]="showLinkPatientModal()"
+  (close)="showLinkPatientModal.set(false)"
+  (linked)="onPatientLinked($event)"
+/>
+
+<app-new-conversation-modal
+  [isOpen]="showNewConversationModal()"
+  (close)="showNewConversationModal.set(false)"
+  (created)="onConversationCreated($event)"
 />

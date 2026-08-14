@@ -9,6 +9,9 @@ import { ConversationResponseDto } from './dto/conversation-response.dto.js';
 import { ChatMessageResponseDto } from './dto/chat-message-response.dto.js';
 import { PatientInfoResponseDto } from './dto/patient-info-response.dto.js';
 import { ChatGateway } from './chat.gateway.js';
+import { PaginatedResponse } from '../../core/utils/paginated-response.js';
+
+type ConversationsFilter = 'todas' | 'aguardando';
 
 @Injectable()
 export class ChatService {
@@ -44,26 +47,87 @@ export class ChatService {
 
   async getConversations(
     companyId: number,
-    status?: ConversationStatus,
-  ): Promise<ConversationResponseDto[]> {
-    const conversations = await this.prisma.client.conversation.findMany({
-      where: { companyId, ...(status && { status }) },
-      include: { patient: { select: { name: true } } },
-      orderBy: { lastMessageAt: 'desc' },
-    });
-    return conversations.map((c) => new ConversationResponseDto(c));
+    page: number,
+    limit: number,
+    search?: string,
+    filter?: ConversationsFilter,
+  ): Promise<PaginatedResponse<ConversationResponseDto>> {
+    const skip = (page - 1) * limit;
+
+    const and: Prisma.ConversationWhereInput[] = [{ companyId }];
+
+    if (filter === 'aguardando') {
+      and.push({ OR: [{ status: 'waiting' }, { unread: { gt: 0 } }] });
+    }
+
+    if (search) {
+      and.push({
+        OR: [
+          { phone: { contains: search } },
+          { patient: { name: { contains: search } } },
+        ],
+      });
+    }
+
+    const where: Prisma.ConversationWhereInput = { AND: and };
+
+    const [conversations, total] = await Promise.all([
+      this.prisma.client.conversation.findMany({
+        where,
+        include: { patient: { select: { name: true } } },
+        orderBy: { lastMessageAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.client.conversation.count({ where }),
+    ]);
+
+    return {
+      data: conversations.map((c) => new ConversationResponseDto(c)),
+      total,
+      page,
+      limit,
+      totalPages: Math.max(1, Math.ceil(total / limit)),
+    };
   }
 
   async getMessages(
     companyId: number,
     conversationId: number,
-  ): Promise<ChatMessageResponseDto[]> {
+    page: number,
+    limit: number,
+  ): Promise<PaginatedResponse<ChatMessageResponseDto>> {
     await this.findConversation(companyId, conversationId);
-    const messages = await this.prisma.client.chatMessage.findMany({
-      where: { conversationId },
-      orderBy: { sentAt: 'asc' },
+    const skip = (page - 1) * limit;
+
+    const [messages, total] = await Promise.all([
+      this.prisma.client.chatMessage.findMany({
+        where: { conversationId },
+        orderBy: { sentAt: 'desc' }, // mais nova primeiro — front reverte por página
+        skip,
+        take: limit,
+      }),
+      this.prisma.client.chatMessage.count({ where: { conversationId } }),
+    ]);
+
+    return {
+      data: messages.map((m) => new ChatMessageResponseDto(m)),
+      total,
+      page,
+      limit,
+      totalPages: Math.max(1, Math.ceil(total / limit)),
+    };
+  }
+
+  async deleteConversation(
+    companyId: number,
+    conversationId: number,
+  ): Promise<void> {
+    await this.findConversation(companyId, conversationId);
+    await this.prisma.client.conversation.delete({
+      where: { id: conversationId },
     });
-    return messages.map((m) => new ChatMessageResponseDto(m));
+    this.gateway.emitConversationDeleted(companyId, conversationId);
   }
 
   async getPatient(
@@ -281,17 +345,11 @@ export class ChatService {
     companyId: number,
     phone: string,
     patientId: number | null,
-  ): Promise<{
-    id: number;
-    status: ConversationStatus;
-    botStep: string | null;
-    phone: string;
-    patientId: number | null;
-  }> {
-    return this.runTransactionWithRetry(async (tx) => {
+  ): Promise<ConversationResponseDto> {
+    const conversation = await this.runTransactionWithRetry(async (tx) => {
       const existing = await tx.conversation.findFirst({
         where: { phone, companyId },
-        include: { patient: { select: { blocked: true } } },
+        include: { patient: { select: { name: true } } },
       });
 
       if (existing) return existing;
@@ -305,9 +363,16 @@ export class ChatService {
           lastMessageAt: new Date(),
           unread: 1,
         },
-        include: { patient: { select: { blocked: true } } },
+        include: { patient: { select: { name: true } } },
       });
     });
+
+    this.gateway.emitConversationUpdated(
+      companyId,
+      new ConversationResponseDto(conversation),
+    );
+
+    return new ConversationResponseDto(conversation);
   }
 
   async saveIncomingMessage(

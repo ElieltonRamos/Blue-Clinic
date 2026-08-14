@@ -8,6 +8,7 @@ export class ConversationResponseDto {
   @ApiProperty() id: number;
   @ApiProperty() phone: string;
   @ApiPropertyOptional() patientName: string | null;
+  @ApiPropertyOptional() patientId: number | null;
   @ApiPropertyOptional() lastMessage: string | null;
   @ApiPropertyOptional() lastMessageAt: Date | null;
   @ApiProperty({ enum: ConversationStatus }) status: ConversationStatus;
@@ -16,6 +17,7 @@ export class ConversationResponseDto {
   constructor(conversation: any) {
     this.id = conversation.id;
     this.phone = conversation.phone;
+    this.patientId = conversation.patientId ?? null;
     this.patientName = conversation.patient?.name ?? null;
     this.lastMessage = conversation.lastMessage;
     this.lastMessageAt = conversation.lastMessageAt;

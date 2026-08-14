@@ -1,11 +1,20 @@
-// dto/conversation-filters.dto.ts
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsOptional } from 'class-validator';
-import { ConversationStatus } from '../../../../generated/prisma/client.js';
+import { IsEnum, IsOptional, IsString } from 'class-validator';
+import { PaginationQueryDto } from './pagination-query.dto.js';
 
-export class ConversationFiltersDto {
-  @ApiPropertyOptional({ enum: ConversationStatus })
+export enum ConversationsFilterTab {
+  todas = 'todas',
+  aguardando = 'aguardando',
+}
+
+export class ConversationFiltersDto extends PaginationQueryDto {
+  @ApiPropertyOptional({ enum: ConversationsFilterTab })
   @IsOptional()
-  @IsEnum(ConversationStatus)
-  status?: ConversationStatus;
+  @IsEnum(ConversationsFilterTab)
+  filter?: ConversationsFilterTab;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  search?: string;
 }

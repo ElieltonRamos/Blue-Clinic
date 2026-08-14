@@ -3,6 +3,14 @@ export type MessageSender = 'patient' | 'bot' | 'human';
 
 export type MessageStatus = 'sent' | 'delivered' | 'read' | 'failed';
 
+export interface PaginatedResponse<T> {
+  data: T[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 export interface MessageStatusUpdate {
   messageId: number;
   status: MessageStatus;
@@ -67,4 +75,23 @@ export interface WhatsappTemplate {
   name: string;
   status: string;
   components: WhatsappTemplateComponent[];
+}
+
+export type ConversationsFilter = 'todas' | 'aguardando';
+
+export interface GetConversationsQuery {
+  page: number;
+  limit: number;
+  search?: string;
+  filter?: ConversationsFilter;
+}
+
+export interface GetMessagesQuery {
+  page: number;
+  limit: number;
+}
+
+export interface CreateConversationDto {
+  phone: string;
+  patientId?: number;
 }
