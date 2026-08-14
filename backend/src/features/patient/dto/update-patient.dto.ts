@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsString,
@@ -9,6 +11,8 @@ import {
   Matches,
 } from 'class-validator';
 import { PatientStatus } from '../../../../generated/prisma/client.js';
+import { Transform } from 'class-transformer';
+import { normalizeBrazilianPhone } from '../../../core/utils/phone.util.js';
 
 export class UpdatePatientDto {
   @ApiPropertyOptional({ example: 'João da Silva' })
@@ -21,8 +25,16 @@ export class UpdatePatientDto {
   @IsOptional()
   email?: string;
 
-  @ApiPropertyOptional({ example: '(38) 99999-9999' })
+  @ApiPropertyOptional({ example: '5538988663580' })
+  @Transform(({ value }) => (value ? normalizeBrazilianPhone(value) : value))
   @IsString({ message: 'Telefone deve ser um texto.' })
+  @Matches(/^\d+$/, {
+    message:
+      'Telefone deve conter apenas números (sem parênteses, traço ou espaço).',
+  })
+  @Matches(/^55[1-9]{2}\d{8}$/, {
+    message: 'Telefone deve ser um celular brasileiro válido: DDD + número.',
+  })
   @IsOptional()
   phone?: string;
 

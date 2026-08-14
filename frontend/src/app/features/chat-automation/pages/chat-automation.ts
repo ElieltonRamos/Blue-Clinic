@@ -44,6 +44,7 @@ type FilterTab = 'todas' | 'aguardando';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ChatAutomation implements OnInit, OnDestroy, AfterViewChecked {
+  private notificationSound = new Audio('/notification.mp3');
   @ViewChild('messagesContainer') private messagesContainer!: ElementRef<HTMLDivElement>;
 
   private chatService = inject(ChatService);
@@ -129,6 +130,10 @@ export class ChatAutomation implements OnInit, OnDestroy, AfterViewChecked {
       .onNewMessage()
       .pipe(takeUntil(this.destroy$))
       .subscribe((msg) => {
+        if (msg.sender === 'patient') {
+          this.notificationSound.play().catch(() => {});
+        }
+
         if (msg.conversationId === this.activeConversationId()) {
           this.messages.update((list) => [...list, msg]);
           this.cdr.markForCheck();
@@ -309,11 +314,7 @@ export class ChatAutomation implements OnInit, OnDestroy, AfterViewChecked {
       this.notification.warning('O campo Nome é obrigatório.');
       return;
     }
-    if (!entity.cpf) {
-      this.notification.warning('O campo CPF é obrigatório.');
-      return;
-    }
-    if (!/^\d{11}$/.test(entity.cpf)) {
+    if (entity.cpf && !/^\d{11}$/.test(entity.cpf)) {
       this.notification.warning('CPF deve conter exatamente 11 dígitos numéricos.');
       return;
     }

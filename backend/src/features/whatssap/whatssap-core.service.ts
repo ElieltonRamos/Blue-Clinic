@@ -9,6 +9,7 @@ import {
   IWhatsappProvider,
   NormalizedIncomingMessage,
 } from './interfaces/whatsapp-provider.interface.js';
+import { normalizeBrazilianPhone } from '../../core/utils/phone.util.js';
 
 @Injectable()
 export class WhatssapCoreService implements OnModuleInit {
@@ -153,6 +154,8 @@ export class WhatssapCoreService implements OnModuleInit {
     companyId: number,
     msg: NormalizedIncomingMessage,
   ): Promise<void> {
+    msg = { ...msg, phone: normalizeBrazilianPhone(msg.phone) };
+
     if (msg.fromMe) {
       await this.handleOutgoingSynced(companyId, msg);
       return;
@@ -200,7 +203,7 @@ export class WhatssapCoreService implements OnModuleInit {
     phone: string,
   ): Promise<{ id: number; blocked: boolean } | null> {
     return this.prisma.client.patient.findFirst({
-      where: { companyId, phone: { contains: phone.slice(-8) } },
+      where: { companyId, phone },
       select: { id: true, blocked: true },
     });
   }

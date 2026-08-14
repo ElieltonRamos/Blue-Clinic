@@ -223,7 +223,7 @@ export class WhatssapController {
     @CurrentUser('companyId') companyId: number,
     @Body() dto: TestSendDto = {},
   ): Promise<{ wamid: string | null }> {
-    const phone = dto?.phone ?? '553888663580';
+    const phone = dto?.phone ?? '5538988663580';
     const text = dto?.text ?? 'Teste 🩺';
     return this.core.sendTestMessage(companyId, phone, text);
   }

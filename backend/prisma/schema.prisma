@@ -244,6 +244,7 @@ model Patient {
   updatedAt DateTime @updatedAt
 
   @@unique([companyId, cpf])
+  @@index([companyId, phone])
   @@map("patient")
 }
 
@@ -454,6 +455,7 @@ model Conversation {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([companyId, phone])
   @@map("conversation")
 }
 

@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsString,
@@ -6,6 +8,8 @@ import {
   IsDateString,
   Matches,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
+import { normalizeBrazilianPhone } from '../../../core/utils/phone.util';
 
 export class CreatePatientDto {
   @ApiProperty({ example: 'João da Silva' })
@@ -17,17 +21,25 @@ export class CreatePatientDto {
   @IsOptional()
   email?: string;
 
-  @ApiPropertyOptional({ example: '(38) 99999-9999' })
+  @Transform(({ value }) => (value ? normalizeBrazilianPhone(value) : value))
   @IsString({ message: 'Telefone deve ser um texto.' })
+  @Matches(/^\d+$/, {
+    message:
+      'Telefone deve conter apenas números (sem parênteses, traço ou espaço).',
+  })
+  @Matches(/^55[1-9]{2}\d{8}$/, {
+    message: 'Telefone deve ser um celular brasileiro válido: DDD + número.',
+  })
   @IsOptional()
   phone?: string;
 
-  @ApiProperty({ example: '00000000000' })
+  @ApiPropertyOptional({ example: '00000000000' })
   @IsString({ message: 'CPF deve ser um texto.' })
   @Matches(/^\d{11}$/, {
     message: 'CPF deve conter exatamente 11 dígitos numéricos.',
   })
-  cpf: string;
+  @IsOptional()
+  cpf?: string;
 
   @ApiPropertyOptional({ example: '1990-01-15' })
   @IsDateString({}, { message: 'Data de nascimento inválida.' })

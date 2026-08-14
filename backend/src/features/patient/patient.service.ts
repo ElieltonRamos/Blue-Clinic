@@ -100,6 +100,7 @@ export class PatientsService {
   ): Promise<PatientDetailResponseDto> {
     await this.assertNoDuplicateName(companyId, dto.name);
     await this.assertNoDuplicateCpf(companyId, dto.cpf);
+    await this.assertNoDuplicatePhone(companyId, dto.phone);
 
     const patient = await this.prisma.client.patient.create({
       data: {
@@ -143,6 +144,8 @@ export class PatientsService {
       await this.assertNoDuplicateName(companyId, dto.name, id);
     if (dto.cpf !== undefined)
       await this.assertNoDuplicateCpf(companyId, dto.cpf, id);
+    if (dto.phone !== undefined)
+      await this.assertNoDuplicatePhone(companyId, dto.phone, id);
 
     const data: Prisma.PatientUpdateInput = {};
     if (dto.name !== undefined) data.name = dto.name;
@@ -288,5 +291,25 @@ export class PatientsService {
 
     if (existing)
       throw new ConflictException('Já existe um paciente com este CPF');
+  }
+
+  private async assertNoDuplicatePhone(
+    companyId: number,
+    phone: string | undefined,
+    excludeId?: number,
+  ): Promise<void> {
+    if (!phone) return;
+
+    const existing = await this.prisma.client.patient.findFirst({
+      where: {
+        companyId,
+        phone,
+        ...(excludeId ? { NOT: { id: excludeId } } : {}),
+      },
+      select: { id: true },
+    });
+
+    if (existing)
+      throw new ConflictException('Já existe um paciente com este telefone');
   }
 }
