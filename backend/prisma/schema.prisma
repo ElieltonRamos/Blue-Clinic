@@ -420,16 +420,16 @@ model WhatsappConfig {
 }
 
 model ReminderRule {
-  id         Int     @id @default(autoincrement())
+  id         Int      @id @default(autoincrement())
   companyId  Int
+  target     String // 'patient' | 'doctor'
   offsetDays Int
   time       String
-  active     Boolean @default(true)
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   company Company @relation(fields: [companyId], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 
   @@map("reminder_rule")
 }

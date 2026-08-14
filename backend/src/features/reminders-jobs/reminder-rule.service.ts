@@ -8,6 +8,9 @@ import { SchedulerRegistry } from '@nestjs/schedule';
 import { CronJob } from 'cron';
 import { PrismaService } from '../../core/database/prisma.service.js';
 import { PatientReminderJob } from './patient-reminder.job.js';
+import { DoctorReminderJob } from './doctor-reminder.job.js';
+
+type ReminderTarget = 'patient' | 'doctor';
 
 @Injectable()
 export class ReminderRuleService implements OnModuleInit {
@@ -17,13 +20,16 @@ export class ReminderRuleService implements OnModuleInit {
     private readonly prisma: PrismaService,
     private readonly schedulerRegistry: SchedulerRegistry,
     private readonly patientReminderJob: PatientReminderJob,
+    private readonly doctorReminderJob: DoctorReminderJob,
   ) {}
 
   async onModuleInit(): Promise<void> {
     const rules = await this.prisma.client.reminderRule.findMany({
       where: { active: true },
     });
-    for (const rule of rules) this.registerJob(rule.id, rule.time);
+    for (const rule of rules) {
+      this.registerJob(rule.id, rule.time, rule.target as ReminderTarget);
+    }
     this.logger.log(
       `[REMINDER-RULES] ${rules.length} job(s) registrado(s) no boot`,
     );
@@ -38,16 +44,25 @@ export class ReminderRuleService implements OnModuleInit {
     return `${minute} ${hour} * * *`;
   }
 
-  private registerJob(ruleId: number, time: string): void {
+  private registerJob(
+    ruleId: number,
+    time: string,
+    target: ReminderTarget,
+  ): void {
     const name = this.jobName(ruleId);
     if (this.schedulerRegistry.doesExist('cron', name)) {
       this.schedulerRegistry.deleteCronJob(name);
     }
 
     const job = new CronJob(this.buildCronExpression(time), () => {
-      this.patientReminderJob.triggerForRule(ruleId).catch((err) => {
+      const runner =
+        target === 'doctor'
+          ? this.doctorReminderJob.triggerForRule(ruleId)
+          : this.patientReminderJob.triggerForRule(ruleId);
+
+      runner.catch((err) => {
         this.logger.error(
-          `[REMINDER-RULES] Falha ao executar rule ${ruleId}`,
+          `[REMINDER-RULES] Falha ao executar rule ${ruleId} (${target})`,
           err,
         );
       });
@@ -64,16 +79,26 @@ export class ReminderRuleService implements OnModuleInit {
     }
   }
 
-  async create(data: { companyId: number; offsetDays: number; time: string }) {
+  async create(data: {
+    companyId: number;
+    target: ReminderTarget;
+    offsetDays: number;
+    time: string;
+  }) {
     const rule = await this.prisma.client.reminderRule.create({ data });
-    this.registerJob(rule.id, rule.time);
+    this.registerJob(rule.id, rule.time, rule.target as ReminderTarget);
     return rule;
   }
 
   async update(
     id: number,
     companyId: number,
-    data: { offsetDays?: number; time?: string; active?: boolean },
+    data: {
+      target?: ReminderTarget;
+      offsetDays?: number;
+      time?: string;
+      active?: boolean;
+    },
   ) {
     const existing = await this.prisma.client.reminderRule.findFirst({
       where: { id, companyId },
@@ -88,7 +113,7 @@ export class ReminderRuleService implements OnModuleInit {
     if (!rule.active) {
       this.unregisterJob(rule.id);
     } else {
-      this.registerJob(rule.id, rule.time);
+      this.registerJob(rule.id, rule.time, rule.target as ReminderTarget);
     }
 
     return rule;

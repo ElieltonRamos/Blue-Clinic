@@ -28,6 +28,10 @@ export class PatientReminderJob {
       this.logger.warn(`[REMINDERS] Rule ${ruleId} inexistente ou inativa`);
       return;
     }
+    if (rule.target !== 'patient') {
+      this.logger.warn(`[REMINDERS] Rule ${ruleId} não é do tipo 'patient'`);
+      return;
+    }
 
     const config = await this.prisma.client.whatsappConfig.findUnique({
       where: { companyId: rule.companyId },

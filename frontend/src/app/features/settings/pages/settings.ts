@@ -1,11 +1,18 @@
-import { Component, inject, OnInit, ChangeDetectionStrategy, signal } from '@angular/core';
+import {
+  Component,
+  inject,
+  OnInit,
+  ChangeDetectionStrategy,
+  signal,
+  computed,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { SettingsService } from '../services/settings.service';
 import { version } from '../../../../../package.json';
 import * as QRCode from 'qrcode';
-import { ReminderRule, WhatsappProviderType } from '../types/settings.types';
+import { ReminderRule, ReminderTarget, WhatsappProviderType } from '../types/settings.types';
 import {
   CompanyData,
   IntegrationStatus,
@@ -68,9 +75,12 @@ export class Settings implements OnInit {
   private originalCompany: CompanyData | null = null;
 
   reminderRules = signal<ReminderRule[]>([]);
+  patientRules = computed(() => this.reminderRules().filter((r) => r.target === 'patient'));
+  doctorRules = computed(() => this.reminderRules().filter((r) => r.target === 'doctor'));
 
   showCreateRuleModal = signal(false);
   newRule = signal<Partial<{ offsetDays: number; time: string }>>({});
+  newRuleTarget = signal<ReminderTarget>('patient');
 
   showEditRuleModal = signal(false);
   editRule = signal<Partial<{ offsetDays: number; time: string; active: string }>>({});
@@ -203,7 +213,8 @@ export class Settings implements OnInit {
     return `${offsetDays} dias antes`;
   }
 
-  openCreateRuleModal(): void {
+  openCreateRuleModal(target: ReminderTarget): void {
+    this.newRuleTarget.set(target);
     this.newRule.set({});
     this.showCreateRuleModal.set(true);
   }
@@ -221,16 +232,18 @@ export class Settings implements OnInit {
       return;
     }
 
-    this.settingsService.createReminderRule({ offsetDays, time }).subscribe({
-      next: (rule) => {
-        this.reminderRules.update((list) => [...list, rule]);
-        this.showCreateRuleModal.set(false);
-        this.notification.success('Regra de lembrete criada com sucesso.');
-      },
-      error: (err: HttpErrorResponse) => {
-        this.notification.error(this.getErrorMessage(err, 'Erro ao criar regra de lembrete.'));
-      },
-    });
+    this.settingsService
+      .createReminderRule({ target: this.newRuleTarget(), offsetDays, time })
+      .subscribe({
+        next: (rule) => {
+          this.reminderRules.update((list) => [...list, rule]);
+          this.showCreateRuleModal.set(false);
+          this.notification.success('Regra de lembrete criada com sucesso.');
+        },
+        error: (err: HttpErrorResponse) => {
+          this.notification.error(this.getErrorMessage(err, 'Erro ao criar regra de lembrete.'));
+        },
+      });
   }
 
   openEditRuleModal(rule: ReminderRule): void {

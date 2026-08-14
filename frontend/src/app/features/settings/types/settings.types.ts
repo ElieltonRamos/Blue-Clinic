@@ -74,9 +74,12 @@ export interface BaileysStatus {
   qr: string | null;
 }
 
+export type ReminderTarget = 'patient' | 'doctor';
+
 export interface ReminderRule {
   id: number;
   companyId: number;
+  target: ReminderTarget;
   offsetDays: number;
   time: string;
   active: boolean;
@@ -85,11 +88,13 @@ export interface ReminderRule {
 }
 
 export interface CreateReminderRuleDto {
+  target: ReminderTarget;
   offsetDays: number;
   time: string;
 }
 
 export interface UpdateReminderRuleDto {
+  target?: ReminderTarget;
   offsetDays?: number;
   time?: string;
   active?: boolean;

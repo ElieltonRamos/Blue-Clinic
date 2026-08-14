@@ -255,20 +255,22 @@
           }
         </div>
       </div>
-      <!-- Lembretes Automáticos -->
+      <!-- Lembretes Automáticos - Pacientes -->
       <div class="rounded-xl border border-(--color-border) bg-bg-sidebar p-5">
         <div class="flex items-center justify-between mb-1">
-          <p class="text-[13px] font-semibold text-(--color-text-primary)">Lembretes Automáticos</p>
+          <p class="text-[13px] font-semibold text-(--color-text-primary)">
+            Lembretes Automáticos — Pacientes
+          </p>
           <button
-            (click)="openCreateRuleModal()"
+            (click)="openCreateRuleModal('patient')"
             class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-(--color-primary) text-(--color-text-inverse) text-[12px] font-medium hover:bg-(--color-primary-hover) transition-colors"
           >
             ＋ Nova regra
           </button>
         </div>
         <p class="text-[11px] text-(--color-text-muted) mb-4">
-          Configure quando o lembrete de consulta é enviado automaticamente. Você pode criar mais de
-          uma regra — por exemplo, um lembrete 3 dias antes e outro no mesmo dia.
+          Configure quando o lembrete de consulta é enviado automaticamente ao paciente. Você pode
+          criar mais de uma regra — por exemplo, um lembrete 3 dias antes e outro no mesmo dia.
         </p>
         <p class="text-[11px] text-(--color-text-muted) mb-4 flex items-start gap-1.5">
           <span>💡</span>
@@ -288,7 +290,7 @@
         </p>
 
         <div class="flex flex-col divide-y divide-(--color-border)">
-          @for (rule of reminderRules(); track rule.id) {
+          @for (rule of patientRules(); track rule.id) {
             <div class="flex items-center gap-4 py-3">
               <div class="flex-1">
                 <p class="text-[13px] font-medium text-(--color-text-primary)">
@@ -326,10 +328,76 @@
             </div>
           }
 
-          @if (reminderRules().length === 0) {
+          @if (patientRules().length === 0) {
             <p class="text-center text-[12px] text-(--color-text-muted) py-6">
-              Nenhuma regra cadastrada. O sistema não envia lembretes automáticos até que uma regra
-              seja criada.
+              Nenhuma regra cadastrada. O sistema não envia lembretes automáticos ao paciente até
+              que uma regra seja criada.
+            </p>
+          }
+        </div>
+      </div>
+
+      <!-- Lembretes Automáticos - Médicos -->
+      <div class="rounded-xl border border-(--color-border) bg-bg-sidebar p-5">
+        <div class="flex items-center justify-between mb-1">
+          <p class="text-[13px] font-semibold text-(--color-text-primary)">
+            Lembretes Automáticos — Médicos
+          </p>
+          <button
+            (click)="openCreateRuleModal('doctor')"
+            class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-(--color-primary) text-(--color-text-inverse) text-[12px] font-medium hover:bg-(--color-primary-hover) transition-colors"
+          >
+            ＋ Nova regra
+          </button>
+        </div>
+        <p class="text-[11px] text-(--color-text-muted) mb-4">
+          Configure quando o resumo da agenda é enviado automaticamente ao médico. Você pode criar
+          mais de uma regra.
+        </p>
+
+        <div class="flex flex-col divide-y divide-(--color-border)">
+          @for (rule of doctorRules(); track rule.id) {
+            <div class="flex items-center gap-4 py-3">
+              <div class="flex-1">
+                <p class="text-[13px] font-medium text-(--color-text-primary)">
+                  {{ ruleOffsetLabel(rule.offsetDays) }}
+                </p>
+                <p class="text-[11px] text-(--color-text-muted)">Enviado às {{ rule.time }}</p>
+              </div>
+
+              <label class="flex items-center gap-1.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  [ngModel]="rule.active"
+                  (ngModelChange)="toggleRuleActive(rule, $event)"
+                  class="accent-(--color-primary)"
+                />
+                <span class="text-[11px] text-(--color-text-muted)">Ativa</span>
+              </label>
+
+              <div class="flex items-center gap-1">
+                <button
+                  (click)="openEditRuleModal(rule)"
+                  class="w-7 h-7 flex items-center justify-center rounded-lg text-(--color-text-muted) hover:bg-(--color-bg-hover-md) hover:text-(--color-text-primary) transition-colors"
+                  title="Editar"
+                >
+                  ✏️
+                </button>
+                <button
+                  (click)="removeRule(rule.id)"
+                  class="w-7 h-7 flex items-center justify-center rounded-lg text-(--color-danger) hover:bg-danger-subtle transition-colors"
+                  title="Remover"
+                >
+                  🗑️
+                </button>
+              </div>
+            </div>
+          }
+
+          @if (doctorRules().length === 0) {
+            <p class="text-center text-[12px] text-(--color-text-muted) py-6">
+              Nenhuma regra cadastrada. O sistema não envia resumo de agenda ao médico até que uma
+              regra seja criada.
             </p>
           }
         </div>

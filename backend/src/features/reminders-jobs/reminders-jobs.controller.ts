@@ -14,6 +14,8 @@ import { CurrentUser } from '../../core/decorators/current-user.decorator.js';
 import { DoctorReminderJob } from './doctor-reminder.job.js';
 import { ReminderRuleService } from './reminder-rule.service.js';
 import { PatientReminderJob } from './patient-reminder.job.js';
+import { CreateReminderRuleDto } from './dto/create-reminder-rule.dto.js';
+import { UpdateReminderRuleDto } from './dto/update-reminder-rule.dto.js';
 
 @Controller('whatssap')
 @UseGuards(JwtAuthGuard)
@@ -44,10 +46,11 @@ export class RemindersJobsController {
   @Post('reminder-rules')
   async createRule(
     @CurrentUser('companyId') companyId: number,
-    @Body() body: { offsetDays: number; time: string },
+    @Body() body: CreateReminderRuleDto,
   ) {
     return this.reminderRuleService.create({
       companyId,
+      target: body.target,
       offsetDays: body.offsetDays,
       time: body.time,
     });
@@ -57,7 +60,7 @@ export class RemindersJobsController {
   async updateRule(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser('companyId') companyId: number,
-    @Body() body: { offsetDays?: number; time?: string; active?: boolean },
+    @Body() body: UpdateReminderRuleDto,
   ) {
     return this.reminderRuleService.update(id, companyId, body);
   }

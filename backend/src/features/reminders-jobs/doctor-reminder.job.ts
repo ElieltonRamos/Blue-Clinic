@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../../core/database/prisma.service.js';
 import { WhatssapCoreService } from '../whatssap/whatssap-core.service.js';
 
@@ -12,34 +11,57 @@ export class DoctorReminderJob {
     private readonly whatsapp: WhatssapCoreService,
   ) {}
 
-  @Cron('0 18 * * *', { name: 'doctor-schedule-reminders' })
-  async sendDoctorReminders(): Promise<void> {
-    this.logger.log('[DOCTOR_REMINDERS] Iniciando (18h)');
-    await this.process();
-  }
-
   async triggerManually(): Promise<void> {
-    await this.process();
+    this.logger.log(
+      '[DOCTOR_REMINDERS] Disparo manual — todas as consultas de amanhã, ignorando rules',
+    );
+    await this.process({ companyId: null, offsetDays: 1 });
   }
 
-  private async process(): Promise<void> {
+  async triggerForRule(ruleId: number): Promise<void> {
+    const rule = await this.prisma.client.reminderRule.findUnique({
+      where: { id: ruleId },
+    });
+    if (!rule || !rule.active) {
+      this.logger.warn(
+        `[DOCTOR_REMINDERS] Rule ${ruleId} inexistente ou inativa`,
+      );
+      return;
+    }
+    if (rule.target !== 'doctor') {
+      this.logger.warn(
+        `[DOCTOR_REMINDERS] Rule ${ruleId} não é do tipo 'doctor'`,
+      );
+      return;
+    }
+
+    this.logger.log(
+      `[DOCTOR_REMINDERS] Rule ${ruleId} disparada — company ${rule.companyId} | offsetDays ${rule.offsetDays}`,
+    );
+    await this.process(rule);
+  }
+
+  private async process(rule: {
+    companyId: number | null;
+    offsetDays: number;
+  }): Promise<void> {
     const now = new Date();
-    const tomorrowStart = new Date(
+    const targetStart = new Date(
       Date.UTC(
         now.getUTCFullYear(),
         now.getUTCMonth(),
-        now.getUTCDate() + 1,
+        now.getUTCDate() + rule.offsetDays,
         0,
         0,
         0,
         0,
       ),
     );
-    const tomorrowEnd = new Date(
+    const targetEnd = new Date(
       Date.UTC(
         now.getUTCFullYear(),
         now.getUTCMonth(),
-        now.getUTCDate() + 1,
+        now.getUTCDate() + rule.offsetDays,
         23,
         59,
         59,
@@ -49,8 +71,9 @@ export class DoctorReminderJob {
 
     const appointments = await this.prisma.client.appointment.findMany({
       where: {
-        date: { gte: tomorrowStart, lte: tomorrowEnd },
+        date: { gte: targetStart, lte: targetEnd },
         status: { in: ['pending', 'confirmed'] },
+        ...(rule.companyId ? { doctor: { companyId: rule.companyId } } : {}),
       },
       include: {
         patient: { select: { name: true } },
@@ -67,7 +90,9 @@ export class DoctorReminderJob {
     });
 
     if (!appointments.length) {
-      this.logger.log('[DOCTOR_REMINDERS] Nenhuma consulta encontrada');
+      this.logger.log(
+        `[DOCTOR_REMINDERS] company ${rule.companyId} — nenhuma consulta para offsetDays ${rule.offsetDays}`,
+      );
       return;
     }
 
