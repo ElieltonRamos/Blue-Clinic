@@ -30,12 +30,16 @@ import { TemplateModal } from './template-modal/template-modal';
 import { CreateAppointmentModal } from '../../../shared/create-appointment-modal/pages/create-appointment-modal';
 import { AppointmentResponse } from '../../../shared/create-appointment-modal/types/create-appointment.types';
 import { FormField, ModalEditEntity } from '../../../shared/modal-edit-entity/modal-edit-entity';
-import { CreatePatientRequest, Patient } from '../../patients/types/patients.types';
+import {
+  CreatePatientRequest,
+  Patient,
+  UpdatePatientRequest,
+} from '../../patients/types/patients.types';
 import { PatientsService } from '../../patients/services/patients.service';
 import { HttpErrorResponse } from '@angular/common/http';
 import { alertConfirm } from '../../../shared/alerts/custom-alerts';
 import { LinkPatientModal } from './link-patient-modal/link-patient-modal';
-import { NewConversationModal } from "./new-conversation-modal/new-conversation-modal";
+import { NewConversationModal } from './new-conversation-modal/new-conversation-modal';
 
 const PAGE_LIMIT = 50;
 const SCROLL_UP_THRESHOLD = 80;
@@ -50,8 +54,8 @@ const SCROLL_UP_THRESHOLD = 80;
     CreateAppointmentModal,
     ModalEditEntity,
     LinkPatientModal,
-    NewConversationModal
-],
+    NewConversationModal,
+  ],
   templateUrl: './chat-automation.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -77,6 +81,8 @@ export class ChatAutomation implements OnInit, OnDestroy, AfterViewChecked {
   // signals
   showRegisterPatientModal = signal(false);
   newPatient = signal<Partial<CreatePatientRequest>>({});
+  showEditPatientModal = signal(false);
+  editPatientEntity = signal<Partial<UpdatePatientRequest>>({});
 
   patientFields: FormField[] = [
     { name: 'name', label: 'Nome', type: 'text', placeholder: 'Nome completo', required: true },
@@ -84,6 +90,11 @@ export class ChatAutomation implements OnInit, OnDestroy, AfterViewChecked {
     { name: 'phone', label: 'Telefone', type: 'text', placeholder: '(00) 00000-0000' },
     { name: 'cpf', label: 'CPF', type: 'text', placeholder: '000.000.000-00' },
     { name: 'birthDate', label: 'Data de Nascimento', type: 'date' },
+  ];
+
+  chatEditPatientFields: FormField[] = [
+    { name: 'name', label: 'Nome', type: 'text', placeholder: 'Nome completo' },
+    { name: 'phone', label: 'Telefone', type: 'text', placeholder: '(00) 00000-0000' },
   ];
 
   // conversas
@@ -544,6 +555,41 @@ export class ChatAutomation implements OnInit, OnDestroy, AfterViewChecked {
       },
       error: (err: HttpErrorResponse) => {
         this.notification.error(this.getErrorMessage(err, 'Erro ao registrar paciente.'));
+      },
+    });
+  }
+
+  openEditPatientModal(): void {
+    const p = this.patient();
+    if (!p) return;
+    this.editPatientEntity.set({
+      name: p.name ?? undefined,
+      phone: p.phone ?? undefined,
+    });
+    this.showEditPatientModal.set(true);
+  }
+
+  onUpdatePatientChat(entity: Partial<UpdatePatientRequest>): void {
+    const p = this.patient();
+    const convId = this.activeConversationId();
+    if (!p?.id || !convId) return;
+
+    this.patientsService.updatePatient(p.id, entity).subscribe({
+      next: () => {
+        this.showEditPatientModal.set(false);
+        this.notification.success('Paciente atualizado com sucesso.');
+        this.chatService.getPatient(convId).subscribe({
+          next: (updated) => {
+            this.patient.set(updated);
+            this.conversations.update((list) =>
+              list.map((c) => (c.id === convId ? { ...c, patientName: updated.name } : c)),
+            );
+            this.cdr.markForCheck();
+          },
+        });
+      },
+      error: (err: HttpErrorResponse) => {
+        this.notification.error(this.getErrorMessage(err, 'Erro ao atualizar paciente.'));
       },
     });
   }

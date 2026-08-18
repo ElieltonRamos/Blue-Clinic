@@ -155,7 +155,14 @@ export class Patients implements OnInit {
   openEditModal(): void {
     const detail = this.selectedDetail();
     if (!detail) return;
-    this.editPatient.set({ name: detail.name, whatsappActive: detail.whatsappActive });
+    const listItem = this.patients().find((p) => p.id === detail.id);
+    this.editPatient.set({
+      name: detail.name,
+      phone: listItem?.phone ?? undefined,
+      cpf: listItem?.cpf ?? undefined,
+      status: listItem?.status,
+      whatsappActive: detail.whatsappActive,
+    });
     this.showEditModal.set(true);
   }
 

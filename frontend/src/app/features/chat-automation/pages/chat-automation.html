@@ -326,6 +326,16 @@
           </button>
         }
 
+        @if (p.id) {
+          <button
+            (click)="openEditPatientModal()"
+            class="w-full border border-(--color-border-md) bg-bg-card text-(--color-text-primary) font-bold py-2.5 rounded-lg text-[12px] flex items-center justify-center gap-2 hover:bg-(--color-bg-hover-md) transition-all active:scale-95"
+          >
+            <span>✏️</span>
+            <span>Editar Paciente</span>
+          </button>
+        }
+
         <button
           (click)="openAppointmentModal()"
           [disabled]="!p.id"
@@ -386,4 +396,13 @@
   [isOpen]="showNewConversationModal()"
   (close)="showNewConversationModal.set(false)"
   (created)="onConversationCreated($event)"
+/>
+
+<app-modal-edit-entity
+  title="Editar Paciente"
+  [show]="showEditPatientModal()"
+  [fields]="chatEditPatientFields"
+  [entity]="editPatientEntity()"
+  (close)="showEditPatientModal.set(false)"
+  (save)="onUpdatePatientChat($event)"
 />
