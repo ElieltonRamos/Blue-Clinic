@@ -409,7 +409,7 @@
       <div class="space-y-0">
         @for (apt of selectedDay()!.appointments; track apt.id) {
           <div class="py-3 border-b border-(--color-border) last:border-b-0">
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-3 cursor-pointer">
               <span class="text-xs font-medium text-(--color-text-muted) w-12 shrink-0">
                 {{ apt.startTime }}
               </span>
@@ -427,17 +427,23 @@
               >
                 {{ statusLabel(apt.status) }}
               </span>
-              <div class="flex items-center gap-1 shrink-0">
+              <div class="flex items-center gap-1 shrink-0" (click)="$event.stopPropagation()">
+                <button
+                  (click)="toggleExpand(apt)"
+                  class="text-[10px] px-2 py-1 rounded-lg border border-(--color-border) text-(--color-text-secondary) hover:bg-(--color-bg-overlay) transition-colors"
+                >
+                  ✏️ Editar
+                </button>
                 @if (apt.status === 'pending') {
                   <button
-                    (click)="confirmAppointment(apt); $event.stopPropagation()"
+                    (click)="confirmAppointment(apt)"
                     [disabled]="actionLoading()"
                     class="text-[10px] px-2 py-1 rounded-lg bg-(--color-primary-subtle) text-(--color-primary-text) hover:opacity-80 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     Confirmar
                   </button>
                   <button
-                    (click)="sendConfirmationRequest(apt); $event.stopPropagation()"
+                    (click)="sendConfirmationRequest(apt)"
                     [disabled]="actionLoading() || confirmationSending() === apt.id"
                     class="text-[10px] px-2 py-1 rounded-lg bg-info-subtle text-info hover:opacity-80 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                   >
@@ -447,67 +453,55 @@
                       📲 Confirmar via WhatsApp
                     }
                   </button>
-                  <button
-                    (click)="requestCancel(apt); $event.stopPropagation()"
-                    [disabled]="actionLoading()"
-                    class="text-[10px] px-2 py-1 rounded-lg bg-danger-subtle text-(--color-danger) hover:opacity-80 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    Cancelar
-                  </button>
                 }
                 @if (apt.status === 'confirmed') {
                   <button
-                    (click)="handlePayClick(apt); $event.stopPropagation()"
+                    (click)="handlePayClick(apt)"
                     [disabled]="actionLoading()"
                     class="text-[10px] px-2 py-1 rounded-lg bg-success-subtle text-success hover:opacity-80 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     {{ payButtonLabel(apt) }}
                   </button>
-                  <button
-                    (click)="requestReschedule(apt); $event.stopPropagation()"
-                    [disabled]="actionLoading()"
-                    class="text-[10px] px-2 py-1 rounded-lg bg-warning-subtle text-warning hover:opacity-80 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    Remarcar
-                  </button>
-                  <button
-                    (click)="requestCancel(apt); $event.stopPropagation()"
-                    [disabled]="actionLoading()"
-                    class="text-[10px] px-2 py-1 rounded-lg bg-danger-subtle text-(--color-danger) hover:opacity-80 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    Cancelar
-                  </button>
                 }
                 @if (apt.status === 'paid') {
                   <button
-                    (click)="finishAppointment(apt); $event.stopPropagation()"
+                    (click)="finishAppointment(apt)"
                     [disabled]="actionLoading()"
                     class="text-[10px] px-2 py-1 rounded-lg bg-(--color-primary-subtle) text-(--color-primary-text) hover:opacity-80 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     Finalizar
                   </button>
-                  <button
-                    (click)="requestCancel(apt); $event.stopPropagation()"
-                    [disabled]="actionLoading()"
-                    class="text-[10px] px-2 py-1 rounded-lg bg-danger-subtle text-(--color-danger) hover:opacity-80 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    Cancelar
-                  </button>
                 }
-
                 @if (apt.status === 'finished') {
                   <button
-                    (click)="reprintReceipt(apt); $event.stopPropagation()"
+                    (click)="reprintReceipt(apt)"
                     [disabled]="actionLoading()"
                     class="text-[10px] px-2 py-1 rounded-lg bg-info-subtle text-info hover:opacity-80 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     🧾 Comprovante
                   </button>
                 }
-
+                @if (canReschedule(apt)) {
+                  <button
+                    (click)="requestReschedule(apt)"
+                    [disabled]="actionLoading()"
+                    class="text-[10px] px-2 py-1 rounded-lg bg-warning-subtle text-warning hover:opacity-80 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    Remarcar
+                  </button>
+                }
+                @if (apt.status !== 'cancelled' && apt.status !== 'finished') {
+                  <button
+                    (click)="requestCancel(apt)"
+                    [disabled]="actionLoading()"
+                    class="text-[10px] px-2 py-1 rounded-lg bg-danger-subtle text-(--color-danger) hover:opacity-80 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    Cancelar
+                  </button>
+                }
                 @if (apt.status === 'cancelled' && isAdmin) {
                   <button
-                    (click)="requestDelete(apt); $event.stopPropagation()"
+                    (click)="requestDelete(apt)"
                     [disabled]="actionLoading()"
                     class="text-[10px] px-2 py-1 rounded-lg bg-danger-subtle text-(--color-danger) hover:opacity-80 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                   >
@@ -516,6 +510,72 @@
                 }
               </div>
             </div>
+
+            @if (expandedAppointmentId === apt.id) {
+              <div
+                class="mt-2 ml-15 rounded-xl border border-(--color-border) bg-(--color-bg-overlay) p-3 flex flex-col gap-3"
+                (click)="$event.stopPropagation()"
+              >
+                <div class="grid grid-cols-2 gap-2 text-[12px] text-(--color-text-primary)">
+                  <div>
+                    <span class="text-(--color-text-muted)">Especialidade:</span>
+                    {{ apt.specialty }}
+                  </div>
+                  <div>
+                    <span class="text-(--color-text-muted)">Tipo:</span>
+                    {{ apt.appointmentTypeName ?? '—' }}
+                  </div>
+                  <div><span class="text-(--color-text-muted)">Data:</span> {{ apt.date }}</div>
+                  <div>
+                    <span class="text-(--color-text-muted)">Horário:</span> {{ apt.startTime }} –
+                    {{ apt.endTime }}
+                  </div>
+                  @if (apt.cancellationReason) {
+                    <div class="col-span-2">
+                      <span class="text-(--color-text-muted)">Motivo:</span>
+                      {{ apt.cancellationReason }}
+                    </div>
+                  }
+                </div>
+
+                <div class="flex flex-col gap-1">
+                  <label class="text-[10px] text-(--color-text-muted)">Preço</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    [(ngModel)]="editPrice"
+                    class="bg-bg-card border border-(--color-border) rounded-lg px-2.5 py-1.5 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
+                  />
+                </div>
+
+                <div class="flex flex-col gap-1">
+                  <label class="text-[10px] text-(--color-text-muted)">Responsável</label>
+                  <input
+                    type="text"
+                    [(ngModel)]="editResponsible"
+                    class="bg-bg-card border border-(--color-border) rounded-lg px-2.5 py-1.5 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors"
+                  />
+                </div>
+
+                <div class="flex flex-col gap-1">
+                  <label class="text-[10px] text-(--color-text-muted)">Notas</label>
+                  <textarea
+                    rows="2"
+                    [(ngModel)]="editNotes"
+                    class="bg-bg-card border border-(--color-border) rounded-lg px-2.5 py-1.5 text-[12px] text-(--color-text-primary) outline-none focus:border-(--color-primary) transition-colors resize-none"
+                  ></textarea>
+                </div>
+
+                <button
+                  (click)="saveAppointmentEdit(apt)"
+                  [disabled]="savingEdit"
+                  class="self-end px-3 py-1.5 rounded-lg text-[11px] font-medium bg-(--color-primary-subtle) text-(--color-primary-text) border border-(--color-primary)/30 hover:opacity-80 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {{ savingEdit ? 'Salvando...' : 'Salvar' }}
+                </button>
+              </div>
+            }
 
             @if (pendingRescheduleId === apt.id) {
               <div

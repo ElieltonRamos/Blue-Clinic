@@ -46,6 +46,11 @@ export class Calendar implements OnInit {
   private readonly authService = inject(AuthService);
 
   role: string = '';
+  expandedAppointmentId: number | null = null;
+  editPrice: number | null = null;
+  editNotes = '';
+  editResponsible = '';
+  savingEdit = false;
 
   readonly weekDays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
   readonly availablePaymentMethods = PAYMENT_METHODS;
@@ -187,6 +192,60 @@ export class Calendar implements OnInit {
   closeModal(): void {
     if (this.actionLoading()) return;
     this.selectedDay.set(null);
+  }
+
+  toggleExpand(apt: Appointment): void {
+    if (this.expandedAppointmentId === apt.id) {
+      this.expandedAppointmentId = null;
+      return;
+    }
+    this.expandedAppointmentId = apt.id;
+    this.editPrice = apt.price ?? null;
+    this.editNotes = apt.notes ?? '';
+    this.editResponsible = apt.responsible ?? '';
+  }
+
+  canReschedule(apt: Appointment): boolean {
+    return apt.status !== 'cancelled' && apt.status !== 'finished';
+  }
+
+  saveAppointmentEdit(apt: Appointment): void {
+    if (this.savingEdit) return;
+    this.savingEdit = true;
+
+    this.service
+      .updateAppointment(apt.id, {
+        price: this.editPrice ?? undefined,
+        notes: this.editNotes,
+        responsible: this.editResponsible,
+      })
+      .subscribe({
+        next: (updated) => {
+          this.updateAppointmentFields(apt.id, {
+            price: updated.price,
+            notes: updated.notes,
+            responsible: updated.responsible,
+          });
+          this.notify.success('Agendamento atualizado');
+          this.savingEdit = false;
+        },
+        error: (err: HttpErrorResponse) => {
+          this.notify.error(this.getErrorMessage(err, 'Erro ao atualizar agendamento'));
+          this.savingEdit = false;
+        },
+      });
+  }
+
+  private updateAppointmentFields(id: number, fields: Partial<Appointment>): void {
+    this.allAppointments.update((list) => list.map((a) => (a.id === id ? { ...a, ...fields } : a)));
+
+    const day = this.selectedDay();
+    if (day) {
+      this.selectedDay.set({
+        ...day,
+        appointments: day.appointments.map((a) => (a.id === id ? { ...a, ...fields } : a)),
+      });
+    }
   }
 
   // ── Inline actions ────────────────────────────────────────────

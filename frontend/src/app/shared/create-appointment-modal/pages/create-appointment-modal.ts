@@ -115,6 +115,9 @@ export class CreateAppointmentModal implements AfterViewInit, OnDestroy, OnChang
   responsible = '';
   isSaving = false;
 
+  // ── Preço editável ────────────────────────────────────────────────────────
+  editedPrice: number | null = null;
+
   // ── Computed helpers ──────────────────────────────────────────────────────
   get availableSlots(): Slot[] {
     return this.slots.filter((s) => s.status === 'available');
@@ -345,12 +348,16 @@ export class CreateAppointmentModal implements AfterViewInit, OnDestroy, OnChang
     // reset downstream
     this.selectedSlot = null;
     this.slots = [];
+    if (this.selectedType) {
+      this.editedPrice = this.selectedPrice;
+    }
   }
 
   selectType(type: AppointmentType): void {
     this.selectedType = type;
     this.selectedSlot = null;
     this.slots = [];
+    this.editedPrice = this.selectedPrice;
   }
 
   selectSlot(slot: Slot): void {
@@ -399,6 +406,7 @@ export class CreateAppointmentModal implements AfterViewInit, OnDestroy, OnChang
       endTime: this.selectedSlot.endTime,
       notes: this.notes || undefined,
       responsible: this.responsible || undefined,
+      feeOverride: this.editedPrice ?? undefined,
     };
 
     this.service.createAppointment(dto).subscribe({
@@ -425,6 +433,7 @@ export class CreateAppointmentModal implements AfterViewInit, OnDestroy, OnChang
     this.selectedType = null;
     this.selectedDate = '';
     this.selectedSlot = null;
+    this.editedPrice = null;
     if (!this.prefillPatientId) {
       this.selectedPatient = null;
       this.patientSearchQuery = '';

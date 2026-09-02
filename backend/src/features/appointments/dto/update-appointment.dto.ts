@@ -1,5 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, Matches } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsNumber, IsOptional, IsString, Matches, Min } from 'class-validator';
 
 export class UpdateAppointmentDto {
   @ApiPropertyOptional({
@@ -59,4 +60,14 @@ export class UpdateAppointmentDto {
   @IsOptional()
   @IsString({ message: 'O nome do responsável deve ser uma string' })
   responsible?: string;
+
+  @ApiPropertyOptional({
+    description: 'Valor da consulta (sobrescreve a comissão padrão do médico)',
+    example: 150.0,
+  })
+  @IsOptional()
+  @IsNumber({}, { message: 'Valor da consulta  deve ser um número' })
+  @Min(0, { message: 'Valor da consulta não pode ser negativo' })
+  @Type(() => Number)
+  feeOverride?: number;
 }

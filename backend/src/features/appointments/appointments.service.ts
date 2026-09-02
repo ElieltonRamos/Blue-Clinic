@@ -113,10 +113,9 @@ export class AppointmentsService {
       originAppointmentId = origin.id;
     }
 
-    const feeOverride = await this.resolveFee(
-      dto.doctorId,
-      dto.appointmentTypeId,
-    );
+    const feeOverride =
+      dto.feeOverride ??
+      (await this.resolveFee(dto.doctorId, dto.appointmentTypeId));
 
     const appointment = await this.prisma.client.appointment.create({
       data: {
@@ -243,6 +242,7 @@ export class AppointmentsService {
     if (dto.date) data.date = this.parseDateUTC(dto.date);
     if (dto.notes !== undefined) data.notes = dto.notes;
     if (dto.responsible !== undefined) data.responsible = dto.responsible;
+    if (dto.feeOverride !== undefined) data.feeOverride = dto.feeOverride;
 
     const appointment = await this.prisma.client.appointment.update({
       where: { id },

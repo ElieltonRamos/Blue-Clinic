@@ -92,6 +92,18 @@ export class CalendarService {
     );
   }
 
+  updateAppointment(
+    appointmentId: number,
+    data: { price?: number; notes?: string; responsible?: string },
+  ) {
+    const body: Record<string, unknown> = {};
+    if (data.price !== undefined) body['feeOverride'] = data.price;
+    if (data.notes !== undefined) body['notes'] = data.notes;
+    if (data.responsible !== undefined) body['responsible'] = data.responsible;
+
+    return this.http.patch<Appointment>(`${this.apiUrl}/appointments/${appointmentId}`, body);
+  }
+
   reversePayment(appointmentId: number, paymentId: number) {
     return this.http.delete<void>(
       `${this.apiUrl}/appointments/${appointmentId}/payments/${paymentId}`,

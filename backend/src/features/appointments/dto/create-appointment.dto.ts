@@ -7,6 +7,8 @@ import {
   IsOptional,
   Matches,
   IsEnum,
+  IsNumber,
+  Min,
 } from 'class-validator';
 import { AppointmentOrigin } from '../../../../generated/prisma/client';
 
@@ -71,4 +73,14 @@ export class CreateAppointmentDto {
   @IsOptional()
   @IsEnum(AppointmentOrigin, { message: 'Origem inválida' })
   origin?: AppointmentOrigin;
+
+  @ApiPropertyOptional({
+    example: 150.0,
+    description: 'Valor da consulta (sobrescreve a comissão padrão do médico)',
+  })
+  @IsOptional()
+  @IsNumber({}, { message: 'Valor da consulta deve ser um número' })
+  @Min(0, { message: 'Valor da consulta não pode ser negativo' })
+  @Type(() => Number)
+  feeOverride?: number;
 }

@@ -107,7 +107,7 @@ export class Financial implements OnInit {
         this.summary = data.summary;
         this.expenses = data.expenses;
         this.transactions = data.transactions;
-        this.professionals = data.professionals;
+        this.professionals = data.professionals.filter((p) => p.id !== '1');
         this.cashClosing = data.cashClosing;
         this.commissionHistory = data.commissionHistory;
         this.pageLoading.set(false);

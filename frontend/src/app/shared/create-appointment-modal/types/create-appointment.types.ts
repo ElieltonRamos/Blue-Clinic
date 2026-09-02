@@ -54,6 +54,7 @@ export interface CreateAppointmentRequest {
   endTime: string; // HH:mm
   responsible?: string;
   notes?: string;
+  feeOverride?: number;
 }
 
 export interface AppointmentResponse {
