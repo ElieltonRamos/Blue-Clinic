@@ -145,14 +145,11 @@ export class ModalAppointmentReceipt implements OnInit {
   }
 
   getFormattedDate(): string {
-    return new Date(this.paymentData.date).toLocaleString('pt-BR', {
-      timeZone: 'America/Sao_Paulo',
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    const d = new Date(this.paymentData.date);
+    const day = d.getUTCDate().toString().padStart(2, '0');
+    const month = (d.getUTCMonth() + 1).toString().padStart(2, '0');
+    const year = d.getUTCFullYear();
+    return `${day}/${month}/${year}`;
   }
 
   formatNumber(n: any): number {
@@ -228,8 +225,32 @@ export class ModalAppointmentReceipt implements OnInit {
   }
 
   printA4(): void {
-    const content = document.getElementById('receiptContent')?.innerHTML;
-    if (!content) return;
+    const p = this.paymentData;
+    const c = this.companyData;
+    const logoUrl = `${window.location.origin}/logo-empresa.jpeg`;
+
+    const addressLine = c
+      ? `${c.street}, ${c.number}${c.complement ? ', ' + c.complement : ''} - ${c.neighborhood} - ${c.city}/${c.state} - CEP: ${c.cityCode}`
+      : '';
+
+    const descriptionText =
+      p.appointmentTypeName && p.specialty
+        ? `${p.appointmentTypeName} - ${p.specialty}`
+        : p.appointmentTypeName
+          ? p.appointmentTypeName
+          : p.specialty
+            ? `Consulta - ${p.specialty}`
+            : 'Consulta médica';
+
+    const entriesHtml = p.entries
+      .map(
+        (e) =>
+          `<tr>
+          <td>${this.methodLabel(e.method)}</td>
+          <td class="text-right">R$ ${this.formatNumber(e.amount).toFixed(2)}</td>
+        </tr>`,
+      )
+      .join('');
 
     const iframe = document.createElement('iframe');
     iframe.style.position = 'fixed';
@@ -241,44 +262,143 @@ export class ModalAppointmentReceipt implements OnInit {
     const doc = iframe.contentWindow?.document;
     if (!doc) return;
 
-    const styles = Array.from(document.styleSheets)
-      .map((style) => {
-        try {
-          return style.href ? `<link rel="stylesheet" href="${style.href}">` : '';
-        } catch {
-          return '';
-        }
-      })
-      .join('');
-
     doc.open();
+    doc.title = ' ';
     doc.write(`
     <html>
       <head>
-        ${styles}
         <style>
-          @media print {
-            @page { size: A4; margin: 20mm 15mm; }
-            body {
-              margin: 0;
-              padding: 0;
-              width: 100%;
-              font-family: Arial, sans-serif;
-              font-size: 11pt;
-              color: #000;
-            }
-            button, .no-print { display: none !important; }
-            table { width: 100%; border-collapse: collapse; }
-            th { padding: 6px 8px; border-bottom: 2px solid #000; text-align: left; font-size: 11pt; }
-            td { padding: 6px 8px; border-bottom: 1px solid #ccc; font-size: 11pt; }
-            h1 { font-size: 16pt; margin-bottom: 12px; }
-            h2 { font-size: 12pt; text-align: center; margin-bottom: 16px; }
-            p { margin: 4px 0; }
+          @page { size: A4; margin: 18mm 16mm; }
+          * { box-sizing: border-box; }
+          body {
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 11pt;
+            color: #1a1a1a;
+          }
+          .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 2px solid #1a1a1a;
+            padding-bottom: 12px;
+            margin-bottom: 16px;
+          }
+          .header-left { display: flex; align-items: center; gap: 14px; }
+          .header-left img { max-height: 64px; max-width: 140px; object-fit: contain; }
+          .company-name { font-size: 15pt; font-weight: bold; margin: 0; }
+          .company-info { font-size: 9pt; color: #444; margin: 2px 0 0; line-height: 1.4; }
+          .fiscal-note {
+            font-size: 8pt;
+            color: #888;
+            text-align: right;
+            white-space: nowrap;
+          }
+          h1 {
+            font-size: 14pt;
+            margin: 0 0 14px;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+          }
+          .meta-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px 24px;
+            font-size: 10pt;
+            margin-bottom: 18px;
+          }
+          .meta-grid p { margin: 2px 0; }
+          table { width: 100%; border-collapse: collapse; margin-bottom: 6px; }
+          th {
+            background: #f2f2f2;
+            padding: 8px 10px;
+            text-align: left;
+            font-size: 10pt;
+            border-bottom: 2px solid #1a1a1a;
+          }
+          td { padding: 8px 10px; border-bottom: 1px solid #ddd; font-size: 10pt; }
+          .text-right { text-align: right; }
+          .totals { width: 260px; margin-left: auto; margin-top: 10px; }
+          .totals p { display: flex; justify-content: space-between; margin: 3px 0; font-size: 10pt; }
+          .totals .total-final {
+            font-size: 13pt;
+            font-weight: bold;
+            border-top: 2px solid #1a1a1a;
+            padding-top: 6px;
+            margin-top: 6px;
+          }
+          .payment-section { margin-top: 22px; }
+          .payment-section h2 {
+            font-size: 10pt;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 4px;
+            margin-bottom: 6px;
+          }
+          .footer {
+            margin-top: 48px;
+            padding-top: 12px;
+            border-top: 1px solid #ccc;
+            font-size: 8pt;
+            color: #999;
+            text-align: center;
           }
         </style>
       </head>
       <body onload="window.print(); setTimeout(() => window.close(), 100);">
-        ${content}
+        <div class="header">
+          <div class="header-left">
+            <img src="${logoUrl}" onerror="this.style.display='none'" />
+            <div>
+              <p class="company-name">${c?.tradeName ?? ''}</p>
+              <p class="company-info">
+                ${c ? this.formatCnpj(c.cnpj) : ''}${c?.phone ? ' · ' + this.formatPhone(c.phone) : ''}<br>
+                ${addressLine}
+              </p>
+            </div>
+          </div>
+          <div class="fiscal-note">Documento sem<br>valor fiscal</div>
+        </div>
+
+        <h1>Recibo de Consulta</h1>
+
+        <div class="meta-grid">
+          <p><strong>Paciente:</strong> ${p.patient}</p>
+          <p><strong>Data:</strong> ${this.getFormattedDate()}</p>
+          <p><strong>Médico:</strong> ${p.doctor}</p>
+          ${p.startTime ? `<p><strong>Horário:</strong> ${p.startTime}</p>` : ''}
+          ${p.specialty ? `<p><strong>Especialidade:</strong> ${p.specialty}</p>` : ''}
+        </div>
+
+        <table>
+          <thead>
+            <tr><th>Descrição</th><th class="text-right">Valor</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>${descriptionText}</td>
+              <td class="text-right">R$ ${this.formatNumber(p.value + p.discount).toFixed(2)}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="totals">
+          ${p.discount > 0 ? `<p><span>Desconto</span><span>R$ ${this.formatNumber(p.discount).toFixed(2)}</span></p>` : ''}
+          <p class="total-final"><span>Total Pago</span><span>R$ ${this.formatNumber(p.value).toFixed(2)}</span></p>
+        </div>
+
+        <div class="payment-section">
+          <h2>Forma de Pagamento</h2>
+          <table>
+            <tbody>${entriesHtml}</tbody>
+          </table>
+        </div>
+
+        <div class="footer">
+          ${c?.tradeName ?? ''}${c?.email ? ' &nbsp;|&nbsp; ' + c.email : ''}
+        </div>
       </body>
     </html>
   `);

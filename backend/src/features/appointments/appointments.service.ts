@@ -321,7 +321,7 @@ export class AppointmentsService {
         const created = await tx.payment.create({
           data: {
             appointmentId,
-            date: new Date(),
+            date: appointment.date,
             patient: patientName,
             doctor: doctorName,
             registeredById,
@@ -417,6 +417,7 @@ export class AppointmentsService {
 
     return new PaymentResponseDto({
       ...payment,
+      date: appointment.date,
       specialty: appointment.specialty,
       startTime: appointment.startTime,
       appointmentTypeName: appointment.appointmentType?.name ?? null,
@@ -800,6 +801,7 @@ export class AppointmentsService {
 
     return new PaymentResponseDto({
       ...updated,
+      date: appointment.date,
       specialty: appointment.specialty,
       startTime: appointment.startTime,
       appointmentTypeName: appointment.appointmentType?.name ?? null,

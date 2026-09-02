@@ -59,10 +59,16 @@
                 Consulta médica
               }
             </td>
-            <td class="px-4 py-2 border-b text-right">R$ {{ formatNumber(paymentData.value) }}</td>
+            <td class="px-4 py-2 border-b text-right">
+              R$ {{ formatNumber(paymentData.value + paymentData.discount) }}
+            </td>
           </tr>
         </tbody>
       </table>
+
+      @if (paymentData.discount > 0) {
+        <p class="mt-2"><strong>Desconto:</strong> R$ {{ formatNumber(paymentData.discount) }}</p>
+      }
 
       <p class="mt-4 text-lg font-bold">
         <strong>Total Pago: R$</strong> {{ formatNumber(paymentData.value) }}
@@ -78,9 +84,6 @@
                 <span> | Troco: R$ {{ formatNumber(entry.change) }}</span>
               }
             </p>
-          }
-          @if (paymentData.discount > 0) {
-            <p><strong>Desconto:</strong> R$ {{ formatNumber(paymentData.discount) }}</p>
           }
         </div>
 
