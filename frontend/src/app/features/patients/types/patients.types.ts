@@ -53,6 +53,12 @@ export interface PatientDocument {
 export interface PatientDetail {
   id: number;
   name: string;
+  email: string | null;
+  phone: string | null;
+  cpf: string | null;
+  birthDate: string | null; // ISO date
+  status: PatientStatus;
+  blocked: boolean;
   memberSince: string; // ISO date
   whatsappActive: boolean;
   lgpdConsent: boolean;

@@ -4,6 +4,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { PatientStatus } from '../../../../generated/prisma/enums';
 
 export class ConsultationHistoryDto {
   @ApiProperty({ example: 'Consulta de Rotina' })
@@ -54,6 +55,24 @@ export class PatientDetailResponseDto {
   @ApiProperty({ example: 'João da Silva' })
   name: string;
 
+  @ApiPropertyOptional({ example: 'joao@email.com', nullable: true })
+  email: string | null;
+
+  @ApiPropertyOptional({ example: '(38) 99999-9999', nullable: true })
+  phone: string | null;
+
+  @ApiPropertyOptional({ example: '000.000.000-00', nullable: true })
+  cpf: string | null;
+
+  @ApiPropertyOptional({ example: '1990-05-20T00:00:00.000Z', nullable: true })
+  birthDate: string | null;
+
+  @ApiProperty({ enum: PatientStatus, example: PatientStatus.Ativo })
+  status: PatientStatus;
+
+  @ApiProperty({ example: false })
+  blocked: boolean;
+
   @ApiProperty({ example: '2023-01-10T00:00:00.000Z' })
   memberSince: string;
 
@@ -77,6 +96,12 @@ export class PatientDetailResponseDto {
 
     this.id = patient.id;
     this.name = patient.name;
+    this.email = patient.email;
+    this.phone = patient.phone;
+    this.cpf = patient.cpf;
+    this.birthDate = patient.birthDate?.toISOString() ?? null;
+    this.status = patient.status;
+    this.blocked = patient.blocked;
     this.memberSince = patient.memberSince.toISOString();
     this.whatsappActive = patient.whatsappActive;
     this.lgpdConsent = patient.lgpdConsent;

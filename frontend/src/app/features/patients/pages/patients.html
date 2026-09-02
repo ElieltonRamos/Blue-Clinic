@@ -180,6 +180,40 @@
           Paciente desde {{ formatMemberSince(detail.memberSince) }}
         </p>
 
+        <div class="space-y-1 mb-4 text-xs text-(--color-text-secondary)">
+          @if (detail.email) {
+            <p>Email: 📧 {{ detail.email }}</p>
+          }
+          @if (detail.phone) {
+            <p>Telefone:📱 {{ detail.phone }}</p>
+          }
+          @if (detail.cpf) {
+            <p>CPF: 🪪 {{ detail.cpf }}</p>
+          }
+          @if (detail.birthDate) {
+            <p>Aniversario: 🎂 {{ formatDate(detail.birthDate) }}</p>
+          }
+          <p class="flex items-center gap-2">
+            @if (detail.status === 'Ativo') {
+              <span
+                class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-success-subtle text-success"
+                >ATIVO</span
+              >
+            } @else {
+              <span
+                class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-danger-subtle text-danger"
+                >INATIVO</span
+              >
+            }
+            @if (detail.blocked) {
+              <span
+                class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-danger-subtle text-danger"
+                >BLOQUEADO</span
+              >
+            }
+          </p>
+        </div>
+
         <div class="space-y-4 flex-1">
           <div class="flex items-center justify-between border-b border-(--color-border) pb-2">
             <span class="text-xs font-bold uppercase text-(--color-text-muted) tracking-wider"

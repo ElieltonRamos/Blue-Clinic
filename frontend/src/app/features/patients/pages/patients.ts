@@ -226,11 +226,16 @@ export class Patients implements OnInit {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
+      timeZone: 'UTC',
     });
   }
 
   formatMemberSince(iso: string): string {
-    return new Date(iso).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+    return new Date(iso).toLocaleDateString('pt-BR', {
+      month: 'long',
+      year: 'numeric',
+      timeZone: 'UTC',
+    });
   }
 
   formatNextAppointment(date: string, startTime: string): string {
@@ -238,13 +243,17 @@ export class Patients implements OnInit {
     const today = new Date();
     const tomorrow = new Date();
     tomorrow.setDate(today.getDate() + 1);
-    const isToday = d.toDateString() === today.toDateString();
-    const isTomorrow = d.toDateString() === tomorrow.toDateString();
+
+    const isToday =
+      d.toLocaleDateString('en-CA', { timeZone: 'UTC' }) === today.toLocaleDateString('en-CA');
+    const isTomorrow =
+      d.toLocaleDateString('en-CA', { timeZone: 'UTC' }) === tomorrow.toLocaleDateString('en-CA');
+
     const label = isToday
       ? 'Hoje'
       : isTomorrow
         ? 'Amanhã'
-        : d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+        : d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', timeZone: 'UTC' });
     return `${label}, ${startTime}`;
   }
 
