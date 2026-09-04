@@ -169,7 +169,7 @@ export class Financial implements OnInit {
       .map(
         (apt) => `
     <tr>
-      <td>${apt.date}</td>
+      <td>${this.formatDate(apt.date)}</td>
       <td>${apt.patientName}</td>
       <td>${apt.specialty}</td>
       <td>${apt.appointmentType ?? '—'}</td>
@@ -365,6 +365,16 @@ export class Financial implements OnInit {
     return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   }
 
+  formatDate(iso: string): string {
+    if (!iso) return '—';
+    return new Date(iso).toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      timeZone: 'UTC',
+    });
+  }
+
   maxProfessionalValue(): number {
     return Math.max(...this.professionals.map((p) => p.value), 1);
   }
@@ -470,7 +480,7 @@ export class Financial implements OnInit {
           .map(
             (apt) => `
             <tr>
-              <td>${apt.date}</td>
+              <td>${this.formatDate(apt.date)}</td>
               <td>${apt.patientName}</td>
               <td>${apt.specialty}</td>
               <td>${apt.appointmentType ?? '—'}</td>
@@ -597,7 +607,7 @@ export class Financial implements OnInit {
       .map(
         (tx) => `
     <tr>
-      <td>${tx.date} ${tx.time}</td>
+      <td>${this.formatDate(tx.date)} ${tx.time}</td>
       <td style="color:${tx.type === 'entrada' ? '#1a6b3c' : '#c0392b'};font-weight:600">${tx.type === 'entrada' ? '↗ Entrada' : '↘ Saída'}</td>
       <td>${tx.patient}</td>
       <td>${tx.doctor || '—'}</td>
@@ -676,7 +686,7 @@ export class Financial implements OnInit {
             (e) => `
           <tr>
             <td>${e.description}</td>
-            <td>${e.date}</td>
+            <td>${this.formatDate(e.date)}</td>
             <td>${e.status === 'pago' ? 'Pago' : 'Pendente'}</td>
             <td class="amount">${this.formatCurrency(e.value)}</td>
           </tr>

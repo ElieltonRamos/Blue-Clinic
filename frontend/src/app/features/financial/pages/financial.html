@@ -192,7 +192,7 @@
                 <p class="text-[12px] font-semibold text-(--color-danger) text-right">
                   {{ formatCurrency(expense.value) }}
                 </p>
-                <p class="text-[12px] text-(--color-text-muted)">{{ expense.date }}</p>
+                <p class="text-[12px] text-(--color-text-muted)">{{ formatDate(expense.date) }}</p>
                 <span
                   class="text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full text-center"
                   [class]="statusClass(expense.status)"
@@ -339,7 +339,9 @@
                           [disabled]="apt.commissionPaid"
                           (change)="togglePaymentSelection(apt.paymentId)"
                         />
-                        <p class="text-[11px] text-(--color-text-muted)">{{ apt.date }}</p>
+                        <p class="text-[11px] text-(--color-text-muted)">
+                          {{ formatDate(apt.date) }}
+                        </p>
                         <p class="text-[11px] font-medium text-(--color-text-primary) truncate">
                           {{ apt.patientName }}
                         </p>
@@ -513,7 +515,7 @@
                       {{ tx.type }}
                     </span>
                     <span class="text-[10px] text-text-disabled"
-                      >{{ tx.date }} • {{ tx.time }}</span
+                      >{{ formatDate(tx.date) }} • {{ tx.time }}</span
                     >
                   </div>
 
