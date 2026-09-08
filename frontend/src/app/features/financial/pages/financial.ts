@@ -104,6 +104,7 @@ export class Financial implements OnInit {
       commissionHistory: this.service.getCommissionHistory(this.filter),
     }).subscribe({
       next: (data) => {
+        console.log('professionals raw:', JSON.stringify(data.professionals, null, 2));
         this.summary = data.summary;
         this.expenses = data.expenses;
         this.transactions = data.transactions;

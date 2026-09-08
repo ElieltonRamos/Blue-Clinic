@@ -46,6 +46,10 @@ export class FinanceService {
     return { gte, lte };
   }
 
+  private toUTCDateString(date: Date): string {
+    return date.toISOString().split('T')[0];
+  }
+
   private previousRange(filter: FinanceFilterDto): { gte: Date; lte: Date } {
     const from = new Date(`${filter.dateFrom}T00:00:00.000${TZ_OFFSET}`);
     const to = new Date(`${filter.dateTo}T23:59:59.999${TZ_OFFSET}`);
@@ -243,7 +247,7 @@ export class FinanceService {
 
       const appointment: ProfessionalRevenueAppointmentDto = {
         paymentId: p.id,
-        date: this.toLocalDateString(p.appointment.date),
+        date: this.toUTCDateString(p.appointment.date),
         startTime: p.appointment.startTime,
         specialty: p.appointment.specialty,
         appointmentType: p.appointment.appointmentType?.name ?? null,
