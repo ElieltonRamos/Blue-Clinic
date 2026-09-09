@@ -1,3 +1,5 @@
+import { PaymentEntry } from "../../calendar/types/calendar.types";
+
 // patients.types.ts
 export type PatientStatus = 'Ativo' | 'Inativo';
 
@@ -35,11 +37,30 @@ export interface PatientListResponse {
 }
 
 export interface ConsultationHistory {
+  appointmentId: number;
   title: string;
-  date: string; // ISO date
+  date: string;
   doctor: string;
   notes: string | null;
   active: boolean;
+}
+
+export interface PatientPaymentBatchItem {
+  appointmentId: number;
+  date: string;
+  doctor: string;
+  specialty: string | null;
+  appointmentTypeName: string | null;
+  value: number;
+  discount: number;
+}
+
+export interface PatientPaymentBatchResponse {
+  patient: string;
+  items: PatientPaymentBatchItem[];
+  totalValue: number;
+  totalDiscount: number;
+  entries: PaymentEntry[];
 }
 
 export interface PatientDocument {

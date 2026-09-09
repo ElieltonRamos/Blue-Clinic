@@ -39,6 +39,8 @@ import { JwtAuthGuard } from '../../core/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../../core/guards/roles.guard.js';
 import { CurrentUser } from '../../core/decorators/current-user.decorator.js';
 import { PatientsService, UploadedFileCustom } from './patient.service.js';
+import { PatientPaymentBatchResponseDto } from './dto/patient-payment-batch-response.dto.js';
+import { PaymentBatchDto } from './dto/payment-batch.dto.js';
 
 @ApiTags('patients')
 @ApiBearerAuth()
@@ -74,6 +76,17 @@ export class PatientsController {
     @CurrentUser('companyId') companyId: number,
   ) {
     return this.patientsService.findOne(id, companyId);
+  }
+
+  // patients.controller.ts (novo endpoint)
+  @Post('payments/batch')
+  @ApiOperation({ summary: 'Comprovante de consultas pagas (batch)' })
+  @ApiResponse({ status: HttpStatus.OK, type: PatientPaymentBatchResponseDto })
+  getPaymentBatch(
+    @CurrentUser('companyId') companyId: number,
+    @Body() dto: PaymentBatchDto,
+  ) {
+    return this.patientsService.getPaymentBatch(companyId, dto.appointmentIds);
   }
 
   @Post()

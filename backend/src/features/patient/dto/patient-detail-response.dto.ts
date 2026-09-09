@@ -7,6 +7,9 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { PatientStatus } from '../../../../generated/prisma/enums';
 
 export class ConsultationHistoryDto {
+  @ApiProperty({ example: 45 })
+  appointmentId: number;
+
   @ApiProperty({ example: 'Consulta de Rotina' })
   title: string;
 
@@ -107,11 +110,12 @@ export class PatientDetailResponseDto {
     this.lgpdConsent = patient.lgpdConsent;
 
     this.consultationHistory = patient.appointments.map((a: any) => ({
+      appointmentId: a.id,
       title: a.consultation?.title ?? a.appointmentType?.name ?? 'Consulta',
       date: a.date.toISOString(),
       doctor: a.doctor.name,
       notes: a.consultation?.notes ?? null,
-      active: a.status === 'finished',
+      active: a.status === 'finished' || a.status === 'paid',
     }));
 
     this.documents = patient.documents.map((d: any) => ({

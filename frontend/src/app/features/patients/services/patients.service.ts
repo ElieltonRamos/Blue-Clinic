@@ -10,6 +10,7 @@ import {
   CreatePatientRequest,
   UpdatePatientRequest,
   UploadDocumentResponse,
+  PatientPaymentBatchResponse,
 } from '../types/patients.types';
 
 @Injectable({
@@ -57,5 +58,11 @@ export class PatientsService {
 
   deletePatient(id: number) {
     return this.http.delete<void>(`${this.apiUrl}/patients/${id}`);
+  }
+
+  createPaymentBatch(appointmentIds: number[]) {
+    return this.http.post<PatientPaymentBatchResponse>(`${this.apiUrl}/patients/payments/batch`, {
+      appointmentIds,
+    });
   }
 }

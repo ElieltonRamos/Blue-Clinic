@@ -5,6 +5,7 @@ import {
   NotFoundException,
   ConflictException,
   StreamableFile,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../core/database/prisma.service.js';
 import { Prisma } from '../../../generated/prisma/client.js';
@@ -16,6 +17,7 @@ import { UpdatePatientDto } from './dto/update-patient.dto.js';
 import { PatientDocument } from '../../../generated/prisma/client.js';
 import { createReadStream, existsSync } from 'node:fs';
 import { join } from 'node:path';
+import { PatientPaymentBatchResponseDto } from './dto/patient-payment-batch-response.dto.js';
 
 export interface UploadedFileCustom {
   originalname: string;
@@ -127,6 +129,72 @@ export class PatientsService {
     if (!patient) throw new NotFoundException('Paciente não encontrado');
 
     await this.prisma.client.patient.delete({ where: { id } });
+  }
+
+  // patients.service.ts (novo método)
+  async getPaymentBatch(
+    companyId: number,
+    appointmentIds: number[],
+  ): Promise<PatientPaymentBatchResponseDto> {
+    const appointments = await this.prisma.client.appointment.findMany({
+      where: { id: { in: appointmentIds }, companyId },
+      include: {
+        doctor: { select: { name: true } },
+        appointmentType: { select: { name: true } },
+        patient: { select: { id: true, name: true } },
+        payments: { include: { entries: true } },
+      },
+    });
+
+    if (appointments.length !== appointmentIds.length) {
+      throw new NotFoundException(
+        'Um ou mais agendamentos não foram encontrados',
+      );
+    }
+
+    const patientIds = new Set(appointments.map((a) => a.patientId));
+    if (patientIds.size !== 1) {
+      throw new BadRequestException(
+        'Os agendamentos pertencem a pacientes diferentes',
+      );
+    }
+
+    const unpaid = appointments.filter((a) => a.payments.length === 0);
+    if (unpaid.length > 0) {
+      throw new BadRequestException(
+        `Agendamento(s) sem pagamento registrado: ${unpaid.map((a) => a.id).join(', ')}`,
+      );
+    }
+
+    const items = appointments.map((a) => ({
+      appointmentId: a.id,
+      date: a.date.toISOString(),
+      doctor: a.doctor?.name ?? a.doctorName ?? '',
+      specialty: a.specialty,
+      appointmentTypeName: a.appointmentType?.name ?? null,
+      value: a.feeOverride ? Number(a.feeOverride) : 0,
+      discount: 0,
+    }));
+
+    const totalValue = items.reduce((sum, i) => sum + i.value, 0);
+
+    const entries = appointments.flatMap((a) =>
+      a.payments.flatMap((p) =>
+        p.entries.map((e) => ({
+          method: e.method,
+          amount: Number(e.amount),
+          change: Number(e.change),
+        })),
+      ),
+    );
+
+    return {
+      patient: appointments[0].patient?.name ?? '',
+      items,
+      totalValue,
+      totalDiscount: 0,
+      entries,
+    };
   }
 
   async update(

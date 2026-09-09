@@ -9,6 +9,7 @@ import {
   CreatePatientRequest,
   UpdatePatientRequest,
   PatientDocument,
+  PatientPaymentBatchResponse,
 } from '../types/patients.types';
 import { FormField, ModalEditEntity } from '../../../shared/modal-edit-entity/modal-edit-entity';
 import { NotificationService } from '../../../shared/toastr/notification.service';
@@ -17,6 +18,7 @@ import { AppointmentResponse } from '../../../shared/create-appointment-modal/ty
 import { CreateAppointmentModal } from '../../../shared/create-appointment-modal/pages/create-appointment-modal';
 import { AuthService } from '../../../core/services/auth.service';
 import { alertConfirm } from '../../../shared/alerts/custom-alerts';
+import { ModalPatientReceiptBatch } from "../../../shared/modal-patient-receipt-batch/modal-patient-receipt-batch";
 
 const AVATAR_COLORS = [
   'bg-primary text-btn-primary-text',
@@ -29,7 +31,7 @@ const ITEMS_PER_PAGE = 100;
 @Component({
   selector: 'app-patients',
   standalone: true,
-  imports: [CommonModule, FormsModule, ModalEditEntity, PaginatorComponent, CreateAppointmentModal],
+  imports: [CommonModule, FormsModule, ModalEditEntity, PaginatorComponent, CreateAppointmentModal, ModalPatientReceiptBatch],
   templateUrl: './patients.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -42,6 +44,9 @@ export class Patients implements OnInit {
   selectedDetail = signal<PatientDetail | null>(null);
   totalCount = signal(0);
   loading = signal(false);
+  selectedConsultationIds = signal<number[]>([]);
+  batchReceiptData = signal<PatientPaymentBatchResponse | null>(null);
+  loadingBatchReceipt = signal(false);
 
   page = signal(1);
   searchName = signal('');
@@ -78,6 +83,44 @@ export class Patients implements OnInit {
 
   ngOnInit(): void {
     this.loadPatients();
+  }
+
+  toggleConsultationSelection(appointmentId: number): void {
+    this.selectedConsultationIds.update((ids) =>
+      ids.includes(appointmentId)
+        ? ids.filter((id) => id !== appointmentId)
+        : [...ids, appointmentId],
+    );
+  }
+
+  isConsultationSelected(appointmentId: number): boolean {
+    return this.selectedConsultationIds().includes(appointmentId);
+  }
+
+  clearConsultationSelection(): void {
+    this.selectedConsultationIds.set([]);
+  }
+
+  emitBatchReceipt(): void {
+    const ids = this.selectedConsultationIds();
+    if (ids.length === 0 || this.loadingBatchReceipt()) return;
+
+    this.loadingBatchReceipt.set(true);
+    this.patientsService.createPaymentBatch(ids).subscribe({
+      next: (response) => {
+        this.batchReceiptData.set(response);
+        this.loadingBatchReceipt.set(false);
+      },
+      error: (err: HttpErrorResponse) => {
+        this.notification.error(this.getErrorMessage(err, 'Erro ao gerar comprovante'));
+        this.loadingBatchReceipt.set(false);
+      },
+    });
+  }
+
+  closeBatchReceipt(): void {
+    this.batchReceiptData.set(null);
+    this.clearConsultationSelection();
   }
 
   loadPatients(): void {
