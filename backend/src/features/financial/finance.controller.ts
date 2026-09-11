@@ -9,6 +9,7 @@ import {
   Param,
   ParseIntPipe,
   Patch,
+  Delete,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -113,6 +114,22 @@ export class FinanceController {
     @Query() filter: FinanceFilterDto,
   ): Promise<CashClosingRowDto[]> {
     return this.financeService.getCashClosing(companyId, filter);
+  }
+
+  @Delete('expenses/:id')
+  @Roles('admin', 'atendimento')
+  @ApiOperation({ summary: 'Excluir despesa' })
+  @ApiParam({ name: 'id', type: Number })
+  @ApiResponse({ status: HttpStatus.OK })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Despesa não encontrada',
+  })
+  deleteExpense(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser('companyId') companyId: number,
+  ): Promise<void> {
+    return this.financeService.deleteExpense(id, companyId);
   }
 
   @Patch('commissions/pay')

@@ -91,6 +91,20 @@ export class Financial implements OnInit {
     return { dateFrom: this.dateFrom, dateTo: this.dateTo };
   }
 
+  deleteExpense(expense: Expense): void {
+    if (!confirm(`Deseja realmente excluir a despesa "${expense.description}"?`)) return;
+
+    this.service.deleteExpense(expense.id).subscribe({
+      next: () => {
+        this.notify.success('Despesa excluída com sucesso');
+        this.loadAll();
+      },
+      error: (err: HttpErrorResponse) => {
+        this.notify.error(this.getErrorMessage(err, 'Erro ao excluir despesa'));
+      },
+    });
+  }
+
   private loadAll(): void {
     if (!this.dateFrom || !this.dateTo) return;
     this.pageLoading.set(true);

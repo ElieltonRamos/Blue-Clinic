@@ -290,6 +290,15 @@ export class FinanceService {
 
   // ── Cash Closing ───────────────────────────────────────────────────────────
 
+  async deleteExpense(id: number, companyId: number): Promise<void> {
+    const existing = await this.prisma.client.expense.findFirst({
+      where: { id, companyId },
+    });
+    if (!existing) throw new NotFoundException('Despesa não encontrada');
+
+    await this.prisma.client.expense.delete({ where: { id } });
+  }
+
   async getCashClosing(
     companyId: number,
     filter: FinanceFilterDto,

@@ -63,6 +63,10 @@ export class FinanceiroService {
     });
   }
 
+  deleteExpense(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.base}/expenses/${id}`);
+  }
+
   getCashClosing(filter: FinanceFilter): Observable<CashClosingRow[]> {
     return this.http.get<CashClosingRow[]>(`${this.base}/cash-closing`, {
       params: this.params(filter),

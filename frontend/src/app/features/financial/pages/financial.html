@@ -210,6 +210,13 @@
                     </button>
                   }
                   <button
+                    (click)="deleteExpense(expense)"
+                    title="Excluir"
+                    class="text-[10px] px-2 py-0.5 rounded-full bg-danger-subtle text-(--color-danger) hover:opacity-80 transition-opacity font-semibold"
+                  >
+                    ✕ Excluir
+                  </button>
+                  <button
                     (click)="openEditExpenseModal(expense)"
                     title="Editar"
                     class="text-[10px] px-2 py-0.5 rounded-full bg-(--color-bg-overlay) text-(--color-text-muted) hover:opacity-80 transition-opacity font-semibold"
