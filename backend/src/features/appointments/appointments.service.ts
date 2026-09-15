@@ -15,11 +15,7 @@ import { BlockedSlotResponseDto } from './dto/blocked-slot-response.dto.js';
 import { CreateBlockedSlotDto } from './dto/create-blocked-slot.dto.js';
 import { UpdateBlockedSlotDto } from './dto/update-blocked-slot.dto.js';
 import { AutoConfirmationDto } from './dto/auto-confirmation.dto.js';
-import {
-  AvailableSlotsQueryDto,
-  SlotDto,
-  SlotStatus,
-} from './dto/available-slots.dto.js';
+import { AvailableSlotsQueryDto, SlotDto } from './dto/available-slots.dto.js';
 import { UpdateAppointmentStatusDto } from './dto/update-appointment-status.dto.js';
 import { UpdatePaymentDto } from './dto/update-payment.dto.js';
 
@@ -650,23 +646,30 @@ export class AppointmentsService {
       return false;
     });
 
-    // 6. Mapeia status de cada slot
-    return slots.map((slot) => {
+    // 6. Mapeia status de cada slot.
+    //    Quando mais de um agendamento cai dentro do mesmo slot da grade,
+    //    gera uma entrada "booked" para cada um, com o horário real.
+    const result: SlotDto[] = [];
+
+    for (const slot of slots) {
       const slotStart = this.timeToMinutes(slot.startTime);
       const slotEnd = this.timeToMinutes(slot.endTime);
 
-      const bookedBy = appointments.find((a) => {
+      const bookedByAll = appointments.filter((a) => {
         const aStart = this.timeToMinutes(a.startTime);
-        const aEnd = this.timeToMinutes(a.endTime);
-        return slotStart < aEnd && slotEnd > aStart;
+        return aStart >= slotStart && aStart < slotEnd;
       });
 
-      if (bookedBy) {
-        return {
-          ...slot,
-          status: 'booked' as SlotStatus,
-          reason: bookedBy.patient?.name ?? 'Paciente removido',
-        };
+      if (bookedByAll.length > 0) {
+        for (const a of bookedByAll) {
+          result.push({
+            startTime: a.startTime,
+            endTime: a.endTime,
+            status: 'booked',
+            reason: a.patient?.name ?? 'Paciente removido',
+          });
+        }
+        continue;
       }
 
       const blockedBy = effectiveBlocks.find((b) => {
@@ -676,15 +679,18 @@ export class AppointmentsService {
       });
 
       if (blockedBy) {
-        return {
+        result.push({
           ...slot,
-          status: 'blocked' as SlotStatus,
+          status: 'blocked',
           reason: blockedBy.label,
-        };
+        });
+        continue;
       }
 
-      return { ...slot, status: 'available' as SlotStatus };
-    });
+      result.push({ ...slot, status: 'available' });
+    }
+
+    return result;
   }
 
   async updateStatus(

@@ -228,7 +228,44 @@
       <!-- ── Step: Slot ── -->
       @if (currentStep() === 'slot') {
         <div class="space-y-3">
-          @if (loadingSlots) {
+          <button
+            (click)="toggleManualMode()"
+            class="text-[11px] font-medium text-(--color-primary-text) underline underline-offset-2"
+          >
+            {{ manualMode ? '← Voltar para horários da agenda' : 'Agendar em horário manual' }}
+          </button>
+
+          @if (manualMode) {
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label
+                  class="block text-[10px] font-semibold text-(--color-text-muted) uppercase tracking-widest mb-1.5"
+                >
+                  Início
+                </label>
+                <input
+                  type="time"
+                  [(ngModel)]="manualStartTime"
+                  class="w-full bg-(--color-bg-overlay) border border-(--color-border) rounded-xl px-3 py-2.5 text-sm text-(--color-input-text) outline-none focus:border-(--color-primary) transition-colors"
+                />
+              </div>
+              <div>
+                <label
+                  class="block text-[10px] font-semibold text-(--color-text-muted) uppercase tracking-widest mb-1.5"
+                >
+                  Fim
+                </label>
+                <input
+                  type="time"
+                  [(ngModel)]="manualEndTime"
+                  class="w-full bg-(--color-bg-overlay) border border-(--color-border) rounded-xl px-3 py-2.5 text-sm text-(--color-input-text) outline-none focus:border-(--color-primary) transition-colors"
+                />
+              </div>
+            </div>
+            <p class="text-[11px] text-(--color-text-muted)">
+              Horário livre — não valida disponibilidade nem conflitos.
+            </p>
+          } @else if (loadingSlots) {
             <div class="flex justify-center py-8">
               <div
                 class="w-6 h-6 border-2 border-(--color-primary) border-t-transparent rounded-full animate-spin"
@@ -378,7 +415,9 @@
                 { label: 'Data', value: formattedDate },
                 {
                   label: 'Horário',
-                  value: selectedSlot?.startTime + ' – ' + selectedSlot?.endTime,
+                  value: manualMode
+                    ? manualStartTime + ' – ' + manualEndTime
+                    : selectedSlot?.startTime + ' – ' + selectedSlot?.endTime,
                 },
                 { label: 'Paciente', value: selectedPatient?.name },
               ];

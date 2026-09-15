@@ -104,6 +104,10 @@ export class CreateAppointmentModal implements AfterViewInit, OnDestroy, OnChang
   loadingSlots = false;
   selectedSlot: Slot | null = null;
 
+  manualMode = false;
+  manualStartTime = '';
+  manualEndTime = '';
+
   // ── Patients ──────────────────────────────────────────────────────────────
   patients: PatientSummary[] = [];
   patientSearchQuery = '';
@@ -136,12 +140,21 @@ export class CreateAppointmentModal implements AfterViewInit, OnDestroy, OnChang
       case 'date':
         return !!this.selectedDate && this.isValidDay();
       case 'slot':
-        return !!this.selectedSlot;
+        return this.manualMode
+          ? !!this.manualStartTime && !!this.manualEndTime
+          : !!this.selectedSlot;
       case 'patient':
         return !!this.selectedPatient;
       case 'confirm':
         return true;
     }
+  }
+
+  toggleManualMode(): void {
+    this.manualMode = !this.manualMode;
+    this.selectedSlot = null;
+    this.manualStartTime = '';
+    this.manualEndTime = '';
   }
 
   get formattedDate(): string {
@@ -391,8 +404,11 @@ export class CreateAppointmentModal implements AfterViewInit, OnDestroy, OnChang
 
   // ── Submit ────────────────────────────────────────────────────────────────
   confirm(): void {
-    if (!this.selectedDoctor || !this.selectedPatient || !this.selectedType || !this.selectedSlot)
-      return;
+    const hasTime = this.manualMode
+      ? this.manualStartTime && this.manualEndTime
+      : !!this.selectedSlot;
+
+    if (!this.selectedDoctor || !this.selectedPatient || !this.selectedType || !hasTime) return;
 
     this.isSaving = true;
 
@@ -402,13 +418,12 @@ export class CreateAppointmentModal implements AfterViewInit, OnDestroy, OnChang
       appointmentTypeId: this.selectedType.id,
       specialty: this.selectedDoctor.specialty,
       date: this.selectedDate,
-      startTime: this.selectedSlot.startTime,
-      endTime: this.selectedSlot.endTime,
+      startTime: this.manualMode ? this.manualStartTime : this.selectedSlot!.startTime,
+      endTime: this.manualMode ? this.manualEndTime : this.selectedSlot!.endTime,
       notes: this.notes || undefined,
       responsible: this.responsible || undefined,
       feeOverride: this.editedPrice ?? undefined,
     };
-
     this.service.createAppointment(dto).subscribe({
       next: (appointment) => {
         this.isSaving = false;
@@ -443,6 +458,9 @@ export class CreateAppointmentModal implements AfterViewInit, OnDestroy, OnChang
     this.doctorSearchQuery = '';
     this.notes = '';
     this.responsible = '';
+    this.manualMode = false;
+    this.manualStartTime = '';
+    this.manualEndTime = '';
     this.isSaving = false;
   }
 
