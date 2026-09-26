@@ -303,13 +303,24 @@
                 <!-- Expand: lista de consultas -->
                 @if (expandedProfessionals.has(prof.id)) {
                   <div class="border-t border-(--color-border) px-3 pb-3">
-                    <div class="flex items-center justify-end py-2">
+                    <div class="flex items-center justify-end gap-2 py-2">
+                      <p class="text-[10px] text-(--color-text-muted) italic">
+                        Selecione apenas comissões pendentes (para pagar) ou apenas pagas (para
+                        reimprimir recibo) — não é possível misturar os dois tipos na mesma seleção.
+                      </p>
                       <button
-                        [disabled]="selectedCount(prof) === 0"
+                        [disabled]="selectedPaidCount(prof) === 0"
+                        (click)="reprintSelected(prof)"
+                        class="text-[11px] px-3 py-1 rounded-full bg-(--color-bg-overlay) text-(--color-text-muted) font-semibold disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        Imprimir Recibo ({{ selectedPaidCount(prof) }})
+                      </button>
+                      <button
+                        [disabled]="selectedPendingCount(prof) === 0"
                         (click)="payCommissions(prof)"
                         class="text-[11px] px-3 py-1 rounded-full bg-success-subtle text-success font-semibold disabled:opacity-40 disabled:cursor-not-allowed"
                       >
-                        Pagar Selecionadas ({{ selectedCount(prof) }})
+                        Pagar Selecionadas ({{ selectedPendingCount(prof) }})
                       </button>
                     </div>
 
@@ -343,7 +354,7 @@
                         <input
                           type="checkbox"
                           [checked]="selectedPayments.has(apt.paymentId)"
-                          [disabled]="apt.commissionPaid"
+                          [disabled]="hasSelectionType(prof, !apt.commissionPaid)"
                           (change)="togglePaymentSelection(apt.paymentId)"
                         />
                         <p class="text-[11px] text-(--color-text-muted)">

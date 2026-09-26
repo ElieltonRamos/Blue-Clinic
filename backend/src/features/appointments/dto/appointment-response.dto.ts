@@ -61,6 +61,12 @@ export class AppointmentResponseDto {
   })
   originAppointmentId?: string;
 
+  @ApiPropertyOptional({
+    example: 'Paciente necessita de retorno em 15 dias.',
+    description: 'Observações internas sobre o agendamento',
+  })
+  notes?: string;
+
   constructor(data: any) {
     this.id = String(data.id);
     this.doctorId = String(data.doctorId);
@@ -72,6 +78,7 @@ export class AppointmentResponseDto {
     this.startTime = data.startTime;
     this.endTime = data.endTime;
     this.status = data.status;
+    this.notes = data.notes ?? undefined;
     this.responsible = data.responsible ?? undefined;
     this.price =
       data.feeOverride != null ? Number(data.feeOverride) : undefined;

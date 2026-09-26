@@ -142,8 +142,31 @@ export class Financial implements OnInit {
     }
   }
 
-  selectedCount(prof: ProfessionalRevenue): number {
-    return prof.appointments.filter((a) => this.selectedPayments.has(a.paymentId)).length;
+  selectedPendingCount(prof: ProfessionalRevenue): number {
+    return prof.appointments.filter(
+      (a) => this.selectedPayments.has(a.paymentId) && !a.commissionPaid,
+    ).length;
+  }
+
+  selectedPaidCount(prof: ProfessionalRevenue): number {
+    return prof.appointments.filter(
+      (a) => this.selectedPayments.has(a.paymentId) && a.commissionPaid,
+    ).length;
+  }
+
+  reprintSelected(prof: ProfessionalRevenue): void {
+    const appointments = prof.appointments.filter(
+      (a) => this.selectedPayments.has(a.paymentId) && a.commissionPaid,
+    );
+    if (appointments.length === 0) return;
+    this.printCommissionReceipt(prof, appointments);
+    appointments.forEach((a) => this.selectedPayments.delete(a.paymentId));
+  }
+
+  hasSelectionType(prof: ProfessionalRevenue, paid: boolean): boolean {
+    return prof.appointments.some(
+      (a) => this.selectedPayments.has(a.paymentId) && a.commissionPaid === paid,
+    );
   }
 
   payCommissions(prof: ProfessionalRevenue): void {
